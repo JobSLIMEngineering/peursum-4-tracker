@@ -45,3 +45,10 @@ de instellingen van Vercel en GitHub, nooit in de code.
 4. [ ] Login
 5. [ ] Schermen
 6. [ ] Wedstrijdinvoer en statistieken
+
+## Toegevoegd aan versie 1 (na het plan)
+
+- **Feedbackknop:** klein icoon onderin op elk scherm. Opent een tekstvak; de melding
+  wordt met pagina, schermbreedte en tijdstip opgeslagen in een tabel `feedback` in
+  Supabase, met status open/verwerkt. Meldingen worden later in één keer verwerkt.
+  Bouwen zodra de database er is (stap 3), knop zichtbaar vanaf stap 5.

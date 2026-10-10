@@ -1,8 +1,11 @@
 # Peursum 4 Tracker
 
-Persoonlijke web-app die de competitie van Peursum 4 (VV Peursum, 5e klasse zaterdag)
-en eenvoudige spelersstatistieken bijhoudt. Het volledige plan staat in
-[docs/Plan Peursum 4 Tracker.pdf](docs/Plan%20Peursum%204%20Tracker.pdf).
+Persoonlijke web-app voor Peursum 4 (VV Peursum, 5e klasse 521, zaterdag reserve):
+stand, programma, uitslagen, winkans en zelf ingevoerde spelersstatistieken.
+
+De opdracht staat in [docs/PLAN.md](docs/PLAN.md) (10 okt 2026). Uiterlijk en interactie
+volgen [docs/prototype.html](docs/prototype.html); data komt eenmalig uit
+[docs/seed-data.json](docs/seed-data.json). Het oude plan (PDF, 1 okt) is vervangen.
 
 ## Techniek
 
@@ -32,6 +35,8 @@ Open daarna http://localhost:3000.
 | `npm run lint`      | ESLint                            |
 | `npm run typecheck` | TypeScript-controle               |
 | `npm run parse:live`| Parser één keer tegen de echte clubsite draaien |
+| `npm run seed:sql`   | `supabase/seed.sql` opnieuw maken uit de seed-data |
+| `npm run icons`     | App-iconen opnieuw maken in `public/icons/` |
 
 ## Parser voor de clubsite
 
@@ -65,18 +70,33 @@ De parser staat in `src/lib/parser/`:
 Zie [.env.example](.env.example). Geheimen staan alleen in `.env.local` (lokaal) en in
 de instellingen van Vercel en GitHub, nooit in de code.
 
-## Voortgang
+## Voortgang (PLAN.md §9)
 
-1. [x] Project opzetten (lokaal; Vercel volgt zodra het account er is)
-2. [x] Parser voor de clubsite
-3. [ ] Database en ophalen
-4. [ ] Login
-5. [ ] Schermen
-6. [ ] Wedstrijdinvoer en statistieken
+Vooraf klaar uit het eerste plan: projectopzet, parser clubsite.
+
+1. [ ] **Basis**: kopbalk met 4 tabs, feedbackknop, PWA-manifest en iconen zijn klaar.
+   Nog te doen: Supabase koppelen, login alleen voor de eigenaar, deploy op Vercel.
+2. [ ] **Data**: migratie en seed klaar en getest (PGlite). Nog te doen: uitvoeren in Supabase.
+3. [ ] Overzicht + Competitie
+4. [ ] Team + invoer
+5. [ ] Match center
+6. [ ] Scraper
+
+Rekenregels (winkansmodel, rondes, uitslagen afleiden, aanwezigheidslijst, stats) staan
+al in `src/lib/domain/` en zijn getest tegen het prototype.
+
+## Database
+
+| Bestand | Inhoud |
+| --- | --- |
+| `supabase/migrations/0001_init.sql` | Tabellen (PLAN.md §5.4), feedback, Row Level Security |
+| `supabase/seed.sql` | Eenmalige import, gemaakt met `npm run seed:sql` uit `docs/seed-data.json` |
+| `supabase/schema.test.ts` | Draait beide in PGlite en controleert aantallen en beveiliging |
+
+Toegang: alleen e-mailadressen in de tabel `owners` kunnen data lezen of schrijven.
 
 ## Toegevoegd aan versie 1 (na het plan)
 
 - **Feedbackknop:** klein icoon onderin op elk scherm. Opent een tekstvak; de melding
-  wordt met pagina, schermbreedte en tijdstip opgeslagen in een tabel `feedback` in
-  Supabase, met status open/verwerkt. Meldingen worden later in één keer verwerkt.
-  Bouwen zodra de database er is (stap 3), knop zichtbaar vanaf stap 5.
+  wordt met pagina, schermbreedte en tijdstip opgeslagen in de tabel `feedback`, met
+  status open/verwerkt. Meldingen worden later in één keer verwerkt.

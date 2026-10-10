@@ -1,35 +1,117 @@
 @import "tailwindcss";
 
-/* Kleuren benaderd op basis van de Instagram-posts van Peursum 4 */
+/*
+ * Vormgeving volgens docs/prototype.html (PLAN.md §8).
+ * Klassenamen komen overeen met het prototype, zodat het makkelijk te vergelijken is.
+ */
 :root {
-  --background: #0b0b0b;
-  --foreground: #ffffff;
-  --muted: #bfbfbf;
-  --club-red: #d7141a;
-  --club-red-dark: #8b0a0e;
-  --surface: #151111;
+  --bg: #0d0b0c;
+  --surface: #171415;
+  --surface-2: #221d1f;
+  --line: #2e282a;
+  --fg: #ffffff;
+  --muted: #9d9396;
+  --red: #e1242f;
+  --red-deep: #a3121c;
+  --win: #2fbf62;
+  --draw: #f0b429;
+  --loss: #e5484d;
+  --f-anton: var(--font-anton), "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-brush: var(--font-marker), var(--font-barlow-cond), cursive;
+  --f-cond: var(--font-barlow-cond), "Arial Narrow", sans-serif;
+  --f-body: var(--font-barlow), system-ui, sans-serif;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-club: var(--club-red);
-  --color-club-dark: var(--club-red-dark);
+  --color-bg: var(--bg);
   --color-surface: var(--surface);
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-bebas);
-  --font-brush: var(--font-marker);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-red: var(--red);
+  --color-red-deep: var(--red-deep);
+  --color-win: var(--win);
+  --color-draw: var(--draw);
+  --color-loss: var(--loss);
+  --font-sans: var(--f-body);
+  --font-cond: var(--f-cond);
+  --font-anton: var(--f-anton);
 }
 
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
 body {
-  background: var(--background);
-  color: var(--foreground);
+  min-height: 100vh;
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.4;
+  background:
+    radial-gradient(ellipse 90% 55% at 100% 100%, #5a0a1066 0%, transparent 70%),
+    radial-gradient(ellipse 70% 45% at 0% 60%, #3a060b55 0%, transparent 70%),
+    linear-gradient(180deg, #5c0b12 0%, #2a070a 16%, #120a0b 38%, var(--bg) 62%, #160709 100%);
+  background-attachment: fixed;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; }
+
+/* Kop: rood vlak met donkere schuine banen en een schuine onderkant */
+.head { position: relative; overflow: hidden; background: var(--red); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 22px), 0 100%); padding-bottom: 30px; }
+.head::before { content: ""; position: absolute; top: -40px; bottom: -40px; right: 8%; width: 34%; background: #00000029; transform: skewX(-22deg); }
+.head::after { content: ""; position: absolute; top: -40px; bottom: -40px; right: calc(8% + 34% + 18px); width: 5%; background: #0000001f; transform: skewX(-22deg); }
+.head .wrap { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px 24px; flex-wrap: wrap; padding-block: calc(20px + env(safe-area-inset-top)) 0; padding-inline: 33px; }
+@media (max-width: 480px) { .head .wrap { padding-inline: 29px; } }
+.brand { text-decoration: none; }
+.brand h1, .brand .logo { margin: 0; font-family: var(--f-anton); font-weight: 400; text-transform: uppercase; font-size: clamp(38px, 8vw, 58px); line-height: 1; letter-spacing: .01em; color: #fff; display: flex; align-items: center; gap: 12px; transform: skewX(-8deg); text-shadow: 4px 4px 0 #0000004d; }
+.brand .no { background: #0d0b0c; color: #fff; padding: 0 .22em; line-height: 1.08; box-shadow: 5px 5px 0 #00000059; text-shadow: none; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tabs a { background: #00000033; border: 0; color: #fff; font-family: var(--f-cond); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 15px; padding: 9px 16px; cursor: pointer; transform: skewX(-12deg); text-decoration: none; text-align: center; }
+.tabs a span { display: inline-block; transform: skewX(12deg); }
+.tabs a:hover { background: #00000055; }
+.tabs a[aria-current="page"] { background: #0d0b0c; box-shadow: 4px 4px 0 #00000059; }
+@media (max-width: 600px) {
+  .tabs { width: 100%; display: grid; grid-template-columns: auto auto auto auto; gap: 4px; }
+  .tabs a { padding: 9px 4px; font-size: 11px; letter-spacing: .02em; white-space: nowrap; }
 }
 
-/* Subtiele donkerrode gloed voor posterkaarten en headers */
-.poster-glow {
-  background:
-    radial-gradient(120% 80% at 50% 0%, rgb(139 10 14 / 0.45), transparent 70%),
-    var(--surface);
+main.panel { margin-block: 22px 24px; padding: 16px; background: #0b090acc; border: 1px solid #3a282b; border-top: 3px solid var(--red); border-radius: 4px; box-shadow: 0 18px 50px #000000aa, 0 0 0 1px #00000066; backdrop-filter: blur(6px); }
+@media (max-width: 480px) { main.panel { padding: 12px; } }
+
+/* Bouwstenen */
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 3px; min-width: 0; }
+.box-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.box-b { padding: 12px; }
+.lbl { font-family: var(--f-cond); font-weight: 800; letter-spacing: .14em; text-transform: uppercase; font-size: 13px; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px; }
+.lbl::before { content: ""; width: 12px; height: 12px; background: var(--red); transform: skewX(-18deg); }
+h2.brush { font-family: var(--f-brush); font-weight: 400; font-size: 28px; line-height: 1; margin: 6px 0 14px; }
+h2.brush::after { content: ""; display: block; width: 70px; height: 6px; margin-top: 6px; background: var(--red); transform: skewX(-20deg); }
+.btn { font-family: var(--f-cond); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: 14px; border: 1px solid var(--line); background: var(--surface-2); color: #fff; padding: 8px 14px; border-radius: 2px; cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.primary { background: var(--red); border-color: var(--red); }
+.btn.primary:hover { background: var(--red-deep); }
+.btn.sm { padding: 4px 10px; font-size: 12px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.link { background: none; border: 0; color: #fff; font-family: var(--f-cond); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+.muted { color: var(--muted); }
+.meta { font-size: 12px; color: var(--muted); }
+.num { font-family: var(--f-cond); font-weight: 800; font-variant-numeric: tabular-nums; }
+.grid2 { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 780px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+.stack { display: grid; gap: 14px; align-content: start; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.note { margin-top: 10px; padding: 8px 10px; border-radius: 2px; font-size: 13px; }
+.note.warn { background: #f0b4291a; color: var(--draw); }
+.note.ok { background: #2fbf621a; color: var(--win); }
+.foot { color: var(--muted); font-size: 12px; margin-top: 20px; }
+
+/* Formulieren */
+textarea, select, input[type=text], input[type=email], input[type=date], input[type=time] {
+  font: inherit; font-size: 14px; color: #fff; background: var(--surface-2); border: 1px solid var(--line); border-radius: 2px; padding: 6px 8px; width: 100%; min-width: 0;
 }
+textarea { padding: 8px 10px; min-height: 110px; resize: vertical; }
+label.f { display: grid; gap: 4px; font-family: var(--f-cond); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 11px; color: var(--muted); }
+
+/* Feedbackknop */
+.fb-btn { position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 50; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); display: grid; place-items: center; cursor: pointer; box-shadow: 0 6px 18px #000a; opacity: .85; }
+.fb-btn:hover { opacity: 1; background: var(--red); border-color: var(--red); }
+.fb-panel { position: fixed; right: 14px; bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 50; width: min(340px, calc(100vw - 28px)); }

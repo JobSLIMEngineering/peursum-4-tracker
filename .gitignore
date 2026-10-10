@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Aangeleverde pakketten (inhoud staat uitgepakt in docs/)
+*.zip

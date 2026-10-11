@@ -675,3 +675,15 @@ body::before {
   background: linear-gradient(#060404b8, #060404b8), #070505 var(--texture) center / cover no-repeat;
   transform: translateZ(0);
 }
+
+/* Kampioenskans */
+.cc-main { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.cc-pct { font-size: 46px; line-height: 1; color: var(--red); }
+.cc-main b { color: #fff; }
+.cc-list { display: grid; gap: 6px; }
+.cc-row { display: grid; grid-template-columns: minmax(0, 1.3fr) 1fr 44px; gap: 10px; align-items: center; font-size: 14px; }
+.cc-row .num { text-align: right; }
+.cc-row.us { font-weight: 700; }
+.cc-bar { height: 8px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+.cc-bar span { display: block; height: 100%; background: #6f6568; }
+.cc-row.us .cc-bar span { background: var(--red); }

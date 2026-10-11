@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChampionChance } from "@/components/ChampionChance";
 import { Fireworks } from "@/components/Fireworks";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -35,6 +36,8 @@ export default function OverzichtPage() {
             );
           })}
         </section>
+
+        <ChampionChance view={view} />
 
         {per && (
           <Box

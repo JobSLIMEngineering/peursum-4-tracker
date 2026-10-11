@@ -15,6 +15,10 @@ export default function TeamPage() {
   const players = sortPlayers(view.players.filter((p) => p.active));
   const vast = players.filter((p) => p.type === "vast");
   const leen = players.filter((p) => p.type === "leen");
+  // Doelpunten per soort: iedereen met een goal of eigen goal, meeste goals eerst
+  const scorers = players
+    .filter((p) => totals[p.id]?.goals || totals[p.id]?.ownGoals)
+    .sort((a, b) => totals[b.id].goals - totals[a.id].goals || totals[b.id].penalties - totals[a.id].penalties);
   // Keepers: iedereen met positie Keeper, plus wie ooit in het doel stond
   const keepers = players.filter((p) => p.position === "Keeper" || totals[p.id]?.keeperGames);
   const [name, setName] = useState("");
@@ -108,9 +112,43 @@ export default function TeamPage() {
         {table(leen, true)}
       </Box>
 
+      <Box label="Doelpunten" right={<span className="meta">per soort</span>} bodyClass={scorers.length ? "tbl-wrap" : "box-b muted"}>
+        {scorers.length ? (
+          <table className="compact">
+            <thead>
+              <tr>
+                <th className="t">Speler</th>
+                <th>Goals</th>
+                <th>Uit spel</th>
+                <th>Pen.</th>
+                <th>Vrije tr.</th>
+                <th>Eigen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scorers.map((p) => {
+                const t = totals[p.id];
+                return (
+                  <tr key={p.id}>
+                    <td className="t">{playerLabel(p)}</td>
+                    <td className="pts">{t.goals || "–"}</td>
+                    <td>{t.goals - t.penalties - t.freeKicks || "–"}</td>
+                    <td>{t.penalties || "–"}</td>
+                    <td>{t.freeKicks || "–"}</td>
+                    <td style={t.ownGoals ? { color: "var(--loss)" } : undefined}>{t.ownGoals || "–"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          "Nog geen doelpunten ingevoerd."
+        )}
+      </Box>
+
       <Box label="Keepers" bodyClass={keepers.length ? "tbl-wrap" : "box-b muted"}>
         {keepers.length ? (
-          <table>
+          <table className="compact">
             <thead>
               <tr>
                 <th className="t">Keeper</th>

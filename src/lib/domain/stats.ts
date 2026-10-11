@@ -9,6 +9,9 @@ export interface PlayerTotals {
   keeperGames: number;
   cleanSheets: number;
   goalsAgainst: number;
+  penalties: number;
+  freeKicks: number;
+  ownGoals: number;
 }
 
 const empty = (): PlayerTotals => ({
@@ -20,6 +23,9 @@ const empty = (): PlayerTotals => ({
   keeperGames: 0,
   cleanSheets: 0,
   goalsAgainst: 0,
+  penalties: 0,
+  freeKicks: 0,
+  ownGoals: 0,
 });
 
 /**
@@ -46,6 +52,11 @@ export function playerTotals(
       if (!t[id]) continue;
       t[id].goals += s.goals;
       t[id].assists += s.assists;
+      // Penalty's en vrije trappen zijn een deel van de goals; nooit meer dan het aantal goals
+      const pen = Math.min(s.penalties ?? 0, s.goals);
+      t[id].penalties += pen;
+      t[id].freeKicks += Math.min(s.freeKicks ?? 0, s.goals - pen);
+      t[id].ownGoals += s.ownGoals ?? 0;
       if (s.red) t[id].red++;
       else if (s.yellow) t[id].yellow++;
     }

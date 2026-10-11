@@ -259,6 +259,22 @@ describe("spelersstatistieken", () => {
     expect(t.p4).toMatchObject({ keeperGames: 2, cleanSheets: 2, goalsAgainst: 0, yellow: 1 });
   });
 
+  it("telt penalty's, vrije trappen en eigen goals apart", () => {
+    const t2 = playerTotals(players, all, [
+      {
+        ...entries[0],
+        stats: {
+          p1: { ...s(3), penalties: 1, freeKicks: 1 },
+          p2: { ...s(1), penalties: 5 }, // meer penalty's dan goals ingevoerd: begrensd
+          p3: { ...s(0), ownGoals: 1 },
+        },
+      },
+    ]);
+    expect(t2.p1).toMatchObject({ goals: 3, penalties: 1, freeKicks: 1, ownGoals: 0 });
+    expect(t2.p2).toMatchObject({ goals: 1, penalties: 1, freeKicks: 0 });
+    expect(t2.p3).toMatchObject({ goals: 0, ownGoals: 1 });
+  });
+
   it("geeft alle namen bij gelijkstand", () => {
     expect(leaders(players, t, "assists").players.map((p) => p.id)).toEqual(["p2"]);
     const tie = playerTotals(players, all, [

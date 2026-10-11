@@ -77,14 +77,31 @@ export interface PlayerMatchStats {
   /** Geel gekregen. Met `red` samen: tweede geel = rood. */
   yellow: boolean;
   red: boolean;
+  /** Waarvan uit een penalty / vrije trap (deel van `goals`) */
+  penalties?: number;
+  freeKicks?: number;
+  /** Eigen doelpunt van deze speler (in ons doel); telt niet als goal */
+  ownGoals?: number;
+}
+
+export type GoalKind = "spel" | "penalty" | "vrije trap";
+
+/** Eén doelpunt van Peursum 4. `scorerId: null` = eigen goal van de tegenstander. */
+export interface GoalEvent {
+  scorerId: string | null;
+  assistId: string | null;
+  kind: GoalKind;
 }
 
 export interface MatchEntry {
   matchId: string;
   attendance: string[];
+  /** Afgeleid per speler (uit `goals` en de kaarten); hierop rekenen alle statistieken */
   stats: Record<string, PlayerMatchStats>;
   keeperId: string | null;
   opponentOwnGoals: number;
+  /** Doelpunten in volgorde, zoals ingevoerd (vanaf de invoer per doelpunt) */
+  goals?: GoalEvent[];
 }
 
 export const isPlayed = <T extends Pick<Match, "homeGoals" | "awayGoals">>(

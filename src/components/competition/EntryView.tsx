@@ -43,24 +43,42 @@ export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => v
             <p className="lbl">Goals en assists</p>
           </div>
           <div className="box-b">
-            {goals.map(([id, s]) => (
-              <div className="ev" key={`g${id}`}>
-                <span>{name(id)}</span>
-                <span className="num">{s.goals}× goal</span>
-              </div>
-            ))}
-            {e.opponentOwnGoals > 0 && (
+            {e.goals ? (
+              // Per doelpunt, in volgorde van invoer
+              e.goals.map((g, i) => (
+                <div className="ev" key={`gg${i}`}>
+                  <span>
+                    <b className="num" style={{ marginRight: 8 }}>
+                      {i + 1}.
+                    </b>
+                    {g.scorerId ? name(g.scorerId) : <span className="muted">Eigen goal tegenstander</span>}
+                    {g.assistId && <span className="muted"> · assist {name(g.assistId)}</span>}
+                  </span>
+                  {g.kind !== "spel" && <span className="goal-kind">{g.kind}</span>}
+                </div>
+              ))
+            ) : (
+              <>
+                {goals.map(([id, s]) => (
+                  <div className="ev" key={`g${id}`}>
+                    <span>{name(id)}</span>
+                    <span className="num">{s.goals}× goal</span>
+                  </div>
+                ))}
+            {!e.goals && e.opponentOwnGoals > 0 && (
               <div className="ev">
                 <span className="muted">Eigen goal tegenstander</span>
                 <span className="num">{e.opponentOwnGoals}×</span>
               </div>
             )}
-            {assists.map(([id, s]) => (
-              <div className="ev" key={`a${id}`}>
-                <span>{name(id)}</span>
-                <span className="num muted">{s.assists}× assist</span>
-              </div>
-            ))}
+                {assists.map(([id, s]) => (
+                  <div className="ev" key={`a${id}`}>
+                    <span>{name(id)}</span>
+                    <span className="num muted">{s.assists}× assist</span>
+                  </div>
+                ))}
+              </>
+            )}
             {!goals.length && !e.opponentOwnGoals && <span className="muted">Geen goals ingevoerd.</span>}
             {sum !== us && (
               <div className="note warn">
@@ -84,6 +102,16 @@ export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => v
                 {them} / {them === 0 ? "ja" : "nee"}
               </span>
             </div>
+            {stats
+              .filter(([, x]) => x.ownGoals)
+              .map(([id, x]) => (
+                <div className="ev" key={`og${id}`}>
+                  <span>
+                    <span className="og-dot" /> Eigen goal{x.ownGoals! > 1 ? ` (${x.ownGoals}×)` : ""}
+                  </span>
+                  <span>{name(id)}</span>
+                </div>
+              ))}
             {cards.map(([id, s]) => (
               <div className="ev" key={`c${id}`}>
                 <span>

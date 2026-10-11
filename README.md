@@ -14,13 +14,15 @@ volgen [docs/prototype.html](docs/prototype.html); data komt eenmalig uit
 | App (deze repository, **openbaar**) | GitHub Pages: <https://jobslimengineering.github.io/peursum-4-tracker/> |
 | Gegevens (**privé**) | [`JobSLIMEngineering/peursum-4-data`](https://github.com/JobSLIMEngineering/peursum-4-data), map `data/` met JSON-bestanden |
 | Clubsite ophalen | GitHub Action *Ophalen clubsite* in de data-repository (zaterdag elk uur, zondag 4×, plus "Nu verversen") |
-| Inloggen | Eigen fine-grained GitHub-sleutel per apparaat, alleen toegang tot de data-repository |
+| Inloggen | Wachtwoord. Dat ontsleutelt in de browser een GitHub-sleutel die versleuteld in `public/toegang.json` staat (PBKDF2 600.000 rondes + AES-GCM) |
 
 Dit wijkt bewust af van PLAN.md §2 (Vercel + Supabase): de eigenaar wil geen extra accounts.
 Wat er in de praktijk anders is:
 
 - Wijzigingen worden binnen een paar seconden opgeslagen als commit in de data-repository.
-- Er is geen inloglink per e-mail; de GitHub-sleutel is de toegang. Kwijt? Intrekken op GitHub.
+- Inloggen met een wachtwoord (minstens 12 tekens). Vergeten? Op het inlogscherm een nieuwe
+  GitHub-sleutel maken en een nieuw wachtwoord kiezen; je GitHub-account zelf herstel je via e-mail.
+- De sleutel heeft alleen toegang tot `peursum-4-data` en `peursum-4-tracker` (Contents + Actions).
 - De Supabase-ping op woensdag is niet nodig.
 
 Techniek: Next.js 16 als statische export (geen server), TypeScript, Tailwind 4, Vitest, tsx voor de scraper.

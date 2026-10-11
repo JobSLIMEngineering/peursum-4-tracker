@@ -1,6 +1,8 @@
 import { DATA_FILES, EMPTY, type DataFile, type DataFiles } from "./schema";
 
 export const DATA_REPO = { owner: "JobSLIMEngineering", repo: "peursum-4-data", dir: "data" };
+/** Openbare app-repository; hierin staat de versleutelde sleutel (public/toegang.json) */
+export const APP_REPO = { owner: "JobSLIMEngineering", repo: "peursum-4-tracker", vault: "public/toegang.json" };
 export const SYNC_WORKFLOW = "sync.yml";
 
 export interface Store {
@@ -65,13 +67,36 @@ export class GitHubStore implements Store {
     return `/repos/${owner}/${repo}/contents/${dir}/${file}`;
   }
 
-  /** Controleert of de sleutel bij de data-repository kan. */
-  async check(): Promise<void> {
-    const { owner, repo } = DATA_REPO;
-    const res = await this.api(`/repos/${owner}/${repo}`);
-    if (res.status === 401) throw new StoreError("Deze sleutel is ongeldig of verlopen.", 401);
-    if (res.status === 404) throw new StoreError(`Geen toegang tot ${owner}/${repo} met deze sleutel.`, 404);
-    if (!res.ok) throw new StoreError(`GitHub gaf een fout (${res.status}).`, res.status);
+  /** Controleert of de sleutel bij de data-repository kan (en desgewenst in de app-repository mag schrijven). */
+  async check(opts: { appWrite?: boolean } = {}): Promise<void> {
+    const repos = [DATA_REPO, ...(opts.appWrite ? [APP_REPO] : [])];
+    for (const { owner, repo } of repos) {
+      const res = await this.api(`/repos/${owner}/${repo}`);
+      if (res.status === 401) throw new StoreError("Deze sleutel is ongeldig of verlopen.", 401);
+      if (res.status === 404) throw new StoreError(`Geen toegang tot ${owner}/${repo} met deze sleutel.`, 404);
+      if (!res.ok) throw new StoreError(`GitHub gaf een fout (${res.status}).`, res.status);
+      const body = (await res.json()) as { permissions?: { push?: boolean } };
+      if (body.permissions && !body.permissions.push) {
+        throw new StoreError(`Deze sleutel mag niet schrijven in ${owner}/${repo} (Contents: Read and write).`);
+      }
+    }
+  }
+
+  /** Slaat de versleutelde sleutel op in de app-repository; GitHub Pages publiceert hem binnen een paar minuten. */
+  async saveVault(vault: object): Promise<void> {
+    const { owner, repo, vault: path } = APP_REPO;
+    const url = `/repos/${owner}/${repo}/contents/${path}`;
+    const cur = await this.api(url);
+    const sha = cur.ok ? ((await cur.json()) as { sha: string }).sha : undefined;
+    const res = await this.api(url, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: "app: nieuw wachtwoord ingesteld",
+        content: b64encode(JSON.stringify(vault, null, 2) + "\n"),
+        ...(sha ? { sha } : {}),
+      }),
+    });
+    if (!res.ok) throw new StoreError(`Wachtwoord opslaan mislukt (${res.status}).`, res.status);
   }
 
   async read<K extends DataFile>(file: K): Promise<{ data: DataFiles[K]; sha: string | null }> {

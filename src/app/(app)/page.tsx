@@ -102,6 +102,7 @@ const RESULT = { W: "Gewonnen", D: "Gelijk", L: "Verloren" } as const;
 
 /** Laatst gespeelde competitiewedstrijd; bij winst vuurwerk (één keer per sessie) */
 function LastMatch({ view }: { view: AppView }) {
+  const { readOnly } = useData();
   const last = lastMatches(view.matches, US, 1)[0];
   if (!last) return null;
   const r = outcome(last.goalsFor, last.goalsAgainst);
@@ -128,7 +129,7 @@ function LastMatch({ view }: { view: AppView }) {
         </span>
       </div>
       <div className="lm-foot meta">
-        {entry ? `${entry.attendance.length} aanwezig · stats ingevoerd` : <span className="todo">Opstelling en stats invoeren →</span>}
+        {entry ? `${entry.attendance.length} aanwezig · stats ingevoerd` : readOnly ? "Bekijk wedstrijd →" : <span className="todo">Opstelling en stats invoeren →</span>}
       </div>
     </Link>
   );

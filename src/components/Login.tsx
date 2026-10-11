@@ -26,7 +26,15 @@ async function fetchVault(): Promise<Vault | null> {
 }
 
 /** Inloggen met wachtwoord. Eerste keer of vergeten: nieuwe GitHub-sleutel + nieuw wachtwoord. */
-export function Login({ onLogin, error }: { onLogin: (token: string) => Promise<void>; error?: string }) {
+export function Login({
+  onLogin,
+  onGuest,
+  error,
+}: {
+  onLogin: (token: string) => Promise<void>;
+  onGuest: () => Promise<void>;
+  error?: string;
+}) {
   const [vault, setVault] = useState<Vault | null | undefined>(undefined);
   const [mode, setMode] = useState<"password" | "setup">("password");
   const [msg, setMsg] = useState<string | undefined>(error);
@@ -41,7 +49,8 @@ export function Login({ onLogin, error }: { onLogin: (token: string) => Promise<
   if (vault === undefined) return <p className="meta">Laden…</p>;
 
   return (
-    <section className="box" style={{ maxWidth: 520, margin: "0 auto" }}>
+    <div className="stack" style={{ maxWidth: 520, margin: "0 auto" }}>
+    <section className="box">
       <div className="box-h">
         <p className="lbl">{mode === "password" ? "Inloggen" : "Wachtwoord instellen"}</p>
       </div>
@@ -56,6 +65,17 @@ export function Login({ onLogin, error }: { onLogin: (token: string) => Promise<
         />
       )}
     </section>
+    <section className="box guest-box">
+      <div className="box-b">
+        <p style={{ margin: "0 0 10px" }}>
+          <b>Alleen kijken?</b> Bekijk stand, programma, winkans en statistieken zonder in te loggen.
+        </p>
+        <button className="btn" type="button" onClick={() => void onGuest()}>
+          Verder als gast
+        </button>
+      </div>
+    </section>
+    </div>
   );
 }
 

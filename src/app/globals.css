@@ -529,3 +529,6 @@ a.last-match { display: block; color: inherit; text-decoration: none; }
   .head .matchup-slot { order: 2; margin-left: auto; }
   .mu-logos .tlogo { width: 28px !important; height: 28px !important; }
 }
+
+/* "hidden" wint altijd, ook van display:flex */
+[hidden] { display: none !important; }

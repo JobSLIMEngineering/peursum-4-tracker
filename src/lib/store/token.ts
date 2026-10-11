@@ -27,3 +27,21 @@ export function clearToken() {
 
 /** Lokale modus (npm run dev:local): data in de browser, geen sleutel nodig. */
 export const LOCAL_MODE = process.env.NEXT_PUBLIC_DATA === "local";
+
+// Gastmodus (alleen kijken) onthouden op dit apparaat
+const GUEST = "p4-guest";
+export function isGuest(): boolean {
+  try {
+    return localStorage.getItem(GUEST) === "1";
+  } catch {
+    return false;
+  }
+}
+export function setGuest(on: boolean) {
+  try {
+    if (on) localStorage.setItem(GUEST, "1");
+    else localStorage.removeItem(GUEST);
+  } catch {
+    // negeren
+  }
+}

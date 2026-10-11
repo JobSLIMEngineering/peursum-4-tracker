@@ -1,3 +1,4 @@
+import { PUBLIC_REF, PUBLIC_URL } from "./public";
 import { DATA_FILES, EMPTY, type DataFile, type DataFiles } from "./schema";
 
 export const DATA_REPO = { owner: "JobSLIMEngineering", repo: "peursum-4-data", dir: "data" };
@@ -6,7 +7,7 @@ export const APP_REPO = { owner: "JobSLIMEngineering", repo: "peursum-4-tracker"
 export const SYNC_WORKFLOW = "sync.yml";
 
 export interface Store {
-  readonly kind: "github" | "local";
+  readonly kind: "github" | "local" | "public";
   readAll(): Promise<DataFiles>;
   /** Leest het bestand vers, past `fn` toe en schrijft terug. Bij een botsing opnieuw. */
   update<K extends DataFile>(file: K, fn: (cur: DataFiles[K]) => DataFiles[K], message: string): Promise<DataFiles[K]>;
@@ -137,6 +138,39 @@ export class GitHubStore implements Store {
     throw new StoreError(`Opslaan van ${file} mislukt: het bestand werd steeds tegelijk gewijzigd.`);
   }
 
+  /**
+   * Publiceert de kijkversie voor gasten (branch "kijk" van de openbare app-repository).
+   * Maakt de branch aan als hij nog niet bestaat. Een push naar deze branch start geen nieuwe build.
+   */
+  async publishPublic(json: string): Promise<void> {
+    const { owner, repo, branch, path } = PUBLIC_REF;
+    const base = `/repos/${owner}/${repo}`;
+    let cur = await this.api(`${base}/contents/${path}?ref=${branch}`);
+    if (cur.status === 404) {
+      // Branch of bestand bestaat nog niet: branch "kijk" maken vanaf main
+      const main = await this.api(`${base}/git/ref/heads/main`);
+      if (!main.ok) throw new StoreError(`Kijkversie: main niet gevonden (${main.status}).`, main.status);
+      const sha = ((await main.json()) as { object: { sha: string } }).object.sha;
+      const made = await this.api(`${base}/git/refs`, {
+        method: "POST",
+        body: JSON.stringify({ ref: `refs/heads/${branch}`, sha }),
+      });
+      if (!made.ok && made.status !== 422) throw new StoreError(`Kijkversie: branch maken mislukt (${made.status}).`, made.status);
+      cur = await this.api(`${base}/contents/${path}?ref=${branch}`);
+    }
+    const sha = cur.ok ? ((await cur.json()) as { sha: string }).sha : undefined;
+    const res = await this.api(`${base}/contents/${path}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: "kijkversie bijgewerkt",
+        branch,
+        content: b64encode(json),
+        ...(sha ? { sha } : {}),
+      }),
+    });
+    if (!res.ok) throw new StoreError(`Kijkversie publiceren mislukt (${res.status}).`, res.status);
+  }
+
   async triggerSync(): Promise<void> {
     const { owner, repo } = DATA_REPO;
     const res = await this.api(`/repos/${owner}/${repo}/actions/workflows/${SYNC_WORKFLOW}/dispatches`, {
@@ -144,6 +178,30 @@ export class GitHubStore implements Store {
       body: JSON.stringify({ ref: "main", inputs: { force: "true" } }),
     });
     if (!res.ok) throw new StoreError(`Verversen starten mislukt (${res.status}).`, res.status);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Gast: alleen lezen, uit de openbare kijkversie (geen sleutel nodig)
+// ---------------------------------------------------------------------------
+
+export class PublicStore implements Store {
+  readonly kind = "public" as const;
+
+  async readAll(): Promise<DataFiles> {
+    const res = await fetch(`${PUBLIC_URL}?t=${Date.now()}`, { cache: "no-store" });
+    if (res.status === 404) throw new StoreError("Er is nog geen kijkversie gepubliceerd.", 404);
+    if (!res.ok) throw new StoreError(`Kijkversie laden mislukt (${res.status}).`, res.status);
+    const data = (await res.json()) as Partial<DataFiles>;
+    return Object.fromEntries(DATA_FILES.map((f) => [f, data[f] ?? structuredClone(EMPTY[f])])) as unknown as DataFiles;
+  }
+
+  async update(): Promise<never> {
+    throw new StoreError("Als gast kun je alleen kijken.");
+  }
+
+  async triggerSync(): Promise<void> {
+    throw new StoreError("Als gast kun je alleen kijken.");
   }
 }
 

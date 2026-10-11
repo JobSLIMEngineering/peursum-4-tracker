@@ -25,6 +25,11 @@ Wat er in de praktijk anders is:
 - De sleutel heeft alleen toegang tot `peursum-4-data` en `peursum-4-tracker` (Contents + Actions).
 - De Supabase-ping op woensdag is niet nodig.
 
+**Gasten** kiezen op het inlogscherm "Verder als gast" en kunnen alleen kijken. Zij lezen een
+kijkversie (`kijk.json` op de branch `kijk` van deze repository) zonder namen van afgeschermde
+spelers, zonder bijnamen en zonder feedback. De app van de eigenaar werkt die kijkversie
+automatisch bij na elke wijziging (zie `src/lib/store/public.ts`).
+
 Techniek: Next.js 16 als statische export (geen server), TypeScript, Tailwind 4, Vitest, tsx voor de scraper.
 
 ## Lokaal starten

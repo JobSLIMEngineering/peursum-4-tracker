@@ -20,7 +20,7 @@ const CLUB_CODES: Record<string, string> = {
 /** Beginstand van de data-repository, uit docs/seed-data.json (PLAN.md stap 2). */
 export function initialData(seed: SeedData): DataFiles {
   return {
-    ...EMPTY,
+    ...structuredClone(EMPTY),
     "standings.json": {
       snapshots: [{ fetchedAt: "2026-10-10T18:00:00+02:00", source: "seed", rows: seedStandings(seed) }],
     },

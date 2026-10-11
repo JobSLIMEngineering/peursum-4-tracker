@@ -7,7 +7,7 @@ import type { ViewMatch } from "@/lib/store/view";
 
 /** Gespeelde wedstrijd bekijken: goals, assists, keeper, kaarten, aanwezigen (PLAN.md §3.3) */
 export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => void }) {
-  const { view } = useData();
+  const { view, readOnly } = useData();
   const e = view.entries[match.id];
   const [us, them] = ourScore(match)!;
   const name = (id: string) => playerLabel(view.players.find((p) => p.id === id));
@@ -20,9 +20,11 @@ export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => v
             Nog geen opstelling of stats voor deze wedstrijd.
             {match.kind !== "competitie" && ` ${match.kind[0].toUpperCase()}${match.kind.slice(1)}: telt niet mee voor de statistieken.`}
           </p>
-          <button className="btn primary" type="button" onClick={onEdit}>
-            Opstelling en stats invoeren
-          </button>
+          {!readOnly && (
+            <button className="btn primary" type="button" onClick={onEdit}>
+              Opstelling en stats invoeren
+            </button>
+          )}
         </div>
       </section>
     );
@@ -138,11 +140,13 @@ export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => v
           ))}
         </div>
       </section>
-      <div className="actions">
-        <button className="btn" type="button" onClick={onEdit}>
-          Bewerken
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="actions">
+          <button className="btn" type="button" onClick={onEdit}>
+            Bewerken
+          </button>
+        </div>
+      )}
     </>
   );
 }

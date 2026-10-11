@@ -34,7 +34,7 @@ function saveOpen(keys: string[]) {
 }
 
 export function RoundsList() {
-  const { view, mutate } = useData();
+  const { view, mutate, readOnly } = useData();
   const router = useRouter();
   const groups = buildRounds(view.matches);
   const { upcoming, done, defaultOpen } = splitRounds(groups, todayNL());
@@ -151,9 +151,11 @@ export function RoundsList() {
       <section className="box">
         <div className="box-h">
           <SectionToggle label="Komende rondes" count={upcoming.length} closed={collapsed.includes("up")} onClick={() => toggleSection("up")} />
-          <button className="btn sm" type="button" onClick={addMatch}>
-            + Wedstrijd
-          </button>
+          {!readOnly && (
+            <button className="btn sm" type="button" onClick={addMatch}>
+              + Wedstrijd
+            </button>
+          )}
         </div>
         {!collapsed.includes("up") && (
           <div className="rnds">
@@ -260,6 +262,7 @@ function Summary({ g, view }: { g: RoundGroup; view: AppView }) {
 }
 
 function MatchRow({ m, view }: { m: ViewMatch; view: AppView }) {
+  const { readOnly } = useData();
   const ours = isOurs(m);
   const team = (t: string) => (
     <span className={`tname ${t === US ? "us-t" : ""}`}>
@@ -284,7 +287,7 @@ function MatchRow({ m, view }: { m: ViewMatch; view: AppView }) {
       const e = view.entries[m.id];
       sub = e ? (
         `${e.attendance.length} aanwezig · stats ingevoerd`
-      ) : m.kind === "competitie" ? (
+      ) : m.kind === "competitie" && !readOnly ? (
         <span className="todo">Opstelling en stats invoeren</span>
       ) : (
         m.kind

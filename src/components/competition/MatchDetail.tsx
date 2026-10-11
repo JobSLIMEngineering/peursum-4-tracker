@@ -13,9 +13,9 @@ import { EntryForm } from "./EntryForm";
 import { EntryView } from "./EntryView";
 
 export function MatchDetail({ id, startEditing }: { id: string; startEditing: boolean }) {
-  const { view } = useData();
+  const { view, readOnly } = useData();
   const m = view.matches.find((x) => x.id === id);
-  const [mode, setMode] = useState<"view" | "fixture" | "entry">(startEditing ? "fixture" : "view");
+  const [mode, setMode] = useState<"view" | "fixture" | "entry">(startEditing && !readOnly ? "fixture" : "view");
 
   const back = (
     <Link className="btn sm" href="/competitie/" style={{ marginBottom: 12 }}>
@@ -55,7 +55,7 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
         <FixtureForm match={m} onDone={() => setMode("view")} />
       ) : (
         <>
-          <div className="actions" style={{ margin: "0 0 14px" }}>
+          <div className="actions" style={{ margin: "0 0 14px" }} hidden={readOnly}>
             <button className="btn" type="button" onClick={() => setMode("fixture")}>
               Wijzigen
             </button>

@@ -10,7 +10,7 @@ import type { StoredPlayer } from "@/lib/store/schema";
 
 /** Team: vaste selectie, afgeschermde spelers, leenspelers en keepers (PLAN.md §3.5) */
 export default function TeamPage() {
-  const { view, mutate } = useData();
+  const { view, mutate, readOnly } = useData();
   const totals = playerTotals(view.players, view.matches, Object.values(view.entries));
   const players = sortPlayers(view.players.filter((p) => p.active));
   const vast = players.filter((p) => p.type === "vast");
@@ -81,7 +81,7 @@ export default function TeamPage() {
     <div className="stack">
       <Box label={`Vaste selectie (${vast.length})`} bodyClass={null}>
         {table(vast, false)}
-        <form
+        {!readOnly && <form
           className="box-b actions"
           style={{ alignItems: "end", marginTop: 0, borderTop: "1px solid var(--line)" }}
           onSubmit={add}
@@ -101,7 +101,7 @@ export default function TeamPage() {
           <button className="btn" type="submit">
             Toevoegen
           </button>
-        </form>
+        </form>}
       </Box>
 
       <Box
@@ -192,6 +192,7 @@ function PlayerRow({
   isLeen: boolean;
   update: (id: string, patch: Partial<StoredPlayer>, msg: string) => Promise<boolean>;
 }) {
+  const { readOnly } = useData();
   const [name, setName] = useState(p.name ?? "");
   const [armed, setArmed] = useState(false);
 
@@ -226,16 +227,18 @@ function PlayerRow({
         className="pname"
         type="text"
         aria-label="Naam"
+        readOnly={readOnly}
         value={name}
-        placeholder={p.hiddenNo ? `Afgeschermd ${p.hiddenNo} · naam invullen` : ""}
+        placeholder={p.hiddenNo ? (readOnly ? `Afgeschermde speler ${p.hiddenNo}` : `Afgeschermd ${p.hiddenNo} · naam invullen`) : ""}
         onChange={(e) => setName(e.target.value)}
         onBlur={saveName}
         onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-        style={{ borderColor: p.name ? "transparent" : "var(--draw)" }}
+        style={{ borderColor: p.name || readOnly ? "transparent" : "var(--draw)" }}
       />
       <select
         className="ppos"
         aria-label="Positie"
+        disabled={readOnly}
         value={p.position}
         onChange={(e) => void update(p.id, { position: e.target.value as Position }, `positie ${playerLabel(p)}: ${e.target.value}`)}
       >
@@ -273,7 +276,7 @@ function PlayerRow({
           <small>kaarten</small>
         </span>
       </span>
-      <span className="pact">
+      <span className="pact" hidden={readOnly}>
         {isLeen && (
           <button className="btn sm" type="button" onClick={() => void update(p.id, { type: "vast" }, `naar selectie: ${playerLabel(p)}`)}>
             → Selectie

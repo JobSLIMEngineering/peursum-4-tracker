@@ -7,7 +7,7 @@ import { useData } from "./DataProvider";
 
 /** Klein icoon onderin elk scherm. Slaat tekst op met pagina, schermbreedte en tijdstip. */
 export function FeedbackButton() {
-  const { mutate } = useData();
+  const { mutate, readOnly } = useData();
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -48,6 +48,8 @@ export function FeedbackButton() {
       setMsg(null);
     }, 1500);
   }
+
+  if (readOnly) return null;
 
   // Via een portal direct in <body>: anders zit "position: fixed" vast aan het hoofdvlak
   return createPortal(

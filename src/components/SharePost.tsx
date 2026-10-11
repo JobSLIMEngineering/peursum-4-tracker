@@ -2,226 +2,217 @@
 
 import { useState } from "react";
 import { normName } from "@/lib/domain/attendance";
-import { lastMatches, leaders, playerTotals } from "@/lib/domain/stats";
-import { opponent, outcome, playerLabel, US, type Match } from "@/lib/domain/types";
+import { isPlayed, opponent, playerLabel, US, type Match } from "@/lib/domain/types";
+import { BASE } from "@/lib/base";
 import { DAY_FULL, MON_FULL } from "@/lib/format";
+import { canvasLogoSrc } from "@/lib/logos";
 import { standingOf, type AppView } from "@/lib/store/view";
 
-const W = 1080;
-const H = 1350;
+type Format = "post" | "story";
+const SIZE: Record<Format, [number, number]> = { post: [1080, 1350], story: [1080, 1920] };
 
-/** Matchday-post 1080 × 1350 in de app-stijl, zonder winkans (PLAN.md §6, drawShare() in het prototype). */
-async function drawShare(view: AppView, n: Match): Promise<HTMLCanvasElement> {
+const loadImage = (src: string) =>
+  new Promise<HTMLImageElement | null>((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+
+/**
+ * Deelpost in de stijl van de Instagram-posts van Peursum 4 (MATCHDAY of UITSLAG):
+ * zwart met rode vonken, penseeltitel met rode streek, grote wapens, score in penseelletters.
+ */
+async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvasElement> {
+  const [W, H] = SIZE[format];
   const css = getComputedStyle(document.documentElement);
-  const fam = (v: string, fb: string) => `${css.getPropertyValue(v).trim() || ""}, ${fb}`.replace(/^, /, "");
-  const AN = fam("--font-anton", "Impact, sans-serif");
-  const BC = fam("--font-barlow-cond", "'Arial Narrow', sans-serif");
+  const BRUSH = `${css.getPropertyValue("--font-marker").trim()}, Impact, sans-serif`;
+  const COND = `${css.getPropertyValue("--font-barlow-cond").trim()}, 'Arial Narrow', sans-serif`;
   try {
-    await Promise.all([`400 120px ${AN}`, `800 40px ${BC}`, `700 30px ${BC}`].map((f) => document.fonts.load(f)));
+    await Promise.all([`400 200px ${BRUSH}`, `800 60px ${COND}`, `700 40px ${COND}`].map((f) => document.fonts.load(f)));
   } catch {
-    // lettertypes niet geladen: canvas valt terug op systeemfonts
+    // systeemletters als het niet lukt
   }
+  const [texture, brush, homeLogo, awayLogo] = await Promise.all([
+    loadImage(`${BASE}/texture.jpg`),
+    loadImage(`${BASE}/brush.png`),
+    ...[m.home, m.away].map((t) => {
+      const src = canvasLogoSrc(t, view.logos);
+      return src ? loadImage(src) : Promise.resolve(null);
+    }),
+  ]);
 
   const c = document.createElement("canvas");
   c.width = W;
   c.height = H;
   const g = c.getContext("2d")!;
+  const played = isPlayed(m);
+  const story = format === "story";
+  const cx = W / 2;
 
-  const spaced = (t: string, x: number, y: number, ls: number, align: "left" | "center" | "right" = "left") => {
-    g.textAlign = "left";
+  // Achtergrond: textuur (cover)
+  g.fillStyle = "#060404";
+  g.fillRect(0, 0, W, H);
+  if (texture) {
+    const s = Math.max(W / texture.width, H / texture.height);
+    g.drawImage(texture, (W - texture.width * s) / 2, (H - texture.height * s) / 2, texture.width * s, texture.height * s);
+  }
+
+  const shadowed = (fn: () => void, blur = 0, off = 6) => {
+    g.save();
+    g.shadowColor = "rgba(0,0,0,.65)";
+    g.shadowBlur = blur;
+    g.shadowOffsetX = off;
+    g.shadowOffsetY = off;
+    fn();
+    g.restore();
+  };
+  const spaced = (t: string, x: number, y: number, ls: number) => {
     let w = 0;
     for (const ch of t) w += g.measureText(ch).width + ls;
     w -= ls;
-    let sx = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
+    let sx = x - w / 2;
+    g.textAlign = "left";
     for (const ch of t) {
       g.fillText(ch, sx, y);
       sx += g.measureText(ch).width + ls;
     }
   };
-  const fit = (t: string, font: (s: number) => string, size: number, max: number) => {
-    let s = size;
+  const fitFont = (t: string, font: (px: number) => string, px: number, max: number) => {
     do {
-      g.font = font(s);
-      s -= 4;
-    } while (g.measureText(t).width > max && s > 30);
+      g.font = font(px);
+      px -= 4;
+    } while (g.measureText(t).width > max && px > 20);
   };
 
-  // Achtergrond
-  const bg = g.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, "#160a0c");
-  bg.addColorStop(1, "#0b0909");
-  g.fillStyle = bg;
-  g.fillRect(0, 0, W, H);
-
-  // Rood blok met schuine onderkant en donkere banen
+  // Titel met rode penseelstreek
+  const titleY = story ? 330 : 250;
+  const title = played ? "UITSLAG" : "MATCHDAY";
   g.save();
-  g.beginPath();
-  g.moveTo(0, 0);
-  g.lineTo(W, 0);
-  g.lineTo(W, 560);
-  g.lineTo(0, 640);
-  g.closePath();
-  g.clip();
-  g.fillStyle = "#e1242f";
-  g.fillRect(0, 0, W, 700);
-  g.fillStyle = "rgba(0,0,0,.16)";
-  g.beginPath();
-  g.moveTo(640, 0);
-  g.lineTo(1000, 0);
-  g.lineTo(760, 700);
-  g.lineTo(400, 700);
-  g.closePath();
-  g.fill();
-  g.fillStyle = "rgba(0,0,0,.10)";
-  g.beginPath();
-  g.moveTo(1040, 0);
-  g.lineTo(1100, 0);
-  g.lineTo(860, 700);
-  g.lineTo(800, 700);
-  g.closePath();
-  g.fill();
-  g.restore();
-
-  // Kop
-  g.fillStyle = "rgba(255,255,255,.85)";
-  g.font = `700 30px ${BC}`;
-  spaced("MATCHDAY", 80, 110, 10);
-  const dt = new Date(`${n.date}T12:00`);
-  g.fillStyle = "#fff";
-  g.font = `800 34px ${BC}`;
-  spaced(
-    `${DAY_FULL[dt.getDay()]} ${dt.getDate()} ${MON_FULL[dt.getMonth()]}`.toUpperCase() + (n.time ? `  ·  ${n.time}` : ""),
-    80,
-    160,
-    6,
-  );
-
-  const teamLine = (name: string, y: number) => {
-    g.save();
-    g.translate(80, y);
-    g.transform(1, 0, -0.12, 1, 0, 0);
-    g.fillStyle = "rgba(0,0,0,.25)";
-    fit(name.toUpperCase(), (s) => `400 ${s}px ${AN}`, 128, 880);
-    g.fillText(name.toUpperCase(), 6, 6);
-    g.fillStyle = "#fff";
-    g.fillText(name.toUpperCase(), 0, 0);
-    g.restore();
-  };
-  teamLine(n.home, 300);
-  g.fillStyle = "#0d0b0c";
-  g.save();
-  g.translate(80, 340);
-  g.transform(1, 0, -0.15, 1, 0, 0);
-  g.fillRect(0, 0, 120, 70);
-  g.restore();
-  g.fillStyle = "#fff";
-  g.font = `400 52px ${AN}`;
+  g.translate(cx, titleY);
+  g.rotate(-0.05);
+  if (brush) g.drawImage(brush, -430, 20, 860, 90);
+  g.font = `400 ${played ? 190 : 165}px ${BRUSH}`;
   g.textAlign = "center";
-  g.fillText("VS", 132, 397);
-  g.textAlign = "left";
-  teamLine(n.away, 520);
+  shadowed(() => {
+    g.fillStyle = "#f4f1f1";
+    g.fillText(title, 0, 40);
+  });
+  g.restore();
 
-  // Statistiektabel
-  const opp = opponent(n);
-  const u = standingOf(view, US);
-  const o = standingOf(view, opp);
-  const top = 680;
-  const rh = 62;
-  const x1 = 600;
-  const x2 = 880;
-  if (u && o) {
-    const per = (a: number, b: number) => (b ? (a / b).toFixed(1) : "–");
-    const rows: [string, string | number, string | number][] = [
-      ["Positie", `${u.position}e`, `${o.position}e`],
-      ["Punten", u.points, o.points],
-      ["Gespeeld", u.played, o.played],
-      ["W · G · V", `${u.won} · ${u.drawn} · ${u.lost}`, `${o.won} · ${o.drawn} · ${o.lost}`],
-      ["Goals voor p/w", per(u.goalsFor, u.played), per(o.goalsFor, o.played)],
-      ["Goals tegen p/w", per(u.goalsAgainst, u.played), per(o.goalsAgainst, o.played)],
-    ];
-    g.fillStyle = "#e1242f";
-    g.font = `800 26px ${BC}`;
-    g.textAlign = "center";
-    g.fillText("PEURSUM 4", x1, top);
-    g.fillStyle = "#bfb3b6";
-    fit(opp.toUpperCase(), (s) => `800 ${s}px ${BC}`, 26, 220);
-    g.fillText(opp.toUpperCase(), x2, top);
-    rows.forEach((r, i) => {
-      const y = top + 40 + i * rh;
-      g.fillStyle = i % 2 ? "rgba(255,255,255,0)" : "rgba(255,255,255,.04)";
-      g.fillRect(60, y, W - 120, rh);
-      g.textAlign = "left";
-      g.fillStyle = "#bfb3b6";
-      g.font = `700 28px ${BC}`;
-      spaced(r[0].toUpperCase(), 90, y + 41, 3);
-      g.textAlign = "center";
-      g.font = `400 42px ${AN}`;
-      g.fillStyle = "#fff";
-      g.fillText(String(r[1]), x1, y + 46);
-      g.fillStyle = "#d8cfd1";
-      g.fillText(String(r[2]), x2, y + 46);
-    });
-  }
+  // Datum en tijd
+  const dt = m.date ? new Date(`${m.date}T12:00`) : null;
+  const when = dt
+    ? `${DAY_FULL[dt.getDay()]} ${dt.getDate()} ${MON_FULL[dt.getMonth()]}`.toUpperCase() + (m.time && !played ? `  ·  ${m.time}` : "")
+    : "DATUM VOLGT";
+  g.fillStyle = "#e9e5e5";
+  g.font = `700 40px ${COND}`;
+  spaced(when, cx, titleY + 170, 8);
 
-  // Vorm + topscorer
-  const fy = top + 40 + 6 * rh + 20;
-  const form = lastMatches(view.matches, US).reverse();
-  g.textAlign = "left";
-  g.fillStyle = "#bfb3b6";
-  g.font = `700 26px ${BC}`;
-  spaced("VORM PEURSUM 4", 90, fy + 30, 4);
-  form.forEach((m, i) => {
-    const r = outcome(m.goalsFor, m.goalsAgainst);
-    g.fillStyle = r === "W" ? "#2fbf62" : r === "D" ? "#f0b429" : "#e5484d";
-    g.save();
-    g.translate(90 + i * 70, fy + 50);
-    g.transform(1, 0, -0.15, 1, 0, 0);
-    g.fillRect(0, 0, 58, 52);
-    g.restore();
-    g.fillStyle = "#0d0b0c";
-    g.font = `400 34px ${AN}`;
+  // Wapens met namen, score of VS in het midden
+  const rowY = story ? 980 : 760;
+  const logoSize = 300;
+  const sideX = [cx - 300, cx + 300];
+  [homeLogo, awayLogo].forEach((img, i) => {
+    if (!img) return;
+    const s = logoSize / Math.max(img.width, img.height);
+    const w = img.width * s;
+    const h = img.height * s;
+    shadowed(() => g.drawImage(img, sideX[i] - w / 2, rowY - h / 2 - 40, w, h), 30, 0);
+  });
+  g.fillStyle = "#f1eded";
+  [m.home, m.away].forEach((name, i) => {
+    fitFont(name.toUpperCase(), (px) => `800 ${px}px ${COND}`, 50, 420);
     g.textAlign = "center";
-    g.fillText(r === "D" ? "G" : r === "L" ? "V" : "W", 90 + i * 70 + 25, fy + 90);
-    g.textAlign = "left";
+    shadowed(() => g.fillText(name.toUpperCase(), sideX[i], rowY + 175), 0, 3);
   });
 
-  const totals = playerTotals(view.players, view.matches, Object.values(view.entries));
-  const best = leaders(view.players, totals, "goals");
-  if (best.value) {
-    const who = best.players.map(playerLabel).join(", ");
-    g.fillStyle = "#bfb3b6";
-    g.font = `700 26px ${BC}`;
-    spaced("TOPSCORER", 600, fy + 30, 4);
-    g.fillStyle = "#fff";
-    fit(who.toUpperCase(), (s) => `800 ${s}px ${BC}`, 36, 330);
-    g.fillText(who.toUpperCase(), 600, fy + 80);
-    g.fillStyle = "#e1242f";
-    g.font = `400 40px ${AN}`;
-    g.fillText(`${best.value} goals`, 600, fy + 125);
+  g.save();
+  g.translate(cx, rowY);
+  g.rotate(-0.05);
+  g.textAlign = "center";
+  if (played) {
+    const color = (team: string) => (team === US ? "#f4f1f1" : "#e1242f");
+    g.font = `400 230px ${BRUSH}`;
+    const parts: [string, string][] = [
+      [String(m.homeGoals), color(m.home)],
+      ["-", "#e1242f"],
+      [String(m.awayGoals), color(m.away)],
+    ];
+    const widths = parts.map(([t]) => g.measureText(t).width);
+    let x = -widths.reduce((a, b) => a + b, 0) / 2;
+    parts.forEach(([t, col], i) => {
+      g.textAlign = "left";
+      shadowed(() => {
+        g.fillStyle = col;
+        g.fillText(t, x, 70);
+      });
+      x += widths[i];
+    });
+  } else {
+    g.font = `400 150px ${BRUSH}`;
+    shadowed(() => {
+      g.fillStyle = "#e1242f";
+      g.fillText("VS", 0, 50);
+    });
+  }
+  g.restore();
+
+  // Extra regel: bij uitslag de doelpuntenmakers, bij matchday de stand
+  const infoY = rowY + 290 + (story ? 80 : 0);
+  g.textAlign = "center";
+  if (played) {
+    const e = view.entries[m.id];
+    const counts = new Map<string, number>();
+    for (const goal of e?.goals ?? []) {
+      const n = goal.scorerId ? playerLabel(view.players.find((p) => p.id === goal.scorerId)) : "Eigen goal";
+      counts.set(n, (counts.get(n) ?? 0) + 1);
+    }
+    if (!e?.goals) for (const [id, s] of Object.entries(e?.stats ?? {})) if (s.goals) counts.set(playerLabel(view.players.find((p) => p.id === id)), s.goals);
+    const scorers = [...counts].map(([n, k]) => (k > 1 ? `${n} ${k}×` : n)).join("   ·   ");
+    if (scorers) {
+      g.fillStyle = "#c9bfc1";
+      g.font = `700 30px ${COND}`;
+      spaced("DOELPUNTEN", cx, infoY, 6);
+      g.fillStyle = "#f1eded";
+      fitFont(scorers.toUpperCase(), (px) => `800 ${px}px ${COND}`, 40, W - 140);
+      g.fillText(scorers.toUpperCase(), cx, infoY + 52);
+    }
+  } else {
+    const u = standingOf(view, US);
+    const o = standingOf(view, opponent(m));
+    if (u && o) {
+      const line = m.home === US ? `${u.position}E · ${u.points} PT   VS   ${o.position}E · ${o.points} PT` : `${o.position}E · ${o.points} PT   VS   ${u.position}E · ${u.points} PT`;
+      g.fillStyle = "#f1eded";
+      g.font = `800 40px ${COND}`;
+      spaced(line, cx, infoY, 4);
+    }
   }
 
-  // Voet
+  // Voet: sportpark en hashtag
   g.fillStyle = "#e1242f";
-  g.fillRect(0, H - 70, W, 70);
-  g.fillStyle = "#fff";
-  g.font = `800 28px ${BC}`;
-  g.textAlign = "left";
-  spaced((n.venue ?? "").toUpperCase(), 80, H - 26, 4);
-  g.textAlign = "right";
-  g.font = `400 34px ${AN}`;
-  g.fillText("#PEURSUM4", W - 80, H - 22);
+  g.fillRect(cx - 60, H - 150, 120, 5);
+  g.fillStyle = "#d8cfd1";
+  g.font = `700 32px ${COND}`;
+  spaced((m.venue ?? "").toUpperCase(), cx, H - 95, 5);
+  g.fillStyle = "#ffffff";
+  g.font = `400 46px ${BRUSH}`;
+  g.textAlign = "center";
+  g.fillText("#PEURSUM4", cx, H - 40);
   return c;
 }
 
 export function SharePost({ view, match }: { view: AppView; match: Match }) {
-  const [img, setImg] = useState<{ url: string; blob: Blob } | null>(null);
+  const [img, setImg] = useState<{ url: string; blob: Blob; format: Format } | null>(null);
   const [msg, setMsg] = useState("");
-  const filename = `peursum4-vs-${normName(opponent(match)).replace(/[^a-z0-9]+/g, "-")}.png`;
+  const played = isPlayed(match);
+  const filename = `peursum4-${played ? "uitslag" : "matchday"}-${normName(opponent(match)).replace(/[^a-z0-9]+/g, "-")}.png`;
 
-  async function open() {
-    const canvas = await drawShare(view, match);
+  async function make(format: Format) {
+    if (img) URL.revokeObjectURL(img.url);
+    const canvas = await draw(view, match, format);
     const blob = await new Promise<Blob>((r) => canvas.toBlob((b) => r(b!), "image/png"));
-    setImg({ url: URL.createObjectURL(blob), blob });
+    setImg({ url: URL.createObjectURL(blob), blob, format });
     setMsg("");
   }
 
@@ -237,7 +228,6 @@ export function SharePost({ view, match }: { view: AppView; match: Match }) {
       }
       return;
     }
-    // Laptop: gewoon downloaden
     const a = document.createElement("a");
     a.href = img.url;
     a.download = filename;
@@ -248,8 +238,8 @@ export function SharePost({ view, match }: { view: AppView; match: Match }) {
   if (!img) {
     return (
       <div className="actions" style={{ margin: "0 0 14px" }}>
-        <button className="btn primary" type="button" onClick={open}>
-          Delen als post
+        <button className="btn primary" type="button" onClick={() => make("post")}>
+          {played ? "Deel uitslag" : "Delen als post"}
         </button>
       </div>
     );
@@ -258,7 +248,7 @@ export function SharePost({ view, match }: { view: AppView; match: Match }) {
   return (
     <section className="box share" style={{ marginBottom: 14 }}>
       <div className="box-h">
-        <p className="lbl">Matchday-post</p>
+        <p className="lbl">{played ? "Uitslag-post" : "Matchday-post"}</p>
         <button
           className="btn sm"
           type="button"
@@ -272,11 +262,17 @@ export function SharePost({ view, match }: { view: AppView; match: Match }) {
       </div>
       <div className="box-b share-b">
         {/* eslint-disable-next-line @next/next/no-img-element -- lokaal gegenereerde afbeelding (blob-URL) */}
-        <img src={img.url} alt={`Matchday-post Peursum 4 tegen ${opponent(match)}`} />
+        <img src={img.url} alt={`${played ? "Uitslag" : "Matchday"}-post Peursum 4 tegen ${opponent(match)}`} />
         <div className="share-side">
-          <p className="meta" style={{ margin: 0 }}>
-            Formaat 1080 × 1350, past in een Instagram-post. Met stand, vorm en goals per wedstrijd; zonder winkans.
-          </p>
+          <div className="seg" role="group" aria-label="Formaat">
+            <button type="button" aria-pressed={img.format === "post"} onClick={() => make("post")}>
+              Post 4:5
+            </button>
+            <button type="button" aria-pressed={img.format === "story"} onClick={() => make("story")}>
+              Story 9:16
+            </button>
+          </div>
+          <p className="meta">In de stijl van de Instagram van Peursum 4. Zonder winkans.</p>
           <div className="actions">
             <button className="btn primary" type="button" onClick={share}>
               Delen of opslaan

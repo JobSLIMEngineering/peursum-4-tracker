@@ -1,6 +1,7 @@
 "use client";
 
 import { predict, verdict, type Verdict } from "@/lib/domain/model";
+import { ScoreBoard } from "./ScoreBoard";
 import { TeamLogo } from "./TeamLogo";
 import { lastMatches } from "@/lib/domain/stats";
 import { opponent, outcome, US, type Match } from "@/lib/domain/types";
@@ -197,25 +198,7 @@ export function MatchHero({ match }: { match: Match }) {
 
   return (
     <>
-      <div className="hero">
-        <div className="tm">
-          <TeamLogo team={match.home} size={40} />
-          <div>{match.home}</div>
-        </div>
-        <div>
-          {played ? (
-            <span className="big">
-              {match.homeGoals}–{match.awayGoals}
-            </span>
-          ) : (
-            <span className="vs">vs</span>
-          )}
-        </div>
-        <div className="tm r">
-          <TeamLogo team={match.away} size={40} />
-          <div>{match.away}</div>
-        </div>
-      </div>
+      <ScoreBoard match={match} />
       <div className="hero-meta">
         <span>
           {date}

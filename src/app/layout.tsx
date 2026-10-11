@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Barlow, Barlow_Condensed, Permanent_Marker } from "next/font/google";
+import { Anton, Barlow, Barlow_Condensed, Protest_Revolution } from "next/font/google";
 import { BASE } from "@/lib/base";
 import "./globals.css";
 
@@ -13,8 +13,8 @@ const barlowCond = Barlow_Condensed({
 });
 // Lopende tekst
 const barlow = Barlow({ variable: "--font-barlow", weight: ["400", "500", "600"], subsets: ["latin"] });
-// Penseelstijl ("vs" en titels)
-const marker = Permanent_Marker({ variable: "--font-marker", weight: "400", subsets: ["latin"] });
+// Droge penseelletter zoals op de Instagram-posts ("UITSLAG", scores, "vs")
+const marker = Protest_Revolution({ variable: "--font-marker", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Peursum 4",
@@ -39,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="nl"
       className={`${anton.variable} ${barlowCond.variable} ${barlow.variable} ${marker.variable}`}
+      style={{ "--texture": `url(${BASE}/texture.jpg)`, "--brush": `url(${BASE}/brush.png)` } as React.CSSProperties}
     >
       <body>{children}</body>
     </html>

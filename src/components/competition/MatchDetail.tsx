@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { MatchHero, PredictionBlocks } from "@/components/Prediction";
 import { Fireworks } from "@/components/Fireworks";
+import { SharePost } from "@/components/SharePost";
 import { isPlayed, opponent, ourScore, US, type MatchKind } from "@/lib/domain/types";
 import type { MatchEdit } from "@/lib/store/schema";
 import { hasPrediction, type ViewMatch } from "@/lib/store/view";
@@ -49,7 +50,10 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
         mode === "entry" ? (
           <EntryForm match={m} onDone={() => setMode("view")} />
         ) : (
-          <EntryView match={m} onEdit={() => setMode("entry")} />
+          <>
+            <SharePost view={view} match={m} />
+            <EntryView match={m} onEdit={() => setMode("entry")} />
+          </>
         )
       ) : mode === "fixture" ? (
         <FixtureForm match={m} onDone={() => setMode("view")} />

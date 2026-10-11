@@ -57,6 +57,7 @@ Open http://localhost:3000. Lokaal werkt de app met de seed-data in je browser (
 | `npm run sync -- --data <map> [--force]` | Scraper draaien op een lokale kopie van `data/` |
 | `npm run data:init -- <map>` | Inhoud van een nieuwe data-repository klaarzetten |
 | `npm run icons`     | App-iconen opnieuw maken in `public/icons/` |
+| `npm run art`       | Rode vonk-textuur en penseelstreek (Instagram-stijl) opnieuw maken |
 
 ## Parser voor de clubsite
 
@@ -113,3 +114,15 @@ Controles uit PLAN.md staan als tests in `src/lib/domain/domain.test.ts` en `src
 - **Feedbackknop:** klein icoon onderin op elk scherm. Opent een tekstvak; de melding
   wordt met pagina, schermbreedte en tijdstip opgeslagen in de tabel `feedback`, met
   status open/verwerkt. Meldingen worden later in één keer verwerkt.
+
+## Stijl en logo's
+
+De app en de deelposts volgen de Instagram van Peursum 4: zwart met rode vonken
+(`public/texture.jpg`), penseeltitels in *Protest Revolution* met een rode streek
+(`public/brush.png`), score in penseelletters (Peursum wit, tegenstander rood).
+
+Clublogo's staan lokaal in `public/logos/<clubcode>.png`, omdat logo's van voetbal.nl niet in
+een canvas (de deelpost) mogen worden getekend. Nieuwe tegenstander (volgend seizoen)?
+Haal het logo op met
+`curl -o public/logos/CODE.png "https://logoapi.voetbal.nl/logo.php?clubcode=CODE"` en zet de
+code in `src/lib/logos.ts`.

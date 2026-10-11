@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fireworks } from "@/components/Fireworks";
+import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
 import { Box } from "@/components/ui";
@@ -100,7 +101,7 @@ export default function OverzichtPage() {
 
 const RESULT = { W: "Gewonnen", D: "Gelijk", L: "Verloren" } as const;
 
-/** Laatst gespeelde competitiewedstrijd; bij winst vuurwerk (één keer per sessie) */
+/** Laatst gespeelde competitiewedstrijd als "UITSLAG"-bord; bij winst vuurwerk (één keer per sessie) */
 function LastMatch({ view }: { view: AppView }) {
   const { readOnly } = useData();
   const last = lastMatches(view.matches, US, 1)[0];
@@ -108,29 +109,15 @@ function LastMatch({ view }: { view: AppView }) {
   const r = outcome(last.goalsFor, last.goalsAgainst);
   const entry = view.entries[last.match.id];
   return (
-    <Link className={`box last-match ${r === "W" ? "lm-win" : ""}`} href={`/competitie/?w=${encodeURIComponent(last.match.id)}`}>
+    <Link className="last-match" href={`/competitie/?w=${encodeURIComponent(last.match.id)}`}>
       {r === "W" && <Fireworks id={`home-${last.match.id}`} />}
-      <div className="box-h">
-        <p className="lbl">Laatste wedstrijd</p>
-        <span className="meta">{fmtDate(last.match.date).full}</span>
-      </div>
-      <div className="box-b lm-body">
-        <span className="tname lm-opp">
-          <TeamLogo team={last.opponent} size={28} />
-          <span>
-            <b>{last.opponent}</b>
-            <small className="meta">
-              {last.home ? "Thuis" : "Uit"} · {RESULT[r]}
-            </small>
-          </span>
-        </span>
-        <span className={`score ${r}`}>
-          {last.match.homeGoals}–{last.match.awayGoals}
-        </span>
-      </div>
-      <div className="lm-foot meta">
-        {entry ? `${entry.attendance.length} aanwezig · stats ingevoerd` : readOnly ? "Bekijk wedstrijd →" : <span className="todo">Opstelling en stats invoeren →</span>}
-      </div>
+      <ScoreBoard match={last.match} size="compact">
+        <div className="board-meta">
+          {fmtDate(last.match.date).full} · {RESULT[r]}
+          {" · "}
+          {entry ? `${entry.attendance.length} aanwezig` : readOnly ? "bekijk →" : <span className="todo">stats invoeren →</span>}
+        </div>
+      </ScoreBoard>
     </Link>
   );
 }

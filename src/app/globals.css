@@ -17,7 +17,8 @@
   --win: #2fbf62;
   --draw: #f0b429;
   --loss: #e5484d;
-  --f-anton: var(--font-anton), "Barlow Condensed", "Arial Narrow", sans-serif;
+  /* Eén koplettertype in de hele app (Anton is vervallen) */
+  --f-anton: var(--f-cond);
   --f-brush: var(--font-marker), var(--font-barlow-cond), cursive;
   --f-cond: var(--font-barlow-cond), "Arial Narrow", sans-serif;
   --f-body: var(--font-barlow), system-ui, sans-serif;
@@ -650,3 +651,27 @@ main.panel::before {
 body { background: linear-gradient(#060404b8, #060404b8), #070505 var(--texture) center / cover no-repeat fixed; }
 main.panel { background: #0b0809e6; }
 main.panel::before { opacity: .6; }
+
+/* ======================================================================
+   Eén lijn in letters: Barlow Condensed voor koppen, labels en cijfers; Barlow voor tekst.
+   De penseelletter alleen in de scoreborden (titel + score) en de deelposts.
+   ====================================================================== */
+.brand .logo {
+  font-family: var(--f-cond); font-weight: 900; font-style: italic; font-size: clamp(30px, 5vw, 42px);
+  letter-spacing: .01em; transform: none; text-shadow: 3px 3px 0 #000a;
+}
+.brand .no { font-style: italic; }
+.rn, .roundbar .rb, .goal-no { font-family: var(--f-cond); font-weight: 800; }
+.mu-vs, .hero .vs, .board-score .s-vs { font-family: var(--f-cond); font-weight: 800; text-transform: uppercase; }
+.mu-vs { font-size: 13px; color: #c9bfc1; }
+@media (max-width: 600px) { .brand .logo { font-size: 30px; } }
+
+/* Achtergrond op een eigen vaste laag i.p.v. background-attachment: fixed
+   (dat flikkert/verspringt op telefoons bij schermwissels en scrollen) */
+html { background: #070505; }
+body { background: transparent; }
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(#060404b8, #060404b8), #070505 var(--texture) center / cover no-repeat;
+  transform: translateZ(0);
+}

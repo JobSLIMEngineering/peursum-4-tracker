@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Barlow, Barlow_Condensed, Protest_Revolution } from "next/font/google";
+import { Barlow, Barlow_Condensed, Protest_Revolution } from "next/font/google";
 import { BASE } from "@/lib/base";
 import "./globals.css";
 
-// Logo en grote cijfers
-const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin"] });
 // Labels, teamnamen, hoofdletters met letterafstand
 const barlowCond = Barlow_Condensed({
   variable: "--font-barlow-cond",
@@ -13,7 +11,7 @@ const barlowCond = Barlow_Condensed({
 });
 // Lopende tekst
 const barlow = Barlow({ variable: "--font-barlow", weight: ["400", "500", "600"], subsets: ["latin"] });
-// Droge penseelletter zoals op de Instagram-posts ("UITSLAG", scores, "vs")
+// Droge penseelletter: alleen voor de scoreborden en deelposts ("UITSLAG", "MATCHDAY", score)
 const marker = Protest_Revolution({ variable: "--font-marker", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -38,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="nl"
-      className={`${anton.variable} ${barlowCond.variable} ${barlow.variable} ${marker.variable}`}
+      className={`${barlowCond.variable} ${barlow.variable} ${marker.variable}`}
       style={{ "--texture": `url(${BASE}/texture.jpg)`, "--brush": `url(${BASE}/brush.png)` } as React.CSSProperties}
     >
       <body>{children}</body>

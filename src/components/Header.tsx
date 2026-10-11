@@ -12,8 +12,11 @@ export function Header() {
           </span>
         </Link>
         <Tabs />
-        {/* eslint-disable-next-line @next/next/no-img-element -- statische export, geen beeldoptimalisatie */}
-        <img className="club" src={`${BASE}/club-logo.png`} alt="VV Peursum" width={191} height={256} />
+        {/* Hier zet HeaderMatchup de volgende wedstrijd neer; zonder data blijft het clublogo staan */}
+        <div id="matchup-slot" className="matchup-slot">
+          {/* eslint-disable-next-line @next/next/no-img-element -- statische export, geen beeldoptimalisatie */}
+          <img className="club" src={`${BASE}/club-logo.png`} alt="VV Peursum" width={191} height={256} />
+        </div>
       </div>
     </header>
   );

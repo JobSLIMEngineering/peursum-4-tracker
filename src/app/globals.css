@@ -511,3 +511,21 @@ a.last-match { display: block; color: inherit; text-decoration: none; }
   table.compact td.t { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
   table.compact th { letter-spacing: .04em; }
 }
+
+/* ---- Kop: kleiner woordmerk, wedstrijd rechtsboven ---- */
+.brand .logo { font-size: clamp(30px, 5vw, 44px); }
+.head .matchup-slot { order: 3; display: flex; align-items: center; }
+.head .matchup-slot.has-matchup > .club { display: none; }
+.matchup { display: grid; justify-items: center; gap: 3px; text-decoration: none; color: #fff; padding: 4px 8px; border-radius: 4px; background: #00000026; }
+.matchup:hover { background: #0000004d; }
+.mu-logos { display: flex; align-items: center; gap: 6px; }
+.mu-logos .tlogo { background: #fff; border-radius: 50%; padding: 2px; box-sizing: content-box; filter: drop-shadow(2px 2px 0 #0000004d); }
+.mu-vs { font-family: var(--f-brush); font-size: 15px; }
+.mu-when { display: grid; justify-items: center; line-height: 1.1; }
+.mu-when b { font-family: var(--f-cond); font-weight: 800; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; }
+.mu-when span { font-family: var(--f-cond); font-weight: 600; font-size: 11px; color: #ffffffd0; }
+@media (max-width: 600px) {
+  .brand .logo { font-size: 28px; }
+  .head .matchup-slot { order: 2; margin-left: auto; }
+  .mu-logos .tlogo { width: 28px !important; height: 28px !important; }
+}

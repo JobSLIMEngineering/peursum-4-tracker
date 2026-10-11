@@ -4,12 +4,11 @@ import Link from "next/link";
 import { Fireworks } from "@/components/Fireworks";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
-import { Box, WdlBar } from "@/components/ui";
-import { predict, verdict } from "@/lib/domain/model";
+import { Box } from "@/components/ui";
 import { lastMatches, leaders, perMatchStats, playerTotals } from "@/lib/domain/stats";
 import { opponent, outcome, playerLabel, US } from "@/lib/domain/types";
 import { fmtDate, shortDate } from "@/lib/format";
-import { nextMatch, standingOf, type AppView, type ViewMatch } from "@/lib/store/view";
+import { nextMatch, type AppView } from "@/lib/store/view";
 
 export default function OverzichtPage() {
   const { view } = useData();
@@ -21,8 +20,6 @@ export default function OverzichtPage() {
   return (
     <div className="grid2">
       <div className="stack ovl">
-        {next && opp ? <NextBlock view={view} next={next} opp={opp} /> : <Box label="Volgende wedstrijd">Geen komende competitiewedstrijd bekend.</Box>}
-
         <LastMatch view={view} />
 
         <section className="box tops">
@@ -100,33 +97,6 @@ export default function OverzichtPage() {
   );
 }
 
-function NextBlock({ view, next, opp }: { view: AppView; next: ViewMatch; opp: string }) {
-  const p = predict(view.model, US, opp, next.home === US);
-  const d = fmtDate(next.date);
-  return (
-    <section className="hot">
-      <div className="k">
-        Volgende · {d.full} · {next.time ?? ""}
-      </div>
-      <div className="opp tname">
-        <TeamLogo team={opp} size={34} />
-        <span>{opp}</span>
-      </div>
-      <div className="sub">
-        {next.home === US ? "Thuis" : "Uit"} · {standingOf(view, opp)?.position}e in de stand · {verdict(p)}
-      </div>
-      <WdlBar p={p} />
-      <div className="row-b">
-        <span className="sub">
-          Verwacht {p.xgUs.toFixed(1)} – {p.xgThem.toFixed(1)}
-        </span>
-        <Link className="link" href="/match-center/">
-          Match center →
-        </Link>
-      </div>
-    </section>
-  );
-}
 
 const RESULT = { W: "Gewonnen", D: "Gelijk", L: "Verloren" } as const;
 

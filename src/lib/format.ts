@@ -26,3 +26,35 @@ export function shortDate(iso: string | null) {
   const x = new Date(iso);
   return `${x.getDate()} ${MON[x.getMonth()]}`;
 }
+
+/** Aftrap ("2026-10-31", "12:30") in Nederlandse tijd als Date, ongeacht de tijdzone van het apparaat */
+export function kickoff(date: string, time: string | null): Date {
+  const [y, mo, d] = date.split("-").map(Number);
+  const [h, mi] = (time ?? "12:00").split(":").map(Number);
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  // Verschil tussen Nederlandse tijd en UTC op dat moment (zomer- of wintertijd)
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Amsterdam",
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date(guess));
+  const n = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  const asIfUtc = Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"));
+  return new Date(guess - (asIfUtc - guess));
+}
+
+/** "nog 19 dagen", "nog 1 dag 4u", "nog 2u 15m", "nu bezig" of null als hij voorbij is */
+export function countdown(to: Date, now: Date = new Date()): string | null {
+  const min = Math.floor((to.getTime() - now.getTime()) / 60000);
+  if (min <= -120) return null;
+  if (min <= 0) return "nu bezig";
+  const days = Math.floor(min / 1440);
+  const hours = Math.floor((min % 1440) / 60);
+  if (days >= 2) return `nog ${days} dagen`;
+  if (days === 1) return `nog 1 dag ${hours}u`;
+  return `nog ${hours}u ${min % 60}m`;
+}

@@ -156,18 +156,60 @@ describe("aanwezigheidslijst", () => {
 
   it("verwijdert nummering, bullets, emoji en tekst tussen haakjes", () => {
     const r = parseAttendance("1. Tom Rietveld\n- Jasper van Eeuwijk (keeper) ⚽\n• Fabián Jelovic", pl);
-    expect(r).toEqual({ found: ["1", "2", "5"], unknown: [] });
+    expect(r).toEqual({ found: ["1", "2", "5"], unknown: [], ambiguous: [] });
   });
 
   it("matcht op voor- en achternaam en op unieke voornaam", () => {
     expect(parseAttendance("Jasper Eeuwijk, Fabian", pl).found).toEqual(["2", "5"]);
   });
 
-  it("matcht geen voornaam die twee keer voorkomt en meldt onbekenden één keer", () => {
+  it("laat kiezen bij een voornaam die twee keer voorkomt en meldt onbekenden één keer", () => {
     expect(parseAttendance("Luuk; Kees Kamp; kees kamp", pl)).toEqual({
       found: [],
-      unknown: ["Luuk", "Kees Kamp"],
+      unknown: [{ name: "Kees Kamp", loan: false }],
+      ambiguous: [{ name: "Luuk", options: ["3", "4"] }],
     });
+  });
+
+  it("herkent andere schrijfwijzen: ij/y, umlaut, dubbele letters, één tikfout", () => {
+    const pl2 = [
+      { id: "b", name: "Boweij Prijs" },
+      { id: "s", name: "Bjorn van der Stok" },
+      { id: "p", name: "Patrick Lanser" },
+      { id: "m", name: "Jos van de Minkelis" },
+    ];
+    for (const n of ["Bowey", "Boweij", "Bowei", "Björn", "Bjoern", "Patrik", "Minkellis", "Prys"]) {
+      expect(parseAttendance(n, pl2).found, n).toHaveLength(1);
+    }
+    expect(parseAttendance("Bowey, Boweij", pl2).found).toEqual(["b"]);
+  });
+
+  it("gebruikt bijnamen die eerder aan een speler zijn gekoppeld", () => {
+    const pl3 = [{ id: "j", name: "Jasper van Eeuwijk", aliases: ["Jappie"] }];
+    expect(parseAttendance("Jappie", pl3).found).toEqual(["j"]);
+  });
+
+  it("leest een echt WhatsApp-bericht: begroeting en zin overslaan, achternaam en ij/y herkennen", () => {
+    const msg = [
+      "Goedemorgen, ",
+      "Morgen thuis tegen Spijk om 12:30 aanwezig zijn om 11:45.",
+      "Jurrien", "Bobbe", "Job", "Jarno", "Tom", "Bowey", "Björn ", "Fabian ", "Patrick", "Jos", "Tim", "Bryan",
+      "", "Milan 5e", "", "Ruben ", "Marvin",
+    ].join("\n");
+    const r = parseAttendance(msg, players);
+    const name = (id: string) => players.find((p) => p.id === id)?.name;
+    expect(r.found.map(name)).toEqual([
+      "Luuk Bobbe", "Job van der Vlist", "Jarno van der Linden", "Tom Rietveld", "Boweij Prijs",
+      "Bjorn van der Stok", "Fabian Jelovic", "Patrick Lanser", "Jos van de Minkelis", "Bryan van Vulpen",
+    ]);
+    expect(r.ambiguous).toEqual([{ name: "Tim", options: [expect.any(String), expect.any(String)] }]);
+    expect(r.ambiguous[0].options.map(name).sort()).toEqual(["Tim Boer", "Tim van Houwelingen"]);
+    expect(r.unknown).toEqual([
+      { name: "Jurrien", loan: false },
+      { name: "Milan", loan: true },
+      { name: "Ruben", loan: false },
+      { name: "Marvin", loan: false },
+    ]);
   });
 });
 

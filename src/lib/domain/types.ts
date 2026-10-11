@@ -67,6 +67,8 @@ export interface Player {
   type: "vast" | "leen";
   hiddenNo: number | null;
   active: boolean;
+  /** Andere schrijfwijzen of bijnamen uit de aanwezigheidslijst ("Bobbe", "Bowey") */
+  aliases?: string[];
 }
 
 export interface PlayerMatchStats {

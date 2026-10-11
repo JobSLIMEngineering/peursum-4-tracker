@@ -30,10 +30,14 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
       structuredClone(existing) ?? { matchId: match.id, attendance: [], stats: {}, keeperId: null, opponentOwnGoals: 0 },
   );
   const [paste, setPaste] = useState("");
-  const [unknown, setUnknown] = useState<{ name: string; type: "leen" | "vast" }[]>([]);
+  // Nieuwe namen: leenspeler, vaste selectie, naam van een afgeschermde speler ("p:<id>"),
+  // of een andere schrijfwijze van een bestaande speler ("a:<id>", wordt als bijnaam onthouden)
+  const [unknown, setUnknown] = useState<{ name: string; choice: string }[]>([]);
+  const [ambiguous, setAmbiguous] = useState<{ name: string; options: string[] }[]>([]);
   const [busy, setBusy] = useState(false);
 
   const players = sortPlayers(view.players.filter((p) => p.active));
+  const hiddenFree = players.filter((p) => p.hiddenNo && !p.name);
   const present = players.filter((p) => draft.attendance.includes(p.id));
   const sum = assignedGoals(draft);
 
@@ -58,28 +62,52 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
   function processList() {
     const r = parseAttendance(paste, view.players);
     setDraft((d) => ({ ...d, attendance: [...new Set([...d.attendance, ...r.found])] }));
-    setUnknown(r.unknown.map((name) => ({ name, type: "leen" })));
+    setUnknown(r.unknown.map((u) => ({ name: u.name, choice: "leen" })));
+    setAmbiguous(r.ambiguous);
+  }
+
+  function pickAmbiguous(name: string, id: string) {
+    setDraft((d) => ({ ...d, attendance: d.attendance.includes(id) ? d.attendance : [...d.attendance, id] }));
+    setAmbiguous((xs) => xs.filter((x) => x.name !== name));
   }
 
   async function addUnknown() {
-    const created: StoredPlayer[] = unknown.map((u) => ({
-      id: `p-${crypto.randomUUID().slice(0, 8)}`,
-      name: u.name,
-      position: "Onbekend",
-      type: u.type,
-      hiddenNo: null,
-      active: true,
-      clubName: null,
-    }));
+    const named = unknown.filter((u) => u.choice.startsWith("p:")).map((u) => ({ id: u.choice.slice(2), name: u.name }));
+    const alias = unknown.filter((u) => u.choice.startsWith("a:")).map((u) => ({ id: u.choice.slice(2), name: u.name }));
+    const created: StoredPlayer[] = unknown
+      .filter((u) => u.choice === "leen" || u.choice === "vast")
+      .map((u) => ({
+        id: `p-${crypto.randomUUID().slice(0, 8)}`,
+        name: u.name,
+        position: "Onbekend",
+        type: u.choice === "vast" ? "vast" : "leen",
+        hiddenNo: null,
+        active: true,
+        clubName: null,
+      }));
     setBusy(true);
     const ok = await mutate(
       "players.json",
-      (f) => ({ players: [...f.players, ...created] }),
-      `spelers toegevoegd: ${created.map((p) => p.name).join(", ")}`,
+      (f) => ({
+        players: [
+          ...f.players.map((p) => {
+            const n = named.find((x) => x.id === p.id);
+            const extra = alias.filter((x) => x.id === p.id).map((x) => x.name);
+            return {
+              ...p,
+              ...(n ? { name: n.name } : {}),
+              ...(extra.length ? { aliases: [...new Set([...(p.aliases ?? []), ...extra])] } : {}),
+            };
+          }),
+          ...created,
+        ],
+      }),
+      `spelers: ${unknown.map((u) => u.name).join(", ")}`,
     );
     setBusy(false);
     if (!ok) return;
-    setDraft((d) => ({ ...d, attendance: [...d.attendance, ...created.map((p) => p.id)] }));
+    const ids = [...named.map((n) => n.id), ...alias.map((n) => n.id), ...created.map((p) => p.id)];
+    setDraft((d) => ({ ...d, attendance: [...new Set([...d.attendance, ...ids])] }));
     setUnknown([]);
   }
 
@@ -166,31 +194,76 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
             </button>
           </div>
 
+          {ambiguous.map((a) => (
+            <div key={a.name} style={{ marginTop: 12 }}>
+              <p className="meta" style={{ margin: "0 0 6px" }}>
+                Welke <b style={{ color: "#fff" }}>{a.name}</b>?
+              </p>
+              <div className="chips">
+                {a.options.map((id) => (
+                  <button key={id} type="button" className="chip" onClick={() => pickAmbiguous(a.name, id)}>
+                    {playerLabel(view.players.find((p) => p.id === id))}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="chip"
+                  onClick={() => setAmbiguous((xs) => xs.filter((x) => x.name !== a.name))}
+                >
+                  Geen van beide
+                </button>
+              </div>
+            </div>
+          ))}
+
           {unknown.length > 0 && (
             <div style={{ marginTop: 12 }}>
               <p className="meta" style={{ margin: "0 0 4px" }}>
-                Nieuwe namen: kies of het een leenspeler is of iemand van de vaste selectie.
+                Nieuwe namen: kies wie het is. Een andere schrijfwijze onthoudt de app voor de volgende keer.
               </p>
-              {unknown.map((u, i) => (
-                <div className="unk" key={u.name}>
-                  <span>{u.name}</span>
-                  <div className="seg">
-                    {(["leen", "vast"] as const).map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        aria-pressed={u.type === t}
-                        onClick={() => setUnknown((xs) => xs.map((x, j) => (j === i ? { ...x, type: t } : x)))}
-                      >
-                        {t === "leen" ? "Leen" : "Selectie"}
-                      </button>
-                    ))}
+              {unknown.map((u, i) => {
+                const taken = unknown.filter((x, j) => j !== i).map((x) => x.choice);
+                return (
+                  <div className="unk" key={u.name}>
+                    <span>{u.name}</span>
+                    <select
+                      aria-label={`${u.name}: soort speler`}
+                      value={u.choice}
+                      onChange={(e) =>
+                        setUnknown((xs) => xs.map((x, j) => (j === i ? { ...x, choice: e.target.value } : x)))
+                      }
+                      style={{ width: "auto" }}
+                    >
+                      <option value="leen">Leenspeler</option>
+                      <option value="vast">Vaste selectie</option>
+                      {hiddenFree.length > 0 && (
+                        <optgroup label="Naam van afgeschermde speler">
+                          {hiddenFree.map((p) => (
+                            <option key={p.id} value={`p:${p.id}`} disabled={taken.includes(`p:${p.id}`)}>
+                              Afgeschermd {p.hiddenNo}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="Andere schrijfwijze van">
+                        {players
+                          .filter((p) => p.name)
+                          .map((p) => (
+                            <option key={p.id} value={`a:${p.id}`}>
+                              {p.name}
+                            </option>
+                          ))}
+                      </optgroup>
+                    </select>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="actions">
                 <button className="btn" type="button" onClick={addUnknown} disabled={busy}>
                   Toevoegen
+                </button>
+                <button className="btn" type="button" onClick={() => setUnknown([])}>
+                  Overslaan
                 </button>
               </div>
             </div>

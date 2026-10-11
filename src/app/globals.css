@@ -290,3 +290,34 @@ a.btn { color: #fff; }
 
 ol.steps { list-style: decimal; padding-left: 20px; }
 ol.steps li { margin-bottom: 2px; }
+
+/* Stats-invoer op de telefoon: naam boven, knoppen eronder (anders wordt de naam één letter breed) */
+@media (max-width: 600px) {
+  .prow { grid-template-columns: 1fr; gap: 6px; }
+  .prow .ctrls { justify-content: flex-start; }
+}
+
+/* ---- Competitie: rondebalk, filter en meer contrast ---- */
+.roundbar { display: flex; gap: 4px; overflow-x: auto; padding: 2px 2px 10px; margin-bottom: 6px; scrollbar-width: thin; }
+.roundbar .rb {
+  flex: 0 0 auto; min-width: 34px; height: 34px; padding: 0 6px; border: 1px solid var(--line); border-radius: 2px;
+  background: var(--surface-2); color: #fff; font-family: var(--f-anton); font-size: 16px; cursor: pointer;
+  transform: skewX(-10deg);
+}
+.roundbar .rb.W { background: var(--win); color: #06140b; border-color: var(--win); }
+.roundbar .rb.D { background: var(--draw); color: #1c1303; border-color: var(--draw); }
+.roundbar .rb.L { background: var(--loss); color: #1c0506; border-color: var(--loss); }
+.roundbar .rb.free { background: transparent; color: var(--muted); }
+.roundbar .rb.nd { border-style: dashed; border-color: var(--draw); color: var(--draw); }
+.roundbar .rb.next { outline: 2px solid var(--red); outline-offset: 1px; background: var(--red); border-color: var(--red); }
+.only-ours { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; color: #d8cfd1; cursor: pointer; }
+.only-ours input { accent-color: var(--red); width: 16px; height: 16px; }
+
+/* Meer contrast in de rondes */
+.rnd summary { background: #1b1718; }
+.rnd + .rnd { border-top: 1px solid #3a3133; }
+.rd { color: #b9aeb1; }
+.rnd-b { background: #120f10; }
+.rnd-b .prow2 { border-top: 1px solid #241e20; color: #d8cfd1; }
+.rnd-b .prow2.ours { color: #fff; background: #e1242f22; }
+.rnd[open] > summary { background: #241c1e; box-shadow: inset 3px 0 0 var(--red); }

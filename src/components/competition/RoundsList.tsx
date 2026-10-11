@@ -7,11 +7,12 @@ import { useData } from "@/components/DataProvider";
 import { Score } from "@/components/ui";
 import { predict } from "@/lib/domain/model";
 import { buildRounds, ourMatch, splitRounds, type RoundGroup } from "@/lib/domain/rounds";
-import { isOurs, isPlayed, opponent, ourScore, US } from "@/lib/domain/types";
+import { isOurs, isPlayed, opponent, ourScore, outcome, US } from "@/lib/domain/types";
 import { fmtDate, pct, todayNL } from "@/lib/format";
 import { hasPrediction, type AppView, type ViewMatch } from "@/lib/store/view";
 
 const OPEN_KEY = "p4-open-rounds";
+const ONLY_OURS_KEY = "p4-only-ours";
 
 function loadOpen(): string[] | null {
   try {
@@ -36,10 +37,18 @@ export function RoundsList() {
   const groups = buildRounds(view.matches);
   const { upcoming, done, defaultOpen } = splitRounds(groups, todayNL());
   const [open, setOpen] = useState<string[] | null>(null);
+  const [onlyOurs, setOnlyOurs] = useState(false);
 
   // Open/dicht per apparaat onthouden; standaard de eerstvolgende en de laatst gespeelde ronde
   useEffect(() => {
-    queueMicrotask(() => setOpen(loadOpen() ?? defaultOpen));
+    queueMicrotask(() => {
+      setOpen(loadOpen() ?? defaultOpen);
+      try {
+        setOnlyOurs(localStorage.getItem(ONLY_OURS_KEY) === "1");
+      } catch {
+        // geen opslag: standaard alle wedstrijden tonen
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- alleen bij openen van het scherm
   }, []);
 
@@ -88,9 +97,37 @@ export function RoundsList() {
     router.push(`/competitie/?w=${id}&wijzigen=1`);
   }
 
+  const toggleOnlyOurs = () =>
+    setOnlyOurs((v) => {
+      try {
+        localStorage.setItem(ONLY_OURS_KEY, v ? "0" : "1");
+      } catch {
+        // niet onthouden is geen probleem
+      }
+      return !v;
+    });
+
+  /** Naar een ronde springen vanuit de rondebalk: openklappen en ernaartoe scrollen */
+  const jump = (key: string) => {
+    setOpen((cur) => {
+      const next = (cur ?? []).includes(key) ? cur! : [...(cur ?? []), key];
+      saveOpen(next);
+      return next;
+    });
+    requestAnimationFrame(() =>
+      document.getElementById(`ronde-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+
   if (!open) return null;
 
+  const nextKey = defaultOpen[0];
   return (
+    <>
+    <RoundBar groups={groups} nextKey={nextKey} onJump={jump} />
+    <label className="only-ours">
+      <input type="checkbox" checked={onlyOurs} onChange={toggleOnlyOurs} /> Alleen wedstrijden van Peursum 4
+    </label>
     <div className="grid2" style={{ alignItems: "start" }}>
       <section className="box">
         <div className="box-h">
@@ -101,7 +138,7 @@ export function RoundsList() {
         </div>
         <div className="rnds">
           {upcoming.map((g) => (
-            <Round key={g.key} g={g} view={view} open={open.includes(g.key)} onToggle={toggle} />
+            <Round key={g.key} g={g} view={view} open={open.includes(g.key)} onToggle={toggle} onlyOurs={onlyOurs} />
           ))}
         </div>
       </section>
@@ -111,11 +148,12 @@ export function RoundsList() {
         </div>
         <div className="rnds">
           {done.map((g) => (
-            <Round key={g.key} g={g} view={view} open={open.includes(g.key)} onToggle={toggle} />
+            <Round key={g.key} g={g} view={view} open={open.includes(g.key)} onToggle={toggle} onlyOurs={onlyOurs} />
           ))}
         </div>
       </section>
     </div>
+    </>
   );
 }
 
@@ -124,18 +162,22 @@ function Round({
   view,
   open,
   onToggle,
+  onlyOurs,
 }: {
   g: RoundGroup;
   view: AppView;
   open: boolean;
   onToggle: (key: string, open: boolean) => void;
+  onlyOurs: boolean;
 }) {
+  const shown = onlyOurs ? g.matches.filter(isOurs) : g.matches;
   const side = g.kind !== "ronde";
   const title = g.kind === "ronde" ? `Ronde ${g.round}` : g.kind === "inhaal" ? "Inhaal" : "Extra";
   const badge = g.kind === "ronde" ? g.round : g.kind === "inhaal" ? "IN" : "+";
 
   return (
     <details
+      id={`ronde-${g.key}`}
       className={`rnd${side ? " side" : ""}`}
       open={open}
       onToggle={(e) => {
@@ -156,9 +198,10 @@ function Round({
         <span className="chev" aria-hidden="true" />
       </summary>
       <div className="rnd-b">
-        {g.matches.map((m) => (
+        {shown.map((m) => (
           <MatchRow key={m.id} m={m as ViewMatch} view={view} />
         ))}
+        {!shown.length && <div className="prow2 muted">Peursum 4 speelt deze ronde niet.</div>}
       </div>
     </details>
   );
@@ -252,5 +295,47 @@ function MatchRow({ m, view }: { m: ViewMatch; view: AppView }) {
     </Link>
   ) : (
     <div className="prow2">{inner}</div>
+  );
+}
+
+/** Rondebalk 1–22: kleur = uitslag van Peursum, rode rand = eerstvolgende ronde */
+function RoundBar({
+  groups,
+  nextKey,
+  onJump,
+}: {
+  groups: RoundGroup[];
+  nextKey: string | undefined;
+  onJump: (key: string) => void;
+}) {
+  const rounds = groups
+    .filter((g): g is Extract<RoundGroup, { kind: "ronde" }> => g.kind === "ronde")
+    .sort((a, b) => a.round - b.round);
+
+  return (
+    <nav className="roundbar" aria-label="Spring naar ronde">
+      {rounds.map((g) => {
+        const o = ourMatch(g);
+        const score = o ? ourScore(o) : null;
+        const cls = score ? outcome(score[0], score[1]) : o && !o.date ? "nd" : !o ? "free" : "";
+        const label = score
+          ? `Ronde ${g.round}: ${score[0]}-${score[1]}`
+          : o
+            ? `Ronde ${g.round}: ${opponent(o)}${o.date ? "" : " (niet ingepland)"}`
+            : `Ronde ${g.round}: vrij`;
+        return (
+          <button
+            key={g.key}
+            type="button"
+            className={`rb ${cls} ${g.key === nextKey ? "next" : ""}`}
+            onClick={() => onJump(g.key)}
+            aria-label={label}
+            title={label}
+          >
+            {g.round}
+          </button>
+        );
+      })}
+    </nav>
   );
 }

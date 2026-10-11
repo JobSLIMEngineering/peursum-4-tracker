@@ -184,39 +184,57 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
   }
   g.restore();
 
-  // Doelpunten onder elkaar: naam, P/FK-label, assist klein erachter
+  // Doelpunten onder elkaar, in twee kolommen rond een vaste as:
+  // namen rechts uitgelijnd tegen de as, P/FK en assist links uitgelijnd erachter
   if (goals.length) {
     const top = nameY + 90;
     const bottom = H - 180;
     const lineH = Math.min(56, (bottom - top) / goals.length);
-    const big = Math.min(40, lineH * 0.75);
-    const small = Math.round(big * 0.7);
+    let big = Math.min(40, lineH * 0.75);
+    const gap = 18;
+    const measure = () => {
+      const small = Math.round(big * 0.7);
+      g.font = `800 ${big}px ${COND}`;
+      const names = goals.map((x) => g.measureText(x.scorer.toUpperCase()).width);
+      g.font = `800 ${small}px ${COND}`;
+      const tags = goals.map((x) => (x.tag ? g.measureText(x.tag).width + 20 : 0));
+      g.font = `600 ${small}px ${COND}`;
+      const rights = goals.map((x, i) => {
+        const wAss = x.assist ? g.measureText(`assist ${x.assist}`).width : 0;
+        return tags[i] + (tags[i] && wAss ? 12 : 0) + wAss;
+      });
+      return { small, names, tags, maxName: Math.max(...names), maxRight: Math.max(0, ...rights) };
+    };
+    let mm = measure();
+    // Te breed? Dan alles iets kleiner
+    while (mm.maxName + gap + mm.maxRight > W - 140 && big > 22) {
+      big -= 2;
+      mm = measure();
+    }
+    const { small, tags, maxName, maxRight } = mm;
+    const blockW = maxName + (maxRight ? gap + maxRight : 0);
+    const axis = cx - blockW / 2 + maxName;
+
     goals.forEach((x, i) => {
       const y = top + lineH * (i + 0.8);
-      g.font = `800 ${big}px ${COND}`;
-      const wName = g.measureText(x.scorer.toUpperCase()).width;
-      const wTag = x.tag ? (g.font = `800 ${small}px ${COND}`, g.measureText(x.tag).width + 20) : 0;
-      g.font = `600 ${small}px ${COND}`;
-      const aText = x.assist ? `assist ${x.assist}` : "";
-      const wAss = x.assist ? g.measureText(aText).width : 0;
-      let px = cx - (wName + (wTag ? wTag + 12 : 0) + (wAss ? wAss + 16 : 0)) / 2;
-      g.textAlign = "left";
+      g.textAlign = "right";
       g.font = `800 ${big}px ${COND}`;
       g.fillStyle = x.scorer.startsWith("Eigen goal") ? "#bfb3b6" : "#f4f1f1";
-      shadowed(() => g.fillText(x.scorer.toUpperCase(), px, y), 0, 2);
-      px += wName + 12;
+      shadowed(() => g.fillText(x.scorer.toUpperCase(), axis, y), 0, 2);
+      g.textAlign = "left";
+      let px = axis + gap;
       if (x.tag) {
         g.fillStyle = "#e1242f";
-        g.fillRect(px, y - small - 2, wTag, small + 10);
+        g.fillRect(px, y - small - 2, tags[i], small + 10);
         g.fillStyle = "#ffffff";
         g.font = `800 ${small}px ${COND}`;
         g.fillText(x.tag, px + 10, y);
-        px += wTag + 16;
+        px += tags[i] + 12;
       }
       if (x.assist) {
         g.fillStyle = "#a99ea1";
         g.font = `600 ${small}px ${COND}`;
-        g.fillText(aText, px, y);
+        g.fillText(`assist ${x.assist}`, px, y);
       }
     });
   }

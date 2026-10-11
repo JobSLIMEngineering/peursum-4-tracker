@@ -90,8 +90,9 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
   const name = (id: string | null | undefined) => playerLabel(view.players.find((p) => p.id === id));
   const goals: { scorer: string; tag: string | null; assist: string | null }[] = e?.goals
     ? e.goals.map((x) => ({
-        scorer: x.scorerId ? name(x.scorerId) : "Eigen goal tegenstander",
-        tag: x.kind === "penalty" ? "P" : x.kind === "vrije trap" ? "FK" : null,
+        // Eigen goal van de tegenstander: naam van de tegenstander met label O.G.
+        scorer: x.scorerId ? name(x.scorerId) : opponent(m),
+        tag: !x.scorerId ? "O.G." : x.kind === "penalty" ? "P" : x.kind === "vrije trap" ? "FK" : null,
         assist: x.scorerId && x.assistId ? name(x.assistId) : null,
       }))
     : Object.entries(e?.stats ?? {})
@@ -219,7 +220,7 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
       const y = top + lineH * (i + 0.8);
       g.textAlign = "right";
       g.font = `800 ${big}px ${COND}`;
-      g.fillStyle = x.scorer.startsWith("Eigen goal") ? "#bfb3b6" : "#f4f1f1";
+      g.fillStyle = x.tag === "O.G." ? "#bfb3b6" : "#f4f1f1";
       shadowed(() => g.fillText(x.scorer.toUpperCase(), axis, y), 0, 2);
       g.textAlign = "left";
       let px = axis + gap;

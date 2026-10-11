@@ -4,7 +4,7 @@ import type { Match, MatchEntry, MatchKind, Player, StandingRow } from "@/lib/do
  * Opslag: JSON-bestanden in de privé repository peursum-4-data (map data/).
  *
  * Schrijvers per bestand:
- * - standings.json, matches.json, sync.json: scraper (GitHub Action)
+ * - standings.json, matches.json, sync.json, logos.json: scraper (GitHub Action)
  * - overrides.json, entries.json, feedback.json: app
  * - players.json: app, en de scraper voegt nieuwe spelers van de clubsite toe
  *
@@ -52,6 +52,8 @@ export interface DataFiles {
   "entries.json": { entries: Record<string, MatchEntry> };
   "feedback.json": { items: FeedbackItem[] };
   "sync.json": SyncStatus;
+  /** Clublogo per team (voetbal.nl logo-adres), bijgehouden door de scraper */
+  "logos.json": { logos: Record<string, string> };
 }
 
 export type DataFile = keyof DataFiles;
@@ -64,6 +66,7 @@ export const DATA_FILES: DataFile[] = [
   "entries.json",
   "feedback.json",
   "sync.json",
+  "logos.json",
 ];
 
 export const EMPTY: { [K in DataFile]: DataFiles[K] } = {
@@ -74,6 +77,7 @@ export const EMPTY: { [K in DataFile]: DataFiles[K] } = {
   "entries.json": { entries: {} },
   "feedback.json": { items: [] },
   "sync.json": { lastRun: null, lastChange: null, message: "Nog niet opgehaald", unsure: [] },
+  "logos.json": { logos: {} },
 };
 
 const slug = (s: string) =>

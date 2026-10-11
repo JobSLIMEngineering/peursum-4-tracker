@@ -13,6 +13,7 @@ export interface AppView {
   entries: Record<string, MatchEntry>;
   model: Fit;
   pool: Set<string>;
+  logos: Record<string, string>;
 }
 
 const strip = ({ code, ...m }: StoredMatch) => ({ m, code });
@@ -48,6 +49,7 @@ export function buildView(files: DataFiles): AppView {
     entries: files["entries.json"].entries,
     model: fit(standings, knownResults(matches, standings)),
     pool: new Set(standings.map((s) => s.team)),
+    logos: files["logos.json"]?.logos ?? {},
   };
 }
 

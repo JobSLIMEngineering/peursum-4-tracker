@@ -1,6 +1,7 @@
 "use client";
 
 import { predict, verdict, type Verdict } from "@/lib/domain/model";
+import { TeamLogo } from "./TeamLogo";
 import { lastMatches } from "@/lib/domain/stats";
 import { opponent, outcome, US, type Match } from "@/lib/domain/types";
 import { pct } from "@/lib/format";
@@ -123,9 +124,12 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
             return (
               <div className="sos-row" key={x.match.id}>
                 <span className={`rk ${rankClass(pos)}`}>{pos ?? "?"}</span>
-                <span>
-                  {x.home ? "" : "@ "}
-                  {x.opponent}
+                <span className="tname">
+                  <TeamLogo team={x.opponent} size={16} />
+                  <span>
+                    {x.home ? "" : "@ "}
+                    {x.opponent}
+                  </span>
                 </span>
                 <Score home={x.goalsFor} away={x.goalsAgainst} ours={[x.goalsFor, x.goalsAgainst]} size={15} />
               </div>
@@ -146,9 +150,12 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
               return (
                 <div className="sos-row" key={x.match.id}>
                   <span className={`rk ${rankClass(pos)}`}>{pos ?? "?"}</span>
-                  <span>
-                    {x.home ? "" : "@ "}
-                    {x.opponent}
+                  <span className="tname">
+                    <TeamLogo team={x.opponent} size={16} />
+                    <span>
+                      {x.home ? "" : "@ "}
+                      {x.opponent}
+                    </span>
                   </span>
                   <Score home={x.goalsFor} away={x.goalsAgainst} ours={[x.goalsFor, x.goalsAgainst]} size={15} />
                 </div>
@@ -191,7 +198,10 @@ export function MatchHero({ match }: { match: Match }) {
   return (
     <>
       <div className="hero">
-        <div className="tm">{match.home}</div>
+        <div className="tm">
+          <TeamLogo team={match.home} size={40} />
+          <div>{match.home}</div>
+        </div>
         <div>
           {played ? (
             <span className="big">
@@ -201,7 +211,10 @@ export function MatchHero({ match }: { match: Match }) {
             <span className="vs">vs</span>
           )}
         </div>
-        <div className="tm r">{match.away}</div>
+        <div className="tm r">
+          <TeamLogo team={match.away} size={40} />
+          <div>{match.away}</div>
+        </div>
       </div>
       <div className="hero-meta">
         <span>

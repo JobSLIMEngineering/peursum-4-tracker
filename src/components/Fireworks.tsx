@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 const COLORS = ["#e1242f", "#ffffff", "#ff5a63", "#f0b429", "#a3121c"];
 
@@ -112,5 +113,5 @@ export function Fireworks({ id }: { id: string }) {
     };
   }, [id]);
 
-  return <canvas ref={ref} className="fireworks" aria-hidden="true" />;
+  return createPortal(<canvas ref={ref} className="fireworks" aria-hidden="true" />, document.body);
 }

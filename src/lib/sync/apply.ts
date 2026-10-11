@@ -76,6 +76,15 @@ export function applyTeamPage(input: DataFiles, page: TeamPage, now: Date): Sync
     }
   }
 
+  // --- Clublogo's uit de stand (vaste voetbal.nl-adressen, geen verlopende links) ---
+  const logos = files["logos.json"].logos;
+  for (const s of page.standings) {
+    if (s.logoUrl && /^https:\/\/logoapi\.voetbal\.nl\//.test(s.logoUrl) && !/default-logo/.test(s.logoUrl) && logos[s.team] !== s.logoUrl) {
+      logos[s.team] = s.logoUrl;
+      changed.add("logos.json");
+    }
+  }
+
   // --- Eigen wedstrijden van de clubsite: programma en uitslagen ---
   const venueFor = (m: ScrapedMatch) =>
     page.nextMatch && page.nextMatch.homeTeam === m.homeTeam && page.nextMatch.awayTeam === m.awayTeam

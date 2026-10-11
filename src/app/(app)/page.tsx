@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { Fireworks } from "@/components/Fireworks";
+import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
 import { Box, WdlBar } from "@/components/ui";
 import { predict, verdict } from "@/lib/domain/model";
-import { leaders, perMatchStats, playerTotals } from "@/lib/domain/stats";
-import { opponent, playerLabel, US } from "@/lib/domain/types";
+import { lastMatches, leaders, perMatchStats, playerTotals } from "@/lib/domain/stats";
+import { opponent, outcome, playerLabel, US } from "@/lib/domain/types";
 import { fmtDate, shortDate } from "@/lib/format";
 import { nextMatch, standingOf, type AppView, type ViewMatch } from "@/lib/store/view";
 
@@ -20,6 +22,8 @@ export default function OverzichtPage() {
     <div className="grid2">
       <div className="stack ovl">
         {next && opp ? <NextBlock view={view} next={next} opp={opp} /> : <Box label="Volgende wedstrijd">Geen komende competitiewedstrijd bekend.</Box>}
+
+        <LastMatch view={view} />
 
         <section className="box tops">
           {(["goals", "assists"] as const).map((k) => {
@@ -77,7 +81,12 @@ export default function OverzichtPage() {
               return (
                 <tr key={r.team} className={r.team === US ? "us" : r.team === opp ? "nx" : ""}>
                   <td className="pos">{r.position}</td>
-                  <td className="t">{r.team}</td>
+                  <td className="t">
+                    <span className="tname">
+                      <TeamLogo team={r.team} size={18} />
+                      <span>{r.team}</span>
+                    </span>
+                  </td>
                   <td>{r.played}</td>
                   <td>{gd > 0 ? `+${gd}` : gd}</td>
                   <td className="pts">{r.points}</td>
@@ -99,7 +108,10 @@ function NextBlock({ view, next, opp }: { view: AppView; next: ViewMatch; opp: s
       <div className="k">
         Volgende · {d.full} · {next.time ?? ""}
       </div>
-      <div className="opp">{opp}</div>
+      <div className="opp tname">
+        <TeamLogo team={opp} size={34} />
+        <span>{opp}</span>
+      </div>
       <div className="sub">
         {next.home === US ? "Thuis" : "Uit"} · {standingOf(view, opp)?.position}e in de stand · {verdict(p)}
       </div>
@@ -113,5 +125,41 @@ function NextBlock({ view, next, opp }: { view: AppView; next: ViewMatch; opp: s
         </Link>
       </div>
     </section>
+  );
+}
+
+const RESULT = { W: "Gewonnen", D: "Gelijk", L: "Verloren" } as const;
+
+/** Laatst gespeelde competitiewedstrijd; bij winst vuurwerk (één keer per sessie) */
+function LastMatch({ view }: { view: AppView }) {
+  const last = lastMatches(view.matches, US, 1)[0];
+  if (!last) return null;
+  const r = outcome(last.goalsFor, last.goalsAgainst);
+  const entry = view.entries[last.match.id];
+  return (
+    <Link className={`box last-match ${r === "W" ? "lm-win" : ""}`} href={`/competitie/?w=${encodeURIComponent(last.match.id)}`}>
+      {r === "W" && <Fireworks id={`home-${last.match.id}`} />}
+      <div className="box-h">
+        <p className="lbl">Laatste wedstrijd</p>
+        <span className="meta">{fmtDate(last.match.date).full}</span>
+      </div>
+      <div className="box-b lm-body">
+        <span className="tname lm-opp">
+          <TeamLogo team={last.opponent} size={28} />
+          <span>
+            <b>{last.opponent}</b>
+            <small className="meta">
+              {last.home ? "Thuis" : "Uit"} · {RESULT[r]}
+            </small>
+          </span>
+        </span>
+        <span className={`score ${r}`}>
+          {last.match.homeGoals}–{last.match.awayGoals}
+        </span>
+      </div>
+      <div className="lm-foot meta">
+        {entry ? `${entry.attendance.length} aanwezig · stats ingevoerd` : <span className="todo">Opstelling en stats invoeren →</span>}
+      </div>
+    </Link>
   );
 }

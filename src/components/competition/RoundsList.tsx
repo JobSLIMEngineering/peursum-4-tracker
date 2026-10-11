@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TeamLogo } from "@/components/TeamLogo";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useData } from "@/components/DataProvider";
@@ -250,7 +251,8 @@ function Summary({ g, view }: { g: RoundGroup; view: AppView }) {
   return (
     <>
       <span className="rs-us">
-        <b>{opponent(o)}</b> <span className="muted">{o.home === US ? "thuis" : "uit"}</span>
+        <TeamLogo team={opponent(o)} size={18} /> <b>{opponent(o)}</b>{" "}
+        <span className="muted">{o.home === US ? "thuis" : "uit"}</span>
       </span>
       {chip}
     </>
@@ -259,7 +261,12 @@ function Summary({ g, view }: { g: RoundGroup; view: AppView }) {
 
 function MatchRow({ m, view }: { m: ViewMatch; view: AppView }) {
   const ours = isOurs(m);
-  const team = (t: string) => <span className={t === US ? "us-t" : ""}>{t}</span>;
+  const team = (t: string) => (
+    <span className={`tname ${t === US ? "us-t" : ""}`}>
+      <TeamLogo team={t} size={16} />
+      <span>{t}</span>
+    </span>
+  );
 
   let right: React.ReactNode;
   if (isPlayed(m)) right = <Score home={m.homeGoals} away={m.awayGoals} ours={ours ? ourScore(m)! : undefined} />;

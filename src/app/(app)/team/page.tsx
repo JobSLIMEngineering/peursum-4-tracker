@@ -15,7 +15,8 @@ export default function TeamPage() {
   const players = sortPlayers(view.players.filter((p) => p.active));
   const vast = players.filter((p) => p.type === "vast");
   const leen = players.filter((p) => p.type === "leen");
-  const keepers = players.filter((p) => totals[p.id]?.keeperGames);
+  // Keepers: iedereen met positie Keeper, plus wie ooit in het doel stond
+  const keepers = players.filter((p) => p.position === "Keeper" || totals[p.id]?.keeperGames);
   const [name, setName] = useState("");
   const [pos, setPos] = useState<Position>("Onbekend");
 
@@ -116,21 +117,26 @@ export default function TeamPage() {
                 <th>Duels</th>
                 <th>Clean sheets</th>
                 <th>Tegen</th>
+                <th>Gem.</th>
               </tr>
             </thead>
             <tbody>
-              {keepers.map((p) => (
-                <tr key={p.id}>
-                  <td className="t">{playerLabel(p)}</td>
-                  <td>{totals[p.id].keeperGames}</td>
-                  <td>{totals[p.id].cleanSheets}</td>
-                  <td>{totals[p.id].goalsAgainst}</td>
-                </tr>
-              ))}
+              {keepers.map((p) => {
+                const k = totals[p.id];
+                return (
+                  <tr key={p.id}>
+                    <td className="t">{playerLabel(p)}</td>
+                    <td>{k?.keeperGames || "–"}</td>
+                    <td>{k?.keeperGames ? <b className="num cs">{k.cleanSheets}</b> : "–"}</td>
+                    <td>{k?.keeperGames ? k.goalsAgainst : "–"}</td>
+                    <td>{k?.keeperGames ? (k.goalsAgainst / k.keeperGames).toFixed(1) : "–"}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (
-          "Nog geen keeper ingevoerd."
+          "Zet bij een speler de positie op Keeper, of kies de keeper bij het invoeren van een wedstrijd."
         )}
       </Box>
     </div>
@@ -201,8 +207,17 @@ function PlayerRow({
       </select>
       <span className="pstats">
         {stat("opkomst", t?.appearances)}
-        {stat("goals", t?.goals)}
-        {stat("assists", t?.assists)}
+        {p.position === "Keeper" ? (
+          <>
+            {stat("clean sh.", t?.cleanSheets)}
+            {stat("tegen", t?.goalsAgainst)}
+          </>
+        ) : (
+          <>
+            {stat("goals", t?.goals)}
+            {stat("assists", t?.assists)}
+          </>
+        )}
         <span className={t?.yellow || t?.red ? "" : "zero"}>
           <b className="num">
             {t?.yellow ? (

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { TABS, tabIndex } from "@/lib/tabs";
 
 /** Hier nooit swipen */
@@ -32,44 +33,63 @@ export function Gestures() {
   const [showTop, setShowTop] = useState(false);
 
   useEffect(() => {
-    let start: { x: number; y: number; t: number } | null = null;
+    // Richting vastzetten na de eerste ~12 px; horizontaal en ver genoeg = direct wisselen,
+    // zonder op het loslaten te wachten (een scrollende browser stuurt soms geen touchend).
+    let start: { x: number; y: number } | null = null;
+    let axis: "x" | "y" | null = null;
+    let done = false;
 
     const onStart = (e: TouchEvent) => {
+      done = false;
+      axis = null;
       const target = e.target as Element | null;
-      if (e.touches.length !== 1 || blocksSwipe(target)) {
-        start = null;
-        return;
-      }
-      start = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+      start = e.touches.length === 1 && !blocksSwipe(target) ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
     };
 
-    const onEnd = (e: TouchEvent) => {
-      if (!start) return;
-      const dx = e.changedTouches[0].clientX - start.x;
-      const dy = e.changedTouches[0].clientY - start.y;
-      const quick = Date.now() - start.t < 700;
-      start = null;
-      if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    const onMove = (e: TouchEvent) => {
+      if (!start || done) return;
+      const dx = e.touches[0].clientX - start.x;
+      const dy = e.touches[0].clientY - start.y;
+      if (!axis) {
+        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+        axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+        if (axis === "y") start = null;
+        return;
+      }
+      if (Math.abs(dx) < 55) return;
+      done = true;
       const i = tabIndex(path) + (dx < 0 ? 1 : -1);
-      if (i >= 0 && i < TABS.length) router.push(TABS[i].href);
+      if (i >= 0 && i < TABS.length) {
+        navigator.vibrate?.(8);
+        router.push(TABS[i].href);
+      }
+    };
+
+    const reset = () => {
+      start = null;
+      axis = null;
     };
 
     document.addEventListener("touchstart", onStart, { passive: true });
-    document.addEventListener("touchend", onEnd, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: true });
+    document.addEventListener("touchend", reset, { passive: true });
+    document.addEventListener("touchcancel", reset, { passive: true });
     return () => {
       document.removeEventListener("touchstart", onStart);
-      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", reset);
+      document.removeEventListener("touchcancel", reset);
     };
   }, [path, router]);
 
   useEffect(() => {
-    const onScroll = () => setShowTop(window.scrollY > 600);
+    const onScroll = () => setShowTop(window.scrollY > 240);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  return (
+  return createPortal(
     <button
       type="button"
       className={`top-btn ${showTop ? "on" : ""}`}
@@ -80,6 +100,7 @@ export function Gestures() {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
         <path d="M6 15l6-6 6 6" />
       </svg>
-    </button>
+    </button>,
+    document.body,
   );
 }

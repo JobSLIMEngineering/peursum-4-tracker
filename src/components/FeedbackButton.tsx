@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useData } from "./DataProvider";
 
 /** Klein icoon onderin elk scherm. Slaat tekst op met pagina, schermbreedte en tijdstip. */
@@ -48,7 +49,8 @@ export function FeedbackButton() {
     }, 1500);
   }
 
-  return (
+  // Via een portal direct in <body>: anders zit "position: fixed" vast aan het hoofdvlak
+  return createPortal(
     <>
       {open && (
         <section className="box fb-panel" role="dialog" aria-label="Feedback">
@@ -90,6 +92,7 @@ export function FeedbackButton() {
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
       </button>
-    </>
+    </>,
+    document.body,
   );
 }

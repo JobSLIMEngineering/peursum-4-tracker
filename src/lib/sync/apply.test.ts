@@ -74,6 +74,15 @@ describe("verwerken van de teampagina", () => {
     expect(r.summary.join(" ")).not.toMatch(/Tim Boer|Afgeschermde speler 5/);
   });
 
+  it("neemt de clublogo's (vaste voetbal.nl-adressen) uit de stand over", () => {
+    const empty = { ...initial, "logos.json": { logos: {} } };
+    const r = applyTeamPage(empty, oldPage, new Date("2026-10-11T12:00:00Z"));
+    const logos = r.files["logos.json"].logos;
+    expect(Object.keys(logos)).toHaveLength(12);
+    expect(logos["Peursum 4"]).toBe("https://logoapi.voetbal.nl/logo.php?clubcode=BBJB32E");
+    expect(r.changed).toContain("logos.json");
+  });
+
   it("voegt het oefenduel toe als oefen en laat bestaande uitslagen staan", () => {
     const r = applyTeamPage(initial, oldPage, new Date("2026-10-11T12:00:00Z"));
     const m = r.files["matches.json"].matches;

@@ -434,3 +434,27 @@ ol.steps li { margin-bottom: 2px; }
 .sec-toggle { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 4px 0; cursor: pointer; color: #fff; }
 .sec-count { font-family: var(--f-cond); font-weight: 800; font-size: 11px; letter-spacing: 0; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 1px 7px; }
 .chev.up { transform: rotate(225deg); margin-top: 4px; }
+
+/* Clublogo's naast teamnamen */
+.tlogo { display: inline-block; object-fit: contain; vertical-align: middle; flex: 0 0 auto; }
+.tname { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.tname > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.hero .tm { display: grid; gap: 6px; justify-items: start; }
+.hero .tm.r { justify-items: end; }
+.hero .tm .tlogo { filter: drop-shadow(2px 2px 0 #0000004d); background: #fff; border-radius: 50%; padding: 3px; box-sizing: content-box; }
+.hot .opp .tlogo { background: #fff; border-radius: 50%; padding: 3px; box-sizing: content-box; }
+
+/* Horizontale vegen zijn voor tab-wisselen; de browser mag alleen verticaal scrollen (en zoomen) */
+main.panel { touch-action: pan-y pinch-zoom; }
+.roundbar, .tbl-wrap { touch-action: pan-x pan-y; }
+
+/* Overzicht: laatste wedstrijd */
+a.last-match { display: block; color: inherit; text-decoration: none; }
+.last-match .lm-body { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.last-match .lm-opp b { display: block; font-family: var(--f-cond); font-weight: 800; text-transform: uppercase; font-size: 18px; line-height: 1.1; }
+.last-match .lm-opp small { display: block; }
+.last-match .score { font-size: 24px; min-width: 64px; }
+.last-match .lm-foot { padding: 0 12px 10px; }
+.last-match.lm-win { border-color: #2fbf6266; box-shadow: 0 0 0 1px #2fbf6233, 0 2px 10px #00000066; }
+.last-match:hover { border-color: var(--red); }
+.num.cs { color: var(--win); }

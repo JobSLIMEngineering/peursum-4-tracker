@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { MatchHero, PredictionBlocks } from "@/components/Prediction";
-import { isPlayed, opponent, US, type MatchKind } from "@/lib/domain/types";
+import { Fireworks } from "@/components/Fireworks";
+import { isPlayed, opponent, ourScore, US, type MatchKind } from "@/lib/domain/types";
 import type { MatchEdit } from "@/lib/store/schema";
 import { hasPrediction, type ViewMatch } from "@/lib/store/view";
 import { EntryForm } from "./EntryForm";
@@ -34,8 +35,11 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
   }
 
   const played = isPlayed(m);
+  const score = ourScore(m);
+  const won = !!score && score[0] > score[1];
   return (
     <>
+      {won && <Fireworks id={m.id} />}
       {back}
       <div style={{ marginTop: 12 }}>
         <MatchHero match={m} />

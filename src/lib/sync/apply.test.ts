@@ -61,6 +61,19 @@ describe("verwerken van de teampagina", () => {
     expect(players.find((p) => p.name === "Tom Rietveld")?.clubName).toBe("Rietveld, Tom");
   });
 
+  it("voegt een verwijderde (inactieve) speler niet opnieuw toe, ook geen afgeschermde", () => {
+    const removed = structuredClone(initial);
+    for (const p of removed["players.json"].players) {
+      if (p.name === "Tim Boer" || p.hiddenNo === 5) p.active = false;
+    }
+    const page = { ...oldPage, hiddenPlayerCount: 5 };
+    const r = applyTeamPage(removed, page, new Date("2026-10-11T12:00:00Z"));
+    const players = r.files["players.json"].players;
+    expect(players.filter((p) => p.name === "Tim Boer")).toEqual([expect.objectContaining({ active: false })]);
+    expect(players.filter((p) => p.hiddenNo !== null)).toHaveLength(5);
+    expect(r.summary.join(" ")).not.toMatch(/Tim Boer|Afgeschermde speler 5/);
+  });
+
   it("voegt het oefenduel toe als oefen en laat bestaande uitslagen staan", () => {
     const r = applyTeamPage(initial, oldPage, new Date("2026-10-11T12:00:00Z"));
     const m = r.files["matches.json"].matches;

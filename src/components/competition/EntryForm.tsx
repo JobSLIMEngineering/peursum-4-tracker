@@ -60,7 +60,7 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
   }
 
   function processList() {
-    const r = parseAttendance(paste, view.players);
+    const r = parseAttendance(paste, players);
     setDraft((d) => ({ ...d, attendance: [...new Set([...d.attendance, ...r.found])] }));
     setUnknown(r.unknown.map((u) => ({ name: u.name, choice: "leen" })));
     setAmbiguous(r.ambiguous);

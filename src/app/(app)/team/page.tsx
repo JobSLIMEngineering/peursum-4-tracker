@@ -155,7 +155,6 @@ function PlayerRow({
   isLeen: boolean;
   update: (id: string, patch: Partial<StoredPlayer>, msg: string) => Promise<boolean>;
 }) {
-  const { mutate } = useData();
   const [name, setName] = useState(p.name ?? "");
   const [armed, setArmed] = useState(false);
 
@@ -172,7 +171,9 @@ function PlayerRow({
 
   const remove = () => {
     if (!armed) return setArmed(true);
-    void mutate("players.json", (f) => ({ players: f.players.filter((x) => x.id !== p.id) }), `speler verwijderd: ${playerLabel(p)}`);
+    // Niet echt verwijderen: inactief zetten, zodat de ophaalfunctie hem niet opnieuw toevoegt
+    // en eerdere statistieken blijven kloppen
+    void update(p.id, { active: false }, `speler verwijderd: ${playerLabel(p)}`);
   };
 
   return (

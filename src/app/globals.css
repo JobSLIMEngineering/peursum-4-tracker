@@ -321,3 +321,39 @@ ol.steps li { margin-bottom: 2px; }
 .rnd-b .prow2 { border-top: 1px solid #241e20; color: #d8cfd1; }
 .rnd-b .prow2.ours { color: #fff; background: #e1242f22; }
 .rnd[open] > summary { background: #241c1e; box-shadow: inset 3px 0 0 var(--red); }
+
+/* Clublogo rechtsboven in de kop */
+.head .club { order: 3; height: 64px; width: auto; filter: drop-shadow(4px 4px 0 #0000004d); flex: 0 0 auto; }
+.head .brand { order: 1; }
+.head .tabs { order: 2; margin-left: auto; }
+@media (max-width: 600px) {
+  .head .club { order: 2; height: 52px; margin-left: auto; }
+  .head .tabs { order: 3; margin-left: 0; }
+}
+
+/* ---- Beweging: schermovergangen, uitklappen, naar boven, vuurwerk ---- */
+@keyframes page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes page-in-right { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes page-in-left { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes drop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.page-in { animation: page-in .22s ease-out; }
+.page-in-right { animation: page-in-right .24s ease-out; }
+.page-in-left { animation: page-in-left .24s ease-out; }
+.rnd[open] > .rnd-b { animation: drop .2s ease-out; }
+.fb-panel { animation: drop .18s ease-out; }
+
+.top-btn {
+  position: fixed; right: 62px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 50;
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2);
+  display: grid; place-items: center; cursor: pointer; box-shadow: 0 6px 18px #000a;
+  opacity: 0; transform: translateY(12px); pointer-events: none; transition: opacity .2s, transform .2s;
+}
+.top-btn.on { opacity: .9; transform: none; pointer-events: auto; }
+.top-btn:hover { background: var(--red); border-color: var(--red); }
+
+.fireworks { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 60; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-in, .page-in-right, .page-in-left, .rnd[open] > .rnd-b, .fb-panel { animation: none; }
+  .top-btn { transition: none; }
+}

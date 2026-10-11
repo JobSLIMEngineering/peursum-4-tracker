@@ -85,8 +85,27 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
     } while (g.measureText(t).width > max && px > 20);
   };
 
+  // Doelpunten (alleen bij uitslag), in volgorde van invoer
+  const e = played ? view.entries[m.id] : undefined;
+  const name = (id: string | null | undefined) => playerLabel(view.players.find((p) => p.id === id));
+  const goals: { scorer: string; tag: string | null; assist: string | null }[] = e?.goals
+    ? e.goals.map((x) => ({
+        scorer: x.scorerId ? name(x.scorerId) : "Eigen goal tegenstander",
+        tag: x.kind === "penalty" ? "P" : x.kind === "vrije trap" ? "FK" : null,
+        assist: x.scorerId && x.assistId ? name(x.assistId) : null,
+      }))
+    : Object.entries(e?.stats ?? {})
+        .filter(([, st]) => st.goals)
+        .flatMap(([id, st]) => Array.from({ length: st.goals }, () => ({ scorer: name(id), tag: null, assist: null })));
+
+  // Indeling: bij een uitslag met doelpunten alles wat hoger, zodat de lijst past
+  const lift = played && goals.length ? 1 : 0;
+  const shift = story ? 260 : 0;
+  const titleY = (lift ? 200 : 250) + shift;
+  const rowY = (lift ? 600 : 720) + shift + (story && lift ? 40 : 0);
+  const logoSize = lift ? 250 : 300;
+
   // Titel met rode penseelstreek
-  const titleY = story ? 330 : 250;
   const title = played ? "UITSLAG" : "MATCHDAY";
   g.save();
   g.translate(cx, titleY);
@@ -107,24 +126,31 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
     : "DATUM VOLGT";
   g.fillStyle = "#e9e5e5";
   g.font = `700 40px ${COND}`;
-  spaced(when, cx, titleY + 170, 8);
+  spaced(when, cx, titleY + 160, 8);
 
-  // Wapens met namen, score of VS in het midden
-  const rowY = story ? 980 : 760;
-  const logoSize = 300;
+  // Wapens met namen (en bij matchday de stand eronder), score of VS in het midden
   const sideX = [cx - 300, cx + 300];
   [homeLogo, awayLogo].forEach((img, i) => {
     if (!img) return;
-    const s = logoSize / Math.max(img.width, img.height);
-    const w = img.width * s;
-    const h = img.height * s;
-    shadowed(() => g.drawImage(img, sideX[i] - w / 2, rowY - h / 2 - 40, w, h), 30, 0);
+    const sc = logoSize / Math.max(img.width, img.height);
+    const w = img.width * sc;
+    const h = img.height * sc;
+    shadowed(() => g.drawImage(img, sideX[i] - w / 2, rowY - h / 2 - 30, w, h), 30, 0);
   });
-  g.fillStyle = "#f1eded";
-  [m.home, m.away].forEach((name, i) => {
-    fitFont(name.toUpperCase(), (px) => `800 ${px}px ${COND}`, 50, 420);
+  const nameY = rowY + logoSize / 2 + 40;
+  [m.home, m.away].forEach((team, i) => {
+    g.fillStyle = "#f1eded";
+    fitFont(team.toUpperCase(), (px) => `800 ${px}px ${COND}`, 50, 420);
     g.textAlign = "center";
-    shadowed(() => g.fillText(name.toUpperCase(), sideX[i], rowY + 175), 0, 3);
+    shadowed(() => g.fillText(team.toUpperCase(), sideX[i], nameY), 0, 3);
+    if (!played) {
+      const st = standingOf(view, team);
+      if (st) {
+        g.fillStyle = "#e1242f";
+        g.font = `800 34px ${COND}`;
+        spaced(`${st.position}E IN DE STAND`, sideX[i], nameY + 52, 4);
+      }
+    }
   });
 
   g.save();
@@ -133,7 +159,7 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
   g.textAlign = "center";
   if (played) {
     const color = (team: string) => (team === US ? "#f4f1f1" : "#e1242f");
-    g.font = `400 230px ${BRUSH}`;
+    g.font = `400 ${lift ? 200 : 230}px ${BRUSH}`;
     const parts: [string, string][] = [
       [String(m.homeGoals), color(m.home)],
       ["-", "#e1242f"],
@@ -145,7 +171,7 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
       g.textAlign = "left";
       shadowed(() => {
         g.fillStyle = col;
-        g.fillText(t, x, 70);
+        g.fillText(t, x, 60);
       });
       x += widths[i];
     });
@@ -158,35 +184,41 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
   }
   g.restore();
 
-  // Extra regel: bij uitslag de doelpuntenmakers, bij matchday de stand
-  const infoY = rowY + 290 + (story ? 80 : 0);
-  g.textAlign = "center";
-  if (played) {
-    const e = view.entries[m.id];
-    const counts = new Map<string, number>();
-    for (const goal of e?.goals ?? []) {
-      const n = goal.scorerId ? playerLabel(view.players.find((p) => p.id === goal.scorerId)) : "Eigen goal";
-      counts.set(n, (counts.get(n) ?? 0) + 1);
-    }
-    if (!e?.goals) for (const [id, s] of Object.entries(e?.stats ?? {})) if (s.goals) counts.set(playerLabel(view.players.find((p) => p.id === id)), s.goals);
-    const scorers = [...counts].map(([n, k]) => (k > 1 ? `${n} ${k}×` : n)).join("   ·   ");
-    if (scorers) {
-      g.fillStyle = "#c9bfc1";
-      g.font = `700 30px ${COND}`;
-      spaced("DOELPUNTEN", cx, infoY, 6);
-      g.fillStyle = "#f1eded";
-      fitFont(scorers.toUpperCase(), (px) => `800 ${px}px ${COND}`, 40, W - 140);
-      g.fillText(scorers.toUpperCase(), cx, infoY + 52);
-    }
-  } else {
-    const u = standingOf(view, US);
-    const o = standingOf(view, opponent(m));
-    if (u && o) {
-      const line = m.home === US ? `${u.position}E · ${u.points} PT   VS   ${o.position}E · ${o.points} PT` : `${o.position}E · ${o.points} PT   VS   ${u.position}E · ${u.points} PT`;
-      g.fillStyle = "#f1eded";
-      g.font = `800 40px ${COND}`;
-      spaced(line, cx, infoY, 4);
-    }
+  // Doelpunten onder elkaar: naam, P/FK-label, assist klein erachter
+  if (goals.length) {
+    const top = nameY + 90;
+    const bottom = H - 180;
+    const lineH = Math.min(56, (bottom - top) / goals.length);
+    const big = Math.min(40, lineH * 0.75);
+    const small = Math.round(big * 0.7);
+    goals.forEach((x, i) => {
+      const y = top + lineH * (i + 0.8);
+      g.font = `800 ${big}px ${COND}`;
+      const wName = g.measureText(x.scorer.toUpperCase()).width;
+      const wTag = x.tag ? (g.font = `800 ${small}px ${COND}`, g.measureText(x.tag).width + 20) : 0;
+      g.font = `600 ${small}px ${COND}`;
+      const aText = x.assist ? `assist ${x.assist}` : "";
+      const wAss = x.assist ? g.measureText(aText).width : 0;
+      let px = cx - (wName + (wTag ? wTag + 12 : 0) + (wAss ? wAss + 16 : 0)) / 2;
+      g.textAlign = "left";
+      g.font = `800 ${big}px ${COND}`;
+      g.fillStyle = x.scorer.startsWith("Eigen goal") ? "#bfb3b6" : "#f4f1f1";
+      shadowed(() => g.fillText(x.scorer.toUpperCase(), px, y), 0, 2);
+      px += wName + 12;
+      if (x.tag) {
+        g.fillStyle = "#e1242f";
+        g.fillRect(px, y - small - 2, wTag, small + 10);
+        g.fillStyle = "#ffffff";
+        g.font = `800 ${small}px ${COND}`;
+        g.fillText(x.tag, px + 10, y);
+        px += wTag + 16;
+      }
+      if (x.assist) {
+        g.fillStyle = "#a99ea1";
+        g.font = `600 ${small}px ${COND}`;
+        g.fillText(aText, px, y);
+      }
+    });
   }
 
   // Voet: sportpark en hashtag

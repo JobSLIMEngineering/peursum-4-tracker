@@ -99,24 +99,16 @@ export default function OverzichtPage() {
 }
 
 
-const RESULT = { W: "Gewonnen", D: "Gelijk", L: "Verloren" } as const;
-
 /** Laatst gespeelde competitiewedstrijd als "UITSLAG"-bord; bij winst vuurwerk (één keer per sessie) */
 function LastMatch({ view }: { view: AppView }) {
-  const { readOnly } = useData();
   const last = lastMatches(view.matches, US, 1)[0];
   if (!last) return null;
   const r = outcome(last.goalsFor, last.goalsAgainst);
-  const entry = view.entries[last.match.id];
   return (
     <Link className="last-match" href={`/competitie/?w=${encodeURIComponent(last.match.id)}`}>
       {r === "W" && <Fireworks id={`home-${last.match.id}`} />}
       <ScoreBoard match={last.match} size="compact">
-        <div className="board-meta">
-          {fmtDate(last.match.date).full} · {RESULT[r]}
-          {" · "}
-          {entry ? `${entry.attendance.length} aanwezig` : readOnly ? "bekijk →" : <span className="todo">stats invoeren →</span>}
-        </div>
+        <div className="board-meta">{fmtDate(last.match.date).full}</div>
       </ScoreBoard>
     </Link>
   );

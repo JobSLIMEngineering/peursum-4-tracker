@@ -569,3 +569,66 @@ a.last-match:hover .board { border-color: var(--red); }
 
 /* Penseelletter ook voor de kleine "vs" en titels elders */
 h2.brush, .mu-vs, .hero .vs { font-family: var(--f-brush); }
+
+/* ======================================================================
+   Volledige UI in de Instagram-stijl: donkere kop met vonken, penseelletters, rode streken
+   ====================================================================== */
+.head {
+  background: #070505 var(--texture) center 18% / cover no-repeat;
+  clip-path: none; padding-bottom: 22px; position: relative;
+  box-shadow: inset 0 -40px 60px -30px #000;
+}
+.head::before, .head::after { content: none; }
+/* Rode penseelstreek als onderrand van de kop */
+.head .wrap::after {
+  content: ""; position: absolute; left: 6px; right: 6px; bottom: -22px; height: 12px;
+  background: var(--brush) center / 100% 100% no-repeat; opacity: .9; pointer-events: none;
+}
+.brand { position: relative; }
+.brand .logo {
+  font-family: var(--f-brush); text-transform: uppercase; transform: rotate(-3deg); letter-spacing: .01em;
+  gap: 8px; text-shadow: 3px 3px 0 #000a;
+}
+.brand .no { background: none; color: var(--red); box-shadow: none; padding: 0; line-height: 1; text-shadow: 3px 3px 0 #000a; }
+
+/* Tabs (laptop): donker, schuin, actieve tab rood */
+.tabs a { background: #ffffff10; border: 1px solid #ffffff14; }
+.tabs a:hover { background: #ffffff1f; }
+.tabs a[aria-current="page"] { background: var(--red); border-color: var(--red); box-shadow: 3px 3px 0 #000a; }
+
+/* Wedstrijd rechtsboven: past in de donkere kop */
+.matchup { background: #ffffff0d; border: 1px solid #ffffff14; }
+.matchup:hover { background: #e1242f22; border-color: var(--red); }
+.mu-when span { color: #c9bfc1; }
+
+/* Hoofdvlak: rustige donkere laag over de textuur, rode streek bovenaan */
+main.panel { background: #0a0708d9; border-top: 0; position: relative; }
+main.panel::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -6px; height: 10px;
+  background: var(--brush) center / 100% 100% no-repeat; opacity: .85;
+}
+
+/* Bloktitels in penseelletter met een klein rood streepje */
+.lbl {
+  font-family: var(--f-brush); font-weight: 400; letter-spacing: .02em; font-size: 19px; text-transform: uppercase;
+  position: relative; padding-bottom: 4px; transform: rotate(-1.5deg);
+}
+.lbl::before { content: none; }
+.lbl::after {
+  content: ""; position: absolute; left: -4px; bottom: -3px; width: 64px; height: 8px;
+  background: var(--brush) left center / 100% 100% no-repeat;
+}
+.box-h { background: linear-gradient(180deg, #2a2124, #221b1d); }
+.sec-toggle .lbl::after { width: 54px; }
+
+/* Onderbalk (telefoon): donker met rode streek bovenaan */
+@media (max-width: 600px) {
+  .head { padding-bottom: 18px; }
+  .head .wrap::after { bottom: -18px; height: 10px; }
+  .brand .logo { font-size: 32px; }
+  .bottom-nav { border-top: 0; background: #070505f2; }
+  .bottom-nav::before {
+    content: ""; position: absolute; left: 0; right: 0; top: -5px; height: 8px;
+    background: var(--brush) center / 100% 100% no-repeat; opacity: .8;
+  }
+}

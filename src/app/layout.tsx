@@ -19,7 +19,7 @@ const marker = Protest_Revolution({ variable: "--font-marker", weight: "400", su
 export const metadata: Metadata = {
   title: "Peursum 4",
   description: "Stand, programma, winkans en spelersstatistieken van Peursum 4",
-  appleWebApp: { capable: true, title: "Peursum 4", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Peursum 4", statusBarStyle: "black" },
   icons: {
     icon: [
       { url: `${BASE}/icons/icon.svg`, type: "image/svg+xml" },
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e1242f",
+  themeColor: "#0b0707",
   viewportFit: "cover",
 };
 

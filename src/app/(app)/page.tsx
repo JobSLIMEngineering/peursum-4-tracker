@@ -60,7 +60,7 @@ export default function OverzichtPage() {
       </div>
 
       <Box label="Stand" right={<span className="meta">{shortDate(view.standingsDate)}</span>} bodyClass="tbl-wrap">
-        <table>
+        <table className="stand">
           <thead>
             <tr>
               <th className="t" colSpan={2}>

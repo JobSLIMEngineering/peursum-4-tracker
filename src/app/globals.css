@@ -357,3 +357,74 @@ ol.steps li { margin-bottom: 2px; }
   .page-in, .page-in-right, .page-in-left, .rnd[open] > .rnd-b, .fb-panel { animation: none; }
   .top-btn { transition: none; }
 }
+
+/* ======================================================================
+   Telefoon: vaste tabbalk onderaan, compacte kop, meer ruimte voor inhoud
+   ====================================================================== */
+.bottom-nav { display: none; }
+@media (max-width: 600px) {
+  .head .tabs { display: none; }
+  .head { padding-bottom: 20px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), 0 100%); }
+  .head .wrap { padding-block: calc(12px + env(safe-area-inset-top)) 0; padding-inline: 18px; flex-wrap: nowrap; }
+  .brand .logo { font-size: 34px; gap: 8px; }
+  .head .club { height: 46px; }
+
+  .wrap { padding-inline: 8px; }
+  main.panel { margin-block: 12px 16px; padding: 10px; }
+  /* ruimte zodat de laatste regel niet onder de tabbalk en zwevende knoppen valt */
+  body { padding-bottom: calc(118px + env(safe-area-inset-bottom)); }
+
+  .bottom-nav {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 55;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #0d0b0cf2; border-top: 1px solid #3a282b; backdrop-filter: blur(8px);
+  }
+  .bottom-nav a {
+    display: grid; justify-items: center; gap: 2px; padding: 8px 2px 7px; position: relative;
+    color: var(--muted); text-decoration: none;
+    font-family: var(--f-cond); font-weight: 800; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .bottom-nav a[aria-current="page"] { color: #fff; }
+  .bottom-nav a[aria-current="page"]::before {
+    content: ""; position: absolute; top: -1px; left: 22%; right: 22%; height: 3px; background: var(--red); transform: skewX(-20deg);
+  }
+  .bottom-nav a[aria-current="page"] svg { color: var(--red); }
+
+  /* Zwevende knoppen boven de tabbalk */
+  .fb-btn, .top-btn { bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .fb-panel { bottom: calc(126px + env(safe-area-inset-bottom)); }
+
+  /* Stand past op 360 px */
+  .stand td, .stand th { padding: 6px 6px; }
+  .stand td.t { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .stand tr.nx td.t::after { content: "•"; font-size: 14px; margin-left: 4px; }
+}
+
+/* ---- Team: spelerslijst ---- */
+.plist { display: grid; }
+.pcard {
+  display: grid; align-items: center; gap: 8px 12px; padding: 8px 12px; border-bottom: 1px solid var(--line);
+  grid-template-columns: minmax(150px, 1.4fr) 150px minmax(240px, 2fr) auto;
+}
+.pcard:last-child { border-bottom: 0; }
+.pcard.phead { padding-block: 6px; font-family: var(--f-cond); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 11px; color: var(--muted); }
+.pcard.phead .pstats span { text-align: center; }
+.pcard .pname { background: transparent; font-weight: 600; font-size: 15px; padding-inline: 4px; }
+.pcard .pname:focus { background: var(--surface-2); }
+.pstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.pstats > span { display: grid; justify-items: center; line-height: 1.1; }
+.pstats b { font-size: 17px; display: inline-flex; align-items: center; gap: 3px; }
+.pstats small { display: none; font-family: var(--f-cond); font-weight: 700; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.pstats .zero b { color: #6f6568; }
+.pact { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }
+@media (max-width: 700px) {
+  .pcard.phead { display: none; }
+  .pcard { grid-template-columns: 116px 1fr auto; grid-template-areas: "name name act" "pos stats stats"; padding: 10px; }
+  .pcard .ppos { font-size: 13px; padding-inline: 4px; }
+  .pcard .pname { grid-area: name; }
+  .pcard .ppos { grid-area: pos; }
+  .pcard .pact { grid-area: act; }
+  .pcard .pstats { grid-area: stats; background: #00000033; border-radius: 2px; padding: 6px 4px; }
+  .pstats small { display: block; }
+}

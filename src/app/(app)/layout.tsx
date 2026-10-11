@@ -1,3 +1,4 @@
+import { BottomNav } from "@/components/BottomNav";
 import { DataProvider } from "@/components/DataProvider";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { Footer } from "@/components/Footer";
@@ -21,6 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </DataProvider>
         </main>
       </div>
+      <BottomNav />
     </>
   );
 }

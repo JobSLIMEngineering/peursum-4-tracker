@@ -50,32 +50,25 @@ export default function TeamPage() {
     }
   }
 
+  // Kaartjeslijst: op de laptop als tabel, op de telefoon naam + positie boven en de cijfers eronder
   const table = (list: StoredPlayer[], isLeen: boolean) => (
-    <div className="tbl-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th className="t">Naam</th>
-            <th className="t">Positie</th>
-            <th>Opkomst</th>
-            <th>Goals</th>
-            <th>Assists</th>
-            <th>Kaarten</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {list.length ? (
-            list.map((p) => <PlayerRow key={p.id} p={p} t={totals[p.id]} isLeen={isLeen} update={update} />)
-          ) : (
-            <tr>
-              <td className="t muted" colSpan={7}>
-                Geen spelers.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+    <div className="plist">
+      <div className="pcard phead" aria-hidden="true">
+        <span>Naam</span>
+        <span>Positie</span>
+        <span className="pstats">
+          <span>Opkomst</span>
+          <span>Goals</span>
+          <span>Assists</span>
+          <span>Kaarten</span>
+        </span>
+        <span />
+      </div>
+      {list.length ? (
+        list.map((p) => <PlayerRow key={p.id} p={p} t={totals[p.id]} isLeen={isLeen} update={update} />)
+      ) : (
+        <div className="box-b muted">Geen spelers.</div>
+      )}
     </div>
   );
 
@@ -176,59 +169,67 @@ function PlayerRow({
     void update(p.id, { active: false }, `speler verwijderd: ${playerLabel(p)}`);
   };
 
+  const stat = (label: string, v: number | undefined) => (
+    <span className={v ? "" : "zero"}>
+      <b className="num">{v || "–"}</b>
+      <small>{label}</small>
+    </span>
+  );
+
   return (
-    <tr>
-      <td className="t">
-        <input
-          type="text"
-          aria-label="Naam"
-          value={name}
-          placeholder={p.hiddenNo ? `Afgeschermd ${p.hiddenNo} · naam invullen` : ""}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={saveName}
-          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          style={{ background: "transparent", borderColor: p.name ? "transparent" : "var(--draw)", minWidth: 170 }}
-        />
-      </td>
-      <td className="t" style={{ minWidth: 140 }}>
-        <select
-          aria-label="Positie"
-          value={p.position}
-          onChange={(e) => void update(p.id, { position: e.target.value as Position }, `positie ${playerLabel(p)}: ${e.target.value}`)}
-        >
-          {POSITIONS.map((x) => (
-            <option key={x}>{x}</option>
-          ))}
-        </select>
-      </td>
-      <td>{t?.appearances || "–"}</td>
-      <td>{t?.goals || "–"}</td>
-      <td>{t?.assists || "–"}</td>
-      <td>
-        {t?.yellow ? (
-          <>
-            <span className="ci cy" /> {t.yellow}{" "}
-          </>
-        ) : null}
-        {t?.red ? (
-          <>
-            <span className="ci cr" /> {t.red}
-          </>
-        ) : null}
-        {!t?.yellow && !t?.red && "–"}
-      </td>
-      <td style={{ whiteSpace: "nowrap" }}>
+    <div className="pcard">
+      <input
+        className="pname"
+        type="text"
+        aria-label="Naam"
+        value={name}
+        placeholder={p.hiddenNo ? `Afgeschermd ${p.hiddenNo} · naam invullen` : ""}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={saveName}
+        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        style={{ borderColor: p.name ? "transparent" : "var(--draw)" }}
+      />
+      <select
+        className="ppos"
+        aria-label="Positie"
+        value={p.position}
+        onChange={(e) => void update(p.id, { position: e.target.value as Position }, `positie ${playerLabel(p)}: ${e.target.value}`)}
+      >
+        {POSITIONS.map((x) => (
+          <option key={x}>{x}</option>
+        ))}
+      </select>
+      <span className="pstats">
+        {stat("opkomst", t?.appearances)}
+        {stat("goals", t?.goals)}
+        {stat("assists", t?.assists)}
+        <span className={t?.yellow || t?.red ? "" : "zero"}>
+          <b className="num">
+            {t?.yellow ? (
+              <>
+                <span className="ci cy" /> {t.yellow}{" "}
+              </>
+            ) : null}
+            {t?.red ? (
+              <>
+                <span className="ci cr" /> {t.red}
+              </>
+            ) : null}
+            {!t?.yellow && !t?.red && "–"}
+          </b>
+          <small>kaarten</small>
+        </span>
+      </span>
+      <span className="pact">
         {isLeen && (
-          <>
-            <button className="btn sm" type="button" onClick={() => void update(p.id, { type: "vast" }, `naar selectie: ${playerLabel(p)}`)}>
-              → Selectie
-            </button>{" "}
-          </>
+          <button className="btn sm" type="button" onClick={() => void update(p.id, { type: "vast" }, `naar selectie: ${playerLabel(p)}`)}>
+            → Selectie
+          </button>
         )}
         <button className="btn sm" type="button" aria-label={`Verwijder ${playerLabel(p)}`} onClick={remove}>
           {armed ? "Zeker?" : "×"}
         </button>
-      </td>
-    </tr>
+      </span>
+    </div>
   );
 }

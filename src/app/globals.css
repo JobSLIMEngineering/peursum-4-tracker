@@ -687,3 +687,28 @@ body::before {
 .cc-bar { height: 8px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
 .cc-bar span { display: block; height: 100%; background: #6f6568; }
 .cc-row.us .cc-bar span { background: var(--red); }
+
+/* Elk cijfer altijd met zijn eigen label (geen losse kopjes die bij keepers niet kloppen) */
+.pstats small { display: block; }
+
+/* Kop: eigen donkerrood vlak (geen vonken), los van de achtergrond */
+.head {
+  background: linear-gradient(115deg, #b0141e 0%, #7a0b13 42%, #3a070b 78%, #1c0507 100%);
+  box-shadow: 0 8px 22px #000b;
+}
+.head::before {
+  content: ""; position: absolute; top: -40px; bottom: -40px; right: 14%; width: 26%;
+  background: #00000024; transform: skewX(-22deg); pointer-events: none;
+}
+.head::after { content: none; }
+.brand .logo { color: #fff; text-shadow: 3px 3px 0 #0007; }
+.brand .no {
+  background: #0d0b0c; color: #fff; padding: 0 .22em; margin-left: 2px;
+  box-shadow: 4px 4px 0 #0007; text-shadow: none; transform: skewX(-6deg);
+}
+.matchup { background: #00000038; border-color: #ffffff1a; }
+.matchup:hover { background: #00000055; border-color: #fff6; }
+.mu-when span { color: #f0dcdd; }
+.tabs a { background: #00000030; border-color: #ffffff14; }
+.tabs a:hover { background: #00000050; }
+.tabs a[aria-current="page"] { background: #0d0b0c; border-color: #0d0b0c; box-shadow: 3px 3px 0 #0007; }

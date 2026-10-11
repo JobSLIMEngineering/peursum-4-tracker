@@ -55,20 +55,9 @@ export default function TeamPage() {
     }
   }
 
-  // Kaartjeslijst: op de laptop als tabel, op de telefoon naam + positie boven en de cijfers eronder
+  // Kaartjeslijst: elk cijfer met zijn eigen label eronder (keepers tonen clean sheets en tegengoals)
   const table = (list: StoredPlayer[], isLeen: boolean) => (
     <div className="plist">
-      <div className="pcard phead" aria-hidden="true">
-        <span>Naam</span>
-        <span>Positie</span>
-        <span className="pstats">
-          <span>Opkomst</span>
-          <span>Goals</span>
-          <span>Assists</span>
-          <span>Kaarten</span>
-        </span>
-        <span />
-      </div>
       {list.length ? (
         list.map((p) => <PlayerRow key={p.id} p={p} t={totals[p.id]} isLeen={isLeen} update={update} />)
       ) : (

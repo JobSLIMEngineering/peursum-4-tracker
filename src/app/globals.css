@@ -632,3 +632,21 @@ main.panel::before {
     background: var(--brush) center / 100% 100% no-repeat; opacity: .8;
   }
 }
+
+/* ======================================================================
+   Tussenweg: stijl alleen op de blikvangers, de rest rustig en leesbaar
+   ====================================================================== */
+/* Bloktitels weer smal en strak, met het rode blokje */
+.lbl {
+  font-family: var(--f-cond); font-weight: 800; letter-spacing: .14em; font-size: 13px; text-transform: uppercase;
+  transform: none; padding-bottom: 0;
+}
+.lbl::before { content: ""; width: 12px; height: 12px; background: var(--red); transform: skewX(-18deg); }
+.lbl::after { content: none; }
+.box-h { background: var(--box-head); }
+
+/* Vonken gedempt in de kop en de achtergrond (op volle sterkte alleen in de scoreborden) */
+.head { background: linear-gradient(#070505c4, #070505c4), #070505 var(--texture) center 18% / cover no-repeat; }
+body { background: linear-gradient(#060404b8, #060404b8), #070505 var(--texture) center / cover no-repeat fixed; }
+main.panel { background: #0b0809e6; }
+main.panel::before { opacity: .6; }

@@ -4,8 +4,23 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TABS, tabIndex } from "@/lib/tabs";
 
-/** Hier niet swipen: daar scrol je zelf horizontaal of typ je */
-const NO_SWIPE = "input, textarea, select, .roundbar, .tbl-wrap, .matrix, .share-b, .fb-panel, [data-noswipe]";
+/** Hier nooit swipen */
+const NO_SWIPE = "textarea, select, .fb-panel, [data-noswipe]";
+
+/**
+ * Niet swipen als je in een veld aan het typen bent, of als je begint in iets dat zelf
+ * horizontaal scrolt (zoals de rondebalk). Een naamveld dat je alleen aanraakt telt niet.
+ */
+function blocksSwipe(target: Element | null): boolean {
+  if (!target) return false;
+  if (target.closest(NO_SWIPE)) return true;
+  if (target instanceof HTMLInputElement && target === document.activeElement) return true;
+  for (let el: Element | null = target; el && el !== document.body; el = el.parentElement) {
+    const ox = getComputedStyle(el).overflowX;
+    if ((ox === "auto" || ox === "scroll") && el.scrollWidth > el.clientWidth + 2) return true;
+  }
+  return false;
+}
 
 /**
  * Veeg naar links of rechts om naar de volgende of vorige tab te gaan,
@@ -21,7 +36,7 @@ export function Gestures() {
 
     const onStart = (e: TouchEvent) => {
       const target = e.target as Element | null;
-      if (e.touches.length !== 1 || target?.closest(NO_SWIPE)) {
+      if (e.touches.length !== 1 || blocksSwipe(target)) {
         start = null;
         return;
       }

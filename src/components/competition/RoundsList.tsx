@@ -6,13 +6,14 @@ import { useEffect, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { Score } from "@/components/ui";
 import { predict } from "@/lib/domain/model";
-import { buildRounds, ourMatch, splitRounds, type RoundGroup } from "@/lib/domain/rounds";
+import { buildRounds, isRoundDone, ourMatch, splitRounds, type RoundGroup } from "@/lib/domain/rounds";
 import { isOurs, isPlayed, opponent, ourScore, outcome, US } from "@/lib/domain/types";
 import { fmtDate, pct, todayNL } from "@/lib/format";
 import { hasPrediction, type AppView, type ViewMatch } from "@/lib/store/view";
 
 const OPEN_KEY = "p4-open-rounds";
 const ONLY_OURS_KEY = "p4-only-ours";
+const COLLAPSED_KEY = "p4-collapsed-sections";
 
 function loadOpen(): string[] | null {
   try {
@@ -38,6 +39,7 @@ export function RoundsList() {
   const { upcoming, done, defaultOpen } = splitRounds(groups, todayNL());
   const [open, setOpen] = useState<string[] | null>(null);
   const [onlyOurs, setOnlyOurs] = useState(false);
+  const [collapsed, setCollapsed] = useState<string[]>([]);
 
   // Open/dicht per apparaat onthouden; standaard de eerstvolgende en de laatst gespeelde ronde
   useEffect(() => {
@@ -45,6 +47,7 @@ export function RoundsList() {
       setOpen(loadOpen() ?? defaultOpen);
       try {
         setOnlyOurs(localStorage.getItem(ONLY_OURS_KEY) === "1");
+        setCollapsed(JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? "[]") as string[]);
       } catch {
         // geen opslag: standaard alle wedstrijden tonen
       }
@@ -107,8 +110,23 @@ export function RoundsList() {
       return !v;
     });
 
+  /** Hele blok "Komende" of "Gespeelde rondes" in- of uitklappen (onthouden per apparaat) */
+  const toggleSection = (key: "up" | "done") =>
+    setCollapsed((cur) => {
+      const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key];
+      try {
+        localStorage.setItem(COLLAPSED_KEY, JSON.stringify(next));
+      } catch {
+        // niet onthouden is geen probleem
+      }
+      return next;
+    });
+
   /** Naar een ronde springen vanuit de rondebalk: openklappen en ernaartoe scrollen */
   const jump = (key: string) => {
+    const g = groups.find((x) => x.key === key);
+    const section = g && isRoundDone(g, todayNL()) ? "done" : "up";
+    if (collapsed.includes(section)) toggleSection(section);
     setOpen((cur) => {
       const next = (cur ?? []).includes(key) ? cur! : [...(cur ?? []), key];
       saveOpen(next);
@@ -131,26 +149,30 @@ export function RoundsList() {
     <div className="grid2" style={{ alignItems: "start" }}>
       <section className="box">
         <div className="box-h">
-          <p className="lbl">Komende rondes</p>
+          <SectionToggle label="Komende rondes" count={upcoming.length} closed={collapsed.includes("up")} onClick={() => toggleSection("up")} />
           <button className="btn sm" type="button" onClick={addMatch}>
             + Wedstrijd
           </button>
         </div>
-        <div className="rnds">
-          {upcoming.map((g) => (
-            <Round key={g.key} g={g} view={view} open={open.includes(g.key)} onToggle={toggle} onlyOurs={onlyOurs} />
-          ))}
-        </div>
+        {!collapsed.includes("up") && (
+          <div className="rnds">
+            {upcoming.map((g) => (
+              <Round key={g.key} g={g} view={view} open={open.includes(g.key)} onToggle={toggle} onlyOurs={onlyOurs} />
+            ))}
+          </div>
+        )}
       </section>
       <section className="box">
         <div className="box-h">
-          <p className="lbl">Gespeelde rondes</p>
+          <SectionToggle label="Gespeelde rondes" count={done.length} closed={collapsed.includes("done")} onClick={() => toggleSection("done")} />
         </div>
-        <div className="rnds">
-          {done.map((g) => (
-            <Round key={g.key} g={g} view={view} open={open.includes(g.key)} onToggle={toggle} onlyOurs={onlyOurs} />
-          ))}
-        </div>
+        {!collapsed.includes("done") && (
+          <div className="rnds">
+            {done.map((g) => (
+              <Round key={g.key} g={g} view={view} open={open.includes(g.key)} onToggle={toggle} onlyOurs={onlyOurs} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
     </>
@@ -337,5 +359,27 @@ function RoundBar({
         );
       })}
     </nav>
+  );
+}
+
+/** Kop van een blok die het hele blok in- of uitklapt */
+function SectionToggle({
+  label,
+  count,
+  closed,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  closed: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className="sec-toggle" aria-expanded={!closed} onClick={onClick}>
+      <span className="lbl">
+        {label} <span className="sec-count">{count}</span>
+      </span>
+      <span className={`chev ${closed ? "" : "up"}`} aria-hidden="true" />
+    </button>
   );
 }

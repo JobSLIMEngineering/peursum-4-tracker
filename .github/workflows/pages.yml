@@ -19,14 +19,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm run lint
-      - run: npm run typecheck
+      - run: npx next typegen && npm run typecheck
       - run: npm test
       - name: Bouwen
         run: npm run build

@@ -27,17 +27,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Data ophalen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: repo
 
       - name: App-code ophalen (openbare repository)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: JobSLIMEngineering/peursum-4-tracker
           path: app
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm

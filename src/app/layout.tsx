@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Barlow, Barlow_Condensed, Permanent_Marker } from "next/font/google";
+import { BASE } from "@/lib/base";
 import "./globals.css";
 
 // Logo en grote cijfers
@@ -21,10 +22,10 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Peursum 4", statusBarStyle: "black-translucent" },
   icons: {
     icon: [
-      { url: "/icons/icon.svg", type: "image/svg+xml" },
-      { url: "/icons/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: `${BASE}/icons/icon.svg`, type: "image/svg+xml" },
+      { url: `${BASE}/icons/favicon-48.png`, sizes: "48x48", type: "image/png" },
     ],
-    apple: "/icons/apple-touch-icon.png",
+    apple: `${BASE}/icons/apple-touch-icon.png`,
   },
 };
 

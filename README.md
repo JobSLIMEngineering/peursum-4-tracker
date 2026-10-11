@@ -7,22 +7,34 @@ De opdracht staat in [docs/PLAN.md](docs/PLAN.md) (10 okt 2026). Uiterlijk en in
 volgen [docs/prototype.html](docs/prototype.html); data komt eenmalig uit
 [docs/seed-data.json](docs/seed-data.json). Het oude plan (PDF, 1 okt) is vervangen.
 
-## Techniek
+## Opzet: alles op GitHub
 
-- Next.js 16 (App Router, TypeScript) + Tailwind CSS 4
-- Supabase (Postgres + login via magic link)
-- Vitest voor tests
-- GitHub Actions voor het geplande ophalen van de clubsite (vanaf stap 3)
+| Onderdeel | Waar |
+| --- | --- |
+| App (deze repository, **openbaar**) | GitHub Pages: <https://jobslimengineering.github.io/peursum-4-tracker/> |
+| Gegevens (**privé**) | [`JobSLIMEngineering/peursum-4-data`](https://github.com/JobSLIMEngineering/peursum-4-data), map `data/` met JSON-bestanden |
+| Clubsite ophalen | GitHub Action *Ophalen clubsite* in de data-repository (zaterdag elk uur, zondag 4×, plus "Nu verversen") |
+| Inloggen | Eigen fine-grained GitHub-sleutel per apparaat, alleen toegang tot de data-repository |
+
+Dit wijkt bewust af van PLAN.md §2 (Vercel + Supabase): de eigenaar wil geen extra accounts.
+Wat er in de praktijk anders is:
+
+- Wijzigingen worden binnen een paar seconden opgeslagen als commit in de data-repository.
+- Er is geen inloglink per e-mail; de GitHub-sleutel is de toegang. Kwijt? Intrekken op GitHub.
+- De Supabase-ping op woensdag is niet nodig.
+
+Techniek: Next.js 16 als statische export (geen server), TypeScript, Tailwind 4, Vitest, tsx voor de scraper.
 
 ## Lokaal starten
 
 ```bash
 npm install
-cp .env.example .env.local   # en vul de waarden in
 npm run dev
 ```
 
-Open daarna http://localhost:3000.
+Open http://localhost:3000. Lokaal werkt de app met de seed-data in je browser (zie
+`.env.development`); er gaat niets naar GitHub. Tegen de echte data testen: maak
+`.env.development.local` met `NEXT_PUBLIC_DATA=github`.
 
 ## Scripts
 
@@ -35,7 +47,8 @@ Open daarna http://localhost:3000.
 | `npm run lint`      | ESLint                            |
 | `npm run typecheck` | TypeScript-controle               |
 | `npm run parse:live`| Parser één keer tegen de echte clubsite draaien |
-| `npm run seed:sql`   | `supabase/seed.sql` opnieuw maken uit de seed-data |
+| `npm run sync -- --data <map> [--force]` | Scraper draaien op een lokale kopie van `data/` |
+| `npm run data:init -- <map>` | Inhoud van een nieuwe data-repository klaarzetten |
 | `npm run icons`     | App-iconen opnieuw maken in `public/icons/` |
 
 ## Parser voor de clubsite
@@ -67,33 +80,26 @@ De parser staat in `src/lib/parser/`:
 
 ## Omgevingsvariabelen
 
-Zie [.env.example](.env.example). Geheimen staan alleen in `.env.local` (lokaal) en in
-de instellingen van Vercel en GitHub, nooit in de code.
+| Variabele | Waar | Doel |
+| --- | --- | --- |
+| `NEXT_PUBLIC_BASE_PATH` | GitHub Action *Publiceren* | `/peursum-4-tracker` op GitHub Pages |
+| `NEXT_PUBLIC_DATA` | `.env.development` | `local` = testdata in de browser |
+
+Er staan geen geheimen in de code of in de repositories. De GitHub-sleutel staat alleen in de
+browser van je eigen apparaten.
 
 ## Voortgang (PLAN.md §9)
 
-Vooraf klaar uit het eerste plan: projectopzet, parser clubsite.
+1. [x] **Basis**: kopbalk met 4 tabs, feedbackknop, PWA-manifest en iconen, inloggen met GitHub-sleutel.
+   Nog te doen: online zetten (repository openbaar + Pages aan).
+2. [x] **Data**: beginstand uit seed-data (132 wedstrijden, 20 uitslagen, 12 teams, 22 spelers).
+   Nog te doen: data-repository aanmaken en vullen.
+3. [x] **Overzicht + Competitie**: stand, volgende wedstrijd, per-wedstrijd-statistieken, rondes, wijzigen/toevoegen.
+4. [x] **Team + invoer**: selectie, posities, afgeschermde namen, leenspelers, aanwezigheidslijst, stats.
+5. [x] **Match center**: model, matrix, laatste 3, deelpost.
+6. [x] **Scraper**: `scripts/sync.ts` + Action, snapshots, afleiden van uitslagen, Nu verversen.
 
-1. [ ] **Basis**: kopbalk met 4 tabs, feedbackknop, PWA-manifest en iconen zijn klaar.
-   Nog te doen: Supabase koppelen, login alleen voor de eigenaar, deploy op Vercel.
-2. [ ] **Data**: migratie en seed klaar en getest (PGlite). Nog te doen: uitvoeren in Supabase.
-3. [ ] Overzicht + Competitie
-4. [ ] Team + invoer
-5. [ ] Match center
-6. [ ] Scraper
-
-Rekenregels (winkansmodel, rondes, uitslagen afleiden, aanwezigheidslijst, stats) staan
-al in `src/lib/domain/` en zijn getest tegen het prototype.
-
-## Database
-
-| Bestand | Inhoud |
-| --- | --- |
-| `supabase/migrations/0001_init.sql` | Tabellen (PLAN.md §5.4), feedback, Row Level Security |
-| `supabase/seed.sql` | Eenmalige import, gemaakt met `npm run seed:sql` uit `docs/seed-data.json` |
-| `supabase/schema.test.ts` | Draait beide in PGlite en controleert aantallen en beveiliging |
-
-Toegang: alleen e-mailadressen in de tabel `owners` kunnen data lezen of schrijven.
+Controles uit PLAN.md staan als tests in `src/lib/domain/domain.test.ts` en `src/lib/sync/apply.test.ts`.
 
 ## Toegevoegd aan versie 1 (na het plan)
 

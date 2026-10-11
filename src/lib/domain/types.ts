@@ -1,5 +1,5 @@
 /**
- * Domeintypes: los van de database. De datalaag vertaalt Supabase-rijen naar deze vormen,
+ * Domeintypes: los van de opslag. De datalaag (src/lib/store) vertaalt de JSON-bestanden naar deze vormen,
  * zodat alle rekenregels (model, rondes, stats) zonder database te testen zijn.
  */
 
@@ -85,8 +85,9 @@ export interface MatchEntry {
   opponentOwnGoals: number;
 }
 
-export const isPlayed = (m: Match): m is Match & { homeGoals: number; awayGoals: number } =>
-  m.homeGoals !== null && m.awayGoals !== null;
+export const isPlayed = <T extends Pick<Match, "homeGoals" | "awayGoals">>(
+  m: T,
+): m is T & { homeGoals: number; awayGoals: number } => m.homeGoals !== null && m.awayGoals !== null;
 
 export const isOurs = (m: Pick<Match, "home" | "away">) => m.home === US || m.away === US;
 

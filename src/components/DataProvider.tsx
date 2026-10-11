@@ -48,13 +48,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (LOCAL_MODE) {
-      void open(new LocalStore(initialData(seed as SeedData)));
-      return;
-    }
-    const token = getToken();
-    if (token) void open(new GitHubStore(token));
-    else queueMicrotask(() => setPhase({ kind: "login" }));
+    // Na het eerste renderen: localStorage bestaat alleen in de browser
+    queueMicrotask(() => {
+      if (LOCAL_MODE) return void open(new LocalStore(initialData(seed as SeedData)));
+      const token = getToken();
+      if (token) void open(new GitHubStore(token));
+      else setPhase({ kind: "login" });
+    });
   }, [open]);
 
   const login = useCallback(

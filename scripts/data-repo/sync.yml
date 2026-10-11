@@ -1,0 +1,66 @@
+# Haalt de teampagina van Peursum 4 op en werkt data/ bij (PLAN.md §5.2).
+# Het script beslist zelf of het echt ophaalt (Nederlandse tijd, ronde compleet?).
+name: Ophalen clubsite
+
+on:
+  schedule:
+    # Zaterdag: elk uur 13:00–23:00 Nederlandse tijd (UTC-tijden dekken zomer- en wintertijd)
+    - cron: "5 11-22 * * 6"
+    # Zondag: 08, 12, 16 en 20 uur Nederlandse tijd
+    - cron: "5 6,7,10,11,14,15,18,19 * * 0"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Altijd ophalen (Nu verversen)"
+        default: "true"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Data ophalen
+        uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - name: App-code ophalen (openbare repository)
+        uses: actions/checkout@v4
+        with:
+          repository: JobSLIMEngineering/peursum-4-tracker
+          path: app
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Afhankelijkheden
+        working-directory: app
+        run: npm ci --no-audit --no-fund
+
+      - name: Clubsite verwerken
+        working-directory: app
+        run: npx tsx scripts/sync.ts --data ../repo/data ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
+
+      - name: Opslaan
+        working-directory: repo
+        run: |
+          git config user.name "peursum-4-sync"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "Geen wijzigingen"; exit 0; fi
+          git commit -m "sync: $(jq -r .message data/sync.json | cut -c1-200)"
+          for i in 1 2 3; do
+            git pull --rebase && git push && exit 0
+            sleep 5
+          done
+          exit 1

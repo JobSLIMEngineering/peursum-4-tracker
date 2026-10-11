@@ -9,7 +9,11 @@ export function initialData(seed: SeedData): DataFiles {
       snapshots: [{ fetchedAt: "2026-10-10T18:00:00+02:00", source: "seed", rows: seedStandings(seed) }],
     },
     "matches.json": {
-      matches: seedMatches(seed).map(({ edited: _edited, ...m }) => ({ ...m, id: matchId(m), code: null })),
+      matches: seedMatches(seed).map((m) => {
+        const { edited, ...rest } = m;
+        void edited;
+        return { ...rest, id: matchId(m), code: null };
+      }),
     },
     "players.json": {
       players: seedPlayers(seed).map((p) => ({ ...p, clubName: null })),

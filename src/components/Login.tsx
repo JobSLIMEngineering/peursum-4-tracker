@@ -34,7 +34,7 @@ export function Login({ onLogin, error }: { onLogin: (token: string) => Promise<
           De gegevens staan in je privé repository <b>{DATA_REPO.owner}/{DATA_REPO.repo}</b>. Plak hier één keer
           per apparaat je GitHub-sleutel.
         </p>
-        <ol className="meta" style={{ paddingLeft: 18, lineHeight: 1.6 }}>
+        <ol className="meta steps" style={{ lineHeight: 1.6 }}>
           <li>
             Open{" "}
             <a href={TOKEN_URL} target="_blank" rel="noreferrer" style={{ color: "#fff" }}>

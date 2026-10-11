@@ -84,6 +84,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     queueMicrotask(() => {
       if (LOCAL_MODE) return void open(new LocalStore(initialData(seed as SeedData)));
       const token = getToken();
+      // Deellink (…/?gast): direct als gast kijken, tenzij je op dit apparaat al bent ingelogd
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("gast")) {
+        if (!token) setGuest(true);
+        params.delete("gast");
+        const rest = params.toString();
+        window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : "") + window.location.hash);
+      }
       if (token) void open(new GitHubStore(token));
       else if (isGuest()) void open(new PublicStore());
       else setPhase({ kind: "login" });

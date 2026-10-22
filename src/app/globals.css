@@ -878,15 +878,19 @@ body:has(.savebar) .top-btn { display: none; }
    Nieuws op het Overzicht
    ========================================================================== */
 .news { overflow: hidden; }
-.news-dots { display: flex; gap: 6px; }
+.news-dots { display: flex; justify-content: center; gap: 6px; padding: 0 16px 14px; }
 .news-dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 999px; background: var(--line-strong); cursor: pointer; transition: width .3s var(--ease), background .3s var(--ease); }
 .news-dots button[aria-selected="true"] { width: 18px; background: var(--red); }
-.news-stage { display: grid; padding: 4px 16px 18px; }
+.news-stage { display: grid; padding: 4px 16px 12px; touch-action: pan-y; }
 .news-item {
   grid-area: 1 / 1; display: flex; align-items: center; gap: 14px; min-height: 64px; text-decoration: none; color: inherit;
   opacity: 0; transform: translateX(24px); pointer-events: none; transition: opacity .6s var(--ease), transform .6s var(--ease);
 }
 .news-item.gone { transform: translateX(-24px); }
+/* Terug vegen: nieuw bericht komt van links, het oude gaat naar rechts */
+.news-stage.back .news-item { transform: translateX(-24px); }
+.news-stage.back .news-item.gone { transform: translateX(24px); }
+.news-stage .news-item.on { transform: none; }
 .news-item.on { opacity: 1; transform: none; pointer-events: auto; }
 .news-ico { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; background: var(--surface-2); }
 .news-txt { display: grid; gap: 2px; min-width: 0; }

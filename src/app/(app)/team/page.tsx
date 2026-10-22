@@ -273,7 +273,7 @@ function Tile({
 
   useEffect(() => {
     if (!open) return;
-    const timer = setTimeout(() => ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 400);
+    const timer = setTimeout(() => ref.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 400);
     return () => clearTimeout(timer);
   }, [open]);
 

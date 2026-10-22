@@ -75,7 +75,7 @@ export function Medal({ kind, size = 18, plain = false }: { kind: AwardKey; size
 }
 
 /** Vlam met verloop geel → oranje → rood */
-function Flame({ id }: { id: string }) {
+export function Flame({ id }: { id: string }) {
   return (
     <svg className="fire" viewBox="0 0 24 24" aria-hidden="true">
       <defs>
@@ -95,7 +95,7 @@ function Flame({ id }: { id: string }) {
 }
 
 /** Keeperhandschoen met een vlammetje erboven */
-function Glove({ id }: { id: string }) {
+export function Glove({ id }: { id: string }) {
   return (
     <svg className="fire" viewBox="0 0 24 24" aria-hidden="true">
       <defs>

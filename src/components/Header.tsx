@@ -15,8 +15,6 @@ export function Header() {
           {/* eslint-disable-next-line @next/next/no-img-element -- statische export, geen beeldoptimalisatie */}
           <img className="club" src={`${BASE}/club-logo.png`} alt="VV Peursum" width={191} height={256} />
         </div>
-        {/* Tandwiel met instellingen (gezet door Settings) */}
-        <div id="settings-slot" className="settings-slot" />
       </div>
     </header>
   );

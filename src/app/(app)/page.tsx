@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChampionChance } from "@/components/ChampionChance";
 import { Fireworks } from "@/components/Fireworks";
 import { NewsTicker } from "@/components/NewsTicker";
-import { MatchHero } from "@/components/Prediction";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
@@ -27,8 +26,7 @@ export default function OverzichtPage() {
   return (
     <div className="grid2">
       <div className="stack ovl">
-        {soon && next && <MatchHero match={next} />}
-        <LastMatch view={view} />
+        <MatchPair view={view} startOnNext={soon} />
         <NewsTicker />
 
         <ChampionChance view={view} />
@@ -96,17 +94,72 @@ export default function OverzichtPage() {
 }
 
 
-/** Laatst gespeelde competitiewedstrijd als "UITSLAG"-bord; bij winst vuurwerk (één keer per sessie) */
-function LastMatch({ view }: { view: AppView }) {
+/**
+ * Uitslag en volgende wedstrijd naast elkaar: veeg (of tik op een bolletje) om te wisselen.
+ * Is de volgende wedstrijd binnen 3 dagen, dan staat die vooraan. Bij winst vuurwerk (één keer per sessie).
+ */
+function MatchPair({ view, startOnNext }: { view: AppView; startOnNext: boolean }) {
   const last = lastMatches(view.matches, US, 1)[0];
-  if (!last) return null;
-  const r = outcome(last.goalsFor, last.goalsAgainst);
+  const next = nextMatch(view);
+  const track = useRef<HTMLDivElement>(null);
+  const [cur, setCur] = useState(0);
+  const slides: React.ReactNode[] = [];
+
+  if (last)
+    slides.push(
+      <Link key="last" className="last-match" href={`/competitie/?w=${encodeURIComponent(last.match.id)}`}>
+        {outcome(last.goalsFor, last.goalsAgainst) === "W" && <Fireworks id={`home-${last.match.id}`} />}
+        <ScoreBoard match={last.match} size="compact">
+          <div className="board-meta">{fmtDate(last.match.date).full}</div>
+        </ScoreBoard>
+      </Link>,
+    );
+  if (next?.date)
+    slides.push(
+      <Link key="next" className="last-match" href="/match-center/">
+        <ScoreBoard match={next} size="compact" title="Volgende">
+          <div className="board-meta">
+            {fmtDate(next.date).full}
+            {next.time ? ` · ${next.time}` : ""}
+            {next.home === US ? " · thuis" : " · uit"}
+          </div>
+        </ScoreBoard>
+      </Link>,
+    );
+  if (startOnNext && slides.length === 2) slides.reverse();
+
+  useEffect(() => {
+    const el = track.current;
+    if (!el) return;
+    const onScroll = () => setCur(Math.round(el.scrollLeft / el.clientWidth));
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  if (!slides.length) return null;
   return (
-    <Link className="last-match" href={`/competitie/?w=${encodeURIComponent(last.match.id)}`}>
-      {r === "W" && <Fireworks id={`home-${last.match.id}`} />}
-      <ScoreBoard match={last.match} size="compact">
-        <div className="board-meta">{fmtDate(last.match.date).full}</div>
-      </ScoreBoard>
-    </Link>
+    <div className="pair">
+      <div className="pair-track" ref={track}>
+        {slides.map((x, i) => (
+          <div key={i} className="pair-slide">
+            {x}
+          </div>
+        ))}
+      </div>
+      {slides.length > 1 && (
+        <div className="news-dots pair-dots" role="tablist" aria-label="Uitslag of volgende wedstrijd">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={i === cur}
+              aria-label={i === (startOnNext ? 1 : 0) ? "Laatste uitslag" : "Volgende wedstrijd"}
+              onClick={() => track.current?.scrollTo({ left: i * track.current.clientWidth, behavior: "smooth" })}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

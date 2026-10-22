@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MORE, TABS, tabIndex } from "@/lib/tabs";
+import { SettingsPanel } from "./Settings";
 
 const ICON = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;
 
@@ -42,6 +43,7 @@ export function Dock() {
   const path = usePathname();
   const active = tabIndex(path);
   const [more, setMore] = useState<"closed" | "open" | "closing">("closed");
+  const [settings, setSettings] = useState(false);
 
   const close = () => {
     if (more !== "open") return;
@@ -50,7 +52,10 @@ export function Dock() {
   };
 
   useEffect(() => {
-    queueMicrotask(() => setMore("closed"));
+    queueMicrotask(() => {
+      setMore("closed");
+      setSettings(false);
+    });
   }, [path]);
 
   useEffect(() => {
@@ -65,17 +70,48 @@ export function Dock() {
 
   return createPortal(
     <>
-      {more !== "closed" && <div className="scrim clear" onClick={close} />}
+      {(more !== "closed" || settings) && (
+        <div
+          className={`scrim ${settings ? "" : "clear"}`}
+          onClick={() => {
+            close();
+            setSettings(false);
+          }}
+        />
+      )}
       {more !== "closed" && (
-        <nav className={`more-bar glass ${more === "closing" ? "closing" : ""}`} aria-label="Meer schermen">
+        // Rechts boven elkaar, boven de knop Meer
+        <nav className={`more-stack ${more === "closing" ? "closing" : ""}`} aria-label="Meer">
           {MORE.map((m, i) => (
-            <Link key={m.href} href={m.href} aria-current={active === TABS.length + i ? "page" : undefined} onClick={close}>
-              {MORE_ICONS[i]}
+            <Link
+              key={m.href}
+              href={m.href}
+              className="glass"
+              style={{ animationDelay: `${(MORE.length - i) * 40}ms` }}
+              aria-current={active === TABS.length + i ? "page" : undefined}
+              onClick={close}
+            >
               <span>{m.label}</span>
+              {MORE_ICONS[i]}
             </Link>
           ))}
+          <button
+            type="button"
+            className="glass"
+            onClick={() => {
+              setMore("closed");
+              setSettings(true);
+            }}
+          >
+            <span>Instellingen</span>
+            <svg {...ICON}>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+            </svg>
+          </button>
         </nav>
       )}
+      {settings && <SettingsPanel onClose={() => setSettings(false)} />}
 
       <nav className="dock glass" aria-label="Schermen">
         <span className="dock-ind" style={{ transform: `translateX(${ind * 100}%)` }} aria-hidden="true" />

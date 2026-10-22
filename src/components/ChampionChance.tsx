@@ -32,6 +32,8 @@ export function ChampionChance({ view }: { view: AppView }) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4);
   const us = out.champion[US] ?? 0;
+  // Groen bij een goede kans, oranje bij een redelijke, rood bij een kleine
+  const tone = (p: number) => (p >= 0.5 ? "hi" : p >= 0.2 ? "mid" : "lo");
 
   return (
     <Box
@@ -44,7 +46,7 @@ export function ChampionChance({ view }: { view: AppView }) {
       }
     >
       <div className="cc-main">
-        <span className="cc-pct num">{pct(us)}%</span>
+        <span className={`cc-pct num ${tone(us)}`}>{pct(us)}%</span>
         <span className="meta">
           Top 3: <b>{pct(out.top3[US] ?? 0)}%</b>
           <br />
@@ -58,7 +60,7 @@ export function ChampionChance({ view }: { view: AppView }) {
               <TeamLogo team={team} size={16} />
               <span>{team}</span>
             </span>
-            <span className="cc-bar" aria-hidden="true">
+            <span className={`cc-bar ${tone(p)}`} aria-hidden="true">
               <span style={{ width: `${Math.max(2, p * 100)}%` }} />
             </span>
             <span className="num">{p < 0.01 ? "<1" : pct(p)}%</span>

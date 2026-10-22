@@ -19,6 +19,8 @@ export interface NewsItem {
   text?: string;
   /** Speler om een shirtje bij te tonen */
   playerId?: string;
+  /** On fire: vlam (scorer) of handschoen met vuur (keeper) in plaats van een shirtje */
+  fire?: "scorer" | "keeper";
   href?: string;
 }
 
@@ -113,7 +115,7 @@ export function buildNews(i: NewsInput): NewsItem[] {
 
   // --- On fire ---
   for (const [id, list] of Object.entries(i.streaks))
-    for (const s of list) out.push({ key: `vuur-${id}-${s.kind}`, kind: "vuur", kicker: "On fire", title: i.label(id), text: s.reason, playerId: id });
+    for (const s of list) out.push({ key: `vuur-${id}-${s.kind}`, kind: "vuur", kicker: "On fire", title: i.label(id), text: s.reason, playerId: id, fire: s.kind });
 
   return out;
 }

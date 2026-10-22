@@ -6,6 +6,7 @@ import { buildNews, type NewsKind } from "@/lib/domain/news";
 import { playerLabel } from "@/lib/domain/types";
 import { todayNL } from "@/lib/format";
 import { useData } from "./DataProvider";
+import { Flame, Glove } from "./Badges";
 import { Shirt } from "./Shirt";
 
 const ICON: Record<NewsKind, string> = {
@@ -18,7 +19,7 @@ const ICON: Record<NewsKind, string> = {
   vuur: "🔥",
 };
 
-const EVERY = 4000;
+const EVERY = 5500;
 
 /** Nieuws: berichtjes die om de beurt rustig voorbij komen (tik op een bolletje om te kiezen) */
 export function NewsTicker() {
@@ -106,7 +107,17 @@ export function NewsTicker() {
           const p = n.playerId ? view.players.find((x) => x.id === n.playerId) : undefined;
           const body = (
             <>
-              {p ? <Shirt player={p} size={44} /> : <span className="news-ico" aria-hidden="true">{ICON[n.kind]}</span>}
+              {n.fire ? (
+                <span className="news-ico fire" aria-hidden="true">
+                  {n.fire === "keeper" ? <Glove id={`ng-${n.key}`} /> : <Flame id={`nf-${n.key}`} />}
+                </span>
+              ) : p ? (
+                <Shirt player={p} size={44} />
+              ) : (
+                <span className="news-ico" aria-hidden="true">
+                  {ICON[n.kind]}
+                </span>
+              )}
               <span className="news-txt">
                 <span className={`k news-k ${n.kind}`}>{n.kicker}</span>
                 <b>{n.title}</b>

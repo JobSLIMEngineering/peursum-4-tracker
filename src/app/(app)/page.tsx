@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChampionChance } from "@/components/ChampionChance";
 import { Fireworks } from "@/components/Fireworks";
+import { OnFire } from "@/components/OnFire";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
@@ -30,7 +31,17 @@ export default function OverzichtPage() {
             return (
               <div className="top" key={k}>
                 <div className="k">{k === "goals" ? "Topscorer" : "Topassist"}</div>
-                <div className="who">{l.value ? l.players.map(playerLabel).join(", ") : "Nog niets ingevoerd"}</div>
+                <div className="who">
+                  {l.value
+                    ? l.players.map((p, i) => (
+                        <span key={p.id}>
+                          {i > 0 && ", "}
+                          {playerLabel(p)}
+                          <OnFire playerId={p.id} />
+                        </span>
+                      ))
+                    : "Nog niets ingevoerd"}
+                </div>
                 {l.value > 0 && <div className="num">{l.value}</div>}
               </div>
             );

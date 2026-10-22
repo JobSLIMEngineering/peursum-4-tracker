@@ -1,4 +1,5 @@
 import { fit, knownResults, type Fit } from "@/lib/domain/model";
+import { hotStreaks, type Streak } from "@/lib/domain/streaks";
 import { isPlayed, opponent, US, type Match, type MatchEntry, type StandingRow } from "@/lib/domain/types";
 import type { DataFiles, Snapshot, StoredMatch, StoredPlayer } from "./schema";
 
@@ -14,6 +15,8 @@ export interface AppView {
   model: Fit;
   pool: Set<string>;
   logos: Record<string, string>;
+  /** Spelers die "on fire" zijn (vlammetje / handschoen met vuur) */
+  streaks: Record<string, Streak[]>;
 }
 
 const strip = ({ code, ...m }: StoredMatch) => ({ m, code });
@@ -51,6 +54,7 @@ export function buildView(files: DataFiles): AppView {
     model: fit(standings, knownResults(matches, standings)),
     pool: new Set(standings.map((s) => s.team)),
     logos: files["logos.json"]?.logos ?? {},
+    streaks: hotStreaks(matches, files["entries.json"].entries),
   };
 }
 

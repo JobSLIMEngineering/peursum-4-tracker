@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { sortPlayers } from "@/components/competition/EntryForm";
 import { useData } from "@/components/DataProvider";
+import { OnFire } from "@/components/OnFire";
 import { Box } from "@/components/ui";
 import { playerTotals, type PlayerTotals } from "@/lib/domain/stats";
 import { playerLabel, POSITIONS, type Position } from "@/lib/domain/types";
@@ -119,7 +120,9 @@ export default function TeamPage() {
                 const t = totals[p.id];
                 return (
                   <tr key={p.id}>
-                    <td className="t">{playerLabel(p)}</td>
+                    <td className="t">
+                      {playerLabel(p)} <OnFire playerId={p.id} />
+                    </td>
                     <td className="pts">{t.goals || "–"}</td>
                     <td>{t.goals - t.penalties - t.freeKicks || "–"}</td>
                     <td>{t.penalties || "–"}</td>
@@ -152,7 +155,9 @@ export default function TeamPage() {
                 const k = totals[p.id];
                 return (
                   <tr key={p.id}>
-                    <td className="t">{playerLabel(p)}</td>
+                    <td className="t">
+                      {playerLabel(p)} <OnFire playerId={p.id} />
+                    </td>
                     <td>{k?.keeperGames || "–"}</td>
                     <td>{k?.keeperGames ? <b className="num cs">{k.cleanSheets}</b> : "–"}</td>
                     <td>{k?.keeperGames ? k.goalsAgainst : "–"}</td>
@@ -191,6 +196,7 @@ function PlayerRow({
     return () => clearTimeout(timer);
   }, [armed]);
 
+  const [editing, setEditing] = useState(false);
   const saveName = () => {
     const n = name.trim();
     if (n && n !== p.name) void update(p.id, { name: n }, `naam: ${n}`);
@@ -213,18 +219,32 @@ function PlayerRow({
   return (
     <div className={`pcard ${p.injured ? "injured" : ""}`}>
       <div className="pname-wrap">
-        <input
-          className="pname"
-          type="text"
-          aria-label="Naam"
-          readOnly={readOnly}
-          value={name}
-          placeholder={p.hiddenNo ? (readOnly ? `Afgeschermde speler ${p.hiddenNo}` : `Afgeschermd ${p.hiddenNo} · naam invullen`) : ""}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={saveName}
-          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          style={{ borderColor: p.name || readOnly ? "transparent" : "var(--draw)" }}
-        />
+        {editing || (!p.name && !readOnly) ? (
+          <input
+            className="pname"
+            type="text"
+            aria-label="Naam"
+            autoFocus={editing}
+            value={name}
+            placeholder={p.hiddenNo ? `Afgeschermd ${p.hiddenNo} · naam invullen` : ""}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => {
+              saveName();
+              setEditing(false);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+            style={{ borderColor: p.name ? "var(--line)" : "var(--draw)" }}
+          />
+        ) : (
+          <span
+            className={`pname-text ${p.name ? "" : "muted"}`}
+            onClick={() => !readOnly && setEditing(true)}
+            title={readOnly ? undefined : "Tik om de naam aan te passen"}
+          >
+            {playerLabel(p)}
+          </span>
+        )}
+        <OnFire playerId={p.id} />
         {p.injured && <span className="inj-badge">geblesseerd</span>}
       </div>
       <select

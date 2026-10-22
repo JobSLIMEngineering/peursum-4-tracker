@@ -123,14 +123,14 @@ describe("prijzen", () => {
   const get = (k: string) => awards.find((a) => a.key === k)!;
 
   it("Gouden Schoen en Assistkoning tellen goals en assists", () => {
-    expect(get("schoen").leader).toBe("a");
+    expect(get("schoen").leaders).toEqual(["a"]);
     expect(get("schoen").rows[0]).toMatchObject({ display: "4", unit: "goals", detail: "in 5 duels" });
-    expect(get("assist").leader).toBe("b");
+    expect(get("assist").leaders).toEqual(["b"]);
   });
 
   it("Gouden Handschoen: meeste clean sheets, vanaf 2 duels op doel", () => {
     const h = get("handschoen");
-    expect(h.leader).toBe("k");
+    expect(h.leaders).toEqual(["k"]);
     expect(h.rows[0]).toMatchObject({ display: "2", unit: "clean sheets" });
     // 2 tegen in 3 duels = 0,67 per duel: beter dan Y (0,8), dus de beste van de poule
     expect(h.compare).toMatchObject({ rank: 1, teams: 3, best: { team: "Y", perGame: 0.8 } });
@@ -141,8 +141,15 @@ describe("prijzen", () => {
   });
 
   it("Beste Middenvelder pas met genoeg duels", () => {
-    expect(get("mvm").leader).toBe("m");
-    expect(get("muur").leader).toBeNull();
+    expect(get("mvm").leaders).toEqual(["m"]);
+    expect(get("muur").leaders).toEqual([]);
+  });
+
+  it("gelijkstand bovenaan = gedeelde koplopers", () => {
+    const tie = [row("m1", 2, 0, ["a", "b"], { a: st(1), b: st(1) })];
+    const s = computeAwards([pl("a"), pl("b")], tie).find((x) => x.key === "schoen")!;
+    expect(s.leaders.sort()).toEqual(["a", "b"]);
+    expect(prizeLeads([s])).toEqual({ a: ["schoen"], b: ["schoen"] });
   });
 
   it("icoontjes voor koplopers", () => {

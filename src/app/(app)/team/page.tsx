@@ -83,7 +83,7 @@ export default function TeamPage() {
   return (
     <>
       <div className="sec-h">
-        <p className="lbl">Selectie</p>
+        <p className="lbl big">Selectie</p>
         <span className="meta">{vast.length} spelers · tik voor stats</span>
       </div>
       {tiles(vast)}

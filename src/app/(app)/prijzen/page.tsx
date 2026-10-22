@@ -29,7 +29,7 @@ export default function PrijzenPage() {
   return (
     <>
       <div className="sec-h">
-        <p className="lbl">Prijzenrace</p>
+        <p className="lbl big">Prijzenrace</p>
         <span className="meta">na {view.rows.length} ingevoerde duels</span>
       </div>
       <div className="awards">
@@ -43,9 +43,9 @@ export default function PrijzenPage() {
 
 function AwardCard({ a, byId }: { a: Award; byId: Map<string, StoredPlayer> }) {
   const [open, setOpen] = useState(false);
-  const leadRow = a.rows.find((r) => r.playerId === a.leader);
-  const lead = a.leader ? byId.get(a.leader) : undefined;
-  const rest = a.rows.filter((r) => r.playerId !== a.leader).slice(0, 4);
+  const leads = a.leaders.map((id) => ({ p: byId.get(id), r: a.rows.find((r) => r.playerId === id)! })).filter((x) => x.p);
+  const shared = leads.length > 1;
+  const rest = a.rows.filter((r) => !a.leaders.includes(r.playerId)).slice(0, 4);
 
   return (
     <section className="box award">
@@ -58,17 +58,21 @@ function AwardCard({ a, byId }: { a: Award; byId: Map<string, StoredPlayer> }) {
         <InfoTip label={`Hoe werkt ${a.title}?`}>{a.how}</InfoTip>
       </div>
 
-      {lead && leadRow ? (
+      {leads.length ? (
         <div className="award-lead">
-          <Shirt player={lead} size={56} />
+          <span className="award-shirts">
+            {leads.slice(0, 3).map(({ p }) => (
+              <Shirt key={p!.id} player={p!} size={shared ? 44 : 56} />
+            ))}
+          </span>
           <div>
-            <div className="k">Koploper</div>
-            <div className="name">{playerLabel(lead)}</div>
-            <div className="meta">{leadRow.detail}</div>
+            <div className="k">{shared ? `Gedeelde koplopers (${leads.length})` : "Koploper"}</div>
+            <div className="name">{leads.map(({ p }) => playerLabel(p)).join(" & ")}</div>
+            {!shared && <div className="meta">{leads[0].r.detail}</div>}
           </div>
           <div className="val">
-            <span className="num">{leadRow.display}</span>
-            <small>{leadRow.unit}</small>
+            <span className="num">{leads[0].r.display}</span>
+            <small>{leads[0].r.unit}</small>
           </div>
         </div>
       ) : (
@@ -88,7 +92,8 @@ function AwardCard({ a, byId }: { a: Award; byId: Map<string, StoredPlayer> }) {
               <div className="award-rows">
                 {rest.map((r) => {
                   const p = byId.get(r.playerId);
-                  const rank = a.rows.indexOf(r) + 1;
+                  // Gedeelde plek: zelfde nummer als wie hetzelfde getal heeft
+                  const rank = a.rows.findIndex((x) => x.display === r.display) + 1;
                   return (
                     <div key={r.playerId} className={`arow ${r.eligible ? "" : "out"}`}>
                       <span className="rank">{rank}</span>

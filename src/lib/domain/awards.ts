@@ -98,8 +98,8 @@ export interface Award {
   how: string;
   /** Meedingers, beste eerst */
   rows: AwardRow[];
-  /** Koploper (alleen als die mag meedingen) */
-  leader: string | null;
+  /** Koploper(s): meer dan één bij een gedeelde eerste plek (alleen wie mag meedingen) */
+  leaders: string[];
   /** Bij de Gouden Handschoen: hoe de koploper zich verhoudt tot de rest van de competitie */
   compare?: KeeperCompare;
 }
@@ -139,13 +139,15 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
   const kept = (id: string) => rows.filter((r) => r.entry.keeperId === id);
   const games = (id: string) => impact[id].games;
   const inGames = (id: string) => `in ${games(id)} ${plural(games(id), "duel", "duels")}`;
-  // Bij gelijkstand gaat wie er minder wedstrijden voor nodig had voor
+  // Volgorde in de lijst bij gelijkstand: wie er minder wedstrijden voor nodig had eerst
   const tiebreak = (id: string) => 0.001 / Math.max(1, games(id));
 
-  const make = (a: Omit<Award, "leader" | "rows">, list: AwardRow[]): Award => {
+  const make = (a: Omit<Award, "leaders" | "rows">, list: AwardRow[]): Award => {
     const rowsSorted = list.filter((r) => r.eligible || r.value !== 0).sort((x, y) => y.value - x.value);
     const top = rowsSorted.find((r) => r.eligible);
-    return { ...a, rows: rowsSorted, leader: top?.playerId ?? null };
+    // Zelfde getal = gedeelde koploper (de volgorde binnen een gelijkstand is alleen voor de lijst)
+    const leaders = top ? rowsSorted.filter((r) => r.eligible && r.display === top.display).map((r) => r.playerId) : [];
+    return { ...a, rows: rowsSorted, leaders };
   };
 
   const count = (key: "goals" | "assists", unit: [string, string]) =>
@@ -175,7 +177,7 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
       key: "handschoen",
       title: "Gouden Handschoen",
       who: "Keepers · meeste clean sheets",
-      how: "Clean sheets als keeper. Bij gelijkstand wint wie per duel de minste tegengoals kreeg. Meedingen vanaf 2 duels op doel.",
+      how: "Clean sheets als keeper. Evenveel = gedeelde koploper. Meedingen vanaf 2 duels op doel.",
     },
     keepers.map(({ p, k, cs, ga }) => ({
       playerId: p.id,
@@ -186,16 +188,16 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
       eligible: k.length >= 2,
     })),
   );
-  const lead = keepers.find((x) => x.p.id === handschoen.leader);
+  const lead = keepers.find((x) => x.p.id === handschoen.leaders[0]);
   if (lead) handschoen.compare = keeperCompare(lead.ga / lead.k.length, standings);
 
   return [
     make(
-      { key: "schoen", title: "Gouden Schoen", who: "Meeste goals", how: "Alle competitiegoals. Bij gelijkstand gaat wie minder duels speelde voor." },
+      { key: "schoen", title: "Gouden Schoen", who: "Meeste goals", how: "Alle competitiegoals. Evenveel goals = gedeelde koploper." },
       count("goals", ["goal", "goals"]),
     ),
     make(
-      { key: "assist", title: "Assistkoning", who: "Meeste assists", how: "Alle assists in de competitie. Bij gelijkstand gaat wie minder duels speelde voor." },
+      { key: "assist", title: "Assistkoning", who: "Meeste assists", how: "Alle assists in de competitie. Evenveel assists = gedeelde koploper." },
       count("assists", ["assist", "assists"]),
     ),
     handschoen,
@@ -257,6 +259,6 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
 /** Prijzen waar een speler koploper van is (voor de icoontjes) */
 export function prizeLeads(awards: Award[]): Record<string, AwardKey[]> {
   const out: Record<string, AwardKey[]> = {};
-  for (const a of awards) if (a.leader) (out[a.leader] ??= []).push(a.key);
+  for (const a of awards) for (const id of a.leaders) (out[id] ??= []).push(a.key);
   return out;
 }

@@ -109,8 +109,8 @@ function LastMatch({ view }: { view: AppView }) {
 
 /** Koplopers van de prijzen, compact; tik = Prijzen */
 function PrizeRace({ view }: { view: AppView }) {
-  const leaders = view.awards.filter((a) => a.leader).slice(0, 4);
-  if (!leaders.length) return null;
+  const races = view.awards.filter((a) => a.leaders.length).slice(0, 4);
+  if (!races.length) return null;
   return (
     <Box
       label="Prijzenrace"
@@ -122,18 +122,25 @@ function PrizeRace({ view }: { view: AppView }) {
       bodyClass={null}
     >
       <div className="race" style={{ paddingBottom: 6 }}>
-        {leaders.map((a) => {
-          const p = view.players.find((x) => x.id === a.leader);
-          const r = a.rows.find((x) => x.playerId === a.leader)!;
-          if (!p) return null;
+        {races.map((a) => {
+          const ps = a.leaders.map((id) => view.players.find((x) => x.id === id)).filter((p) => !!p);
+          const r = a.rows.find((x) => x.playerId === a.leaders[0])!;
+          if (!ps.length) return null;
           return (
             <Link key={a.key} href="/prijzen/" className="race-row">
               <Medal kind={a.key} size={28} />
               <span className="who">
-                <Shirt player={p} size={30} />
+                <span className="race-shirts">
+                  {ps.slice(0, 2).map((p) => (
+                    <Shirt key={p.id} player={p} size={30} />
+                  ))}
+                </span>
                 <span>
-                  <b>{playerLabel(p)}</b>
-                  <small>{a.title}</small>
+                  <b>{ps.length > 1 ? ps.map((p) => playerLabel(p).split(" ")[0]).join(" & ") : playerLabel(ps[0])}</b>
+                  <small>
+                    {a.title}
+                    {ps.length > 1 && " · gedeeld"}
+                  </small>
                 </span>
               </span>
               <span className="num">

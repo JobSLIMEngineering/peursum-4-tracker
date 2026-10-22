@@ -36,7 +36,11 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
   const { view, mutate } = useData();
   const [us, them] = ourScore(match)!;
   const existing = view.entries[match.id];
-  const [draft, setDraft] = useState<EntryDraft>(() => toDraft(existing, us));
+  // Nieuwe invoer: wie in de spelerslijst op geblesseerd staat, staat hier al als geblesseerd
+  const [draft, setDraft] = useState<EntryDraft>(() => {
+    const d = toDraft(existing, us);
+    return existing ? d : { ...d, injured: view.players.filter((p) => p.active && p.injured).map((p) => p.id) };
+  });
   const [busy, setBusy] = useState(false);
   // Welke doelpuntregel openstaat; standaard de eerste die nog leeg is
   const [openGoal, setOpenGoal] = useState<number | null>(() => {

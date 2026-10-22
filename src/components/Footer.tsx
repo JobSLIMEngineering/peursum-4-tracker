@@ -59,11 +59,6 @@ export function Footer() {
             Nu verversen
           </button>
         )}
-        {store.kind === "github" && (
-          <button className="link" type="button" onClick={logout}>
-            Uitloggen op dit apparaat
-          </button>
-        )}
       </div>
       {msg && <div style={{ marginTop: 4 }}>{msg}</div>}
     </footer>

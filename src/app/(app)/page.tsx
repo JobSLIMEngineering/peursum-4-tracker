@@ -1,31 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ChampionChance } from "@/components/ChampionChance";
 import { Fireworks } from "@/components/Fireworks";
-import { Medal } from "@/components/Badges";
-import { Shirt } from "@/components/Shirt";
+import { NewsTicker } from "@/components/NewsTicker";
+import { MatchHero } from "@/components/Prediction";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
 import { Box } from "@/components/ui";
 import { lastMatches, perMatchStats } from "@/lib/domain/stats";
-import { opponent, outcome, playerLabel, US } from "@/lib/domain/types";
-import { fmtDate, shortDate } from "@/lib/format";
+import { opponent, outcome, US } from "@/lib/domain/types";
+import { fmtDate, kickoff, shortDate } from "@/lib/format";
 import { nextMatch, type AppView } from "@/lib/store/view";
 
 export default function OverzichtPage() {
   const { view } = useData();
   const next = nextMatch(view);
   const opp = next ? opponent(next) : null;
+  // De volgende wedstrijd pas op het Overzicht als hij echt dichtbij is (3 dagen of minder)
+  const [now] = useState(() => Date.now());
+  const soon = !!next?.date && kickoff(next.date, next.time).getTime() - now < 3 * 864e5;
   const per = perMatchStats(view.standings);
 
   return (
     <div className="grid2">
       <div className="stack ovl">
+        {soon && next && <MatchHero match={next} />}
         <LastMatch view={view} />
-
-        <PrizeRace view={view} />
+        <NewsTicker />
 
         <ChampionChance view={view} />
 
@@ -104,53 +108,5 @@ function LastMatch({ view }: { view: AppView }) {
         <div className="board-meta">{fmtDate(last.match.date).full}</div>
       </ScoreBoard>
     </Link>
-  );
-}
-
-/** Koplopers van de prijzen, compact; tik = Prijzen */
-function PrizeRace({ view }: { view: AppView }) {
-  const races = view.awards.filter((a) => a.leaders.length).slice(0, 4);
-  if (!races.length) return null;
-  return (
-    <Box
-      label="Prijzenrace"
-      right={
-        <Link className="link" href="/prijzen/">
-          Alle prijzen
-        </Link>
-      }
-      bodyClass={null}
-    >
-      <div className="race" style={{ paddingBottom: 6 }}>
-        {races.map((a) => {
-          const ps = a.leaders.map((id) => view.players.find((x) => x.id === id)).filter((p) => !!p);
-          const r = a.rows.find((x) => x.playerId === a.leaders[0])!;
-          if (!ps.length) return null;
-          return (
-            <Link key={a.key} href="/prijzen/" className="race-row">
-              <Medal kind={a.key} size={28} />
-              <span className="who">
-                <span className="race-shirts">
-                  {ps.slice(0, 2).map((p) => (
-                    <Shirt key={p.id} player={p} size={30} />
-                  ))}
-                </span>
-                <span>
-                  <b>{ps.length > 1 ? ps.map((p) => playerLabel(p).split(" ")[0]).join(" & ") : playerLabel(ps[0])}</b>
-                  <small>
-                    {a.title}
-                    {ps.length > 1 && " · gedeeld"}
-                  </small>
-                </span>
-              </span>
-              <span className="num">
-                {r.display}
-                <small>{r.unit}</small>
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </Box>
   );
 }

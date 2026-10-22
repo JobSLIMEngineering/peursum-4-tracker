@@ -176,7 +176,7 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
     {
       key: "handschoen",
       title: "Gouden Handschoen",
-      who: "Keepers · meeste clean sheets",
+      who: "Meeste clean sheets",
       how: "Clean sheets als keeper. Evenveel = gedeelde koploper. Meedingen vanaf 2 duels op doel.",
     },
     keepers.map(({ p, k, cs, ga }) => ({
@@ -205,11 +205,12 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
       {
         key: "muur",
         title: "IJzeren Muur",
-        who: "Verdedigers · minder tegen dan verwacht",
+        who: "Minder tegen dan verwacht",
         how: `Hoeveel tegengoals we per duel minder kregen dan het model verwachtte (tegen deze tegenstanders), als hij meedeed. Wedstrijden waarin hij geblesseerd was tellen niet. Meedingen vanaf ${MIN_GAMES} duels en de helft van de duels waarin hij fit was.`,
       },
+      // Alleen vaste spelers, en alleen wie er iets bijdraagt (geen minnen in de lijst)
       active
-        .filter((p) => p.position === "Verdediger")
+        .filter((p) => p.position === "Verdediger" && p.type === "vast" && impact[p.id].defenceImpact > 0)
         .map((p) => ({
           playerId: p.id,
           value: impact[p.id].defenceImpact,
@@ -223,11 +224,11 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
       {
         key: "mvm",
         title: "Beste Middenvelder",
-        who: "Middenvelders · punten boven verwachting",
+        who: "Meer punten dan verwacht",
         how: `Hoeveel punten we per duel méér haalden dan verwacht met hem erbij, vergeleken met zonder hem. Wedstrijden waarin hij geblesseerd was tellen niet. Meedingen vanaf ${MIN_GAMES} duels en de helft van de duels waarin hij fit was.`,
       },
       active
-        .filter((p) => p.position === "Middenvelder")
+        .filter((p) => p.position === "Middenvelder" && p.type === "vast" && impact[p.id].pointsImpact > 0)
         .map((p) => ({
           playerId: p.id,
           value: impact[p.id].pointsImpact,
@@ -238,7 +239,7 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
         })),
     ),
     make(
-      { key: "kaarten", title: "Kaartenkoning", who: "Voor de lol · geel 1, rood 3 punten", how: "Gele kaart 1 punt, rode kaart (ook via twee keer geel) 3 punten." },
+      { key: "kaarten", title: "Kaartenkoning", who: "Geel 1, rood 3 punten", how: "Gele kaart 1 punt, rode kaart (ook via twee keer geel) 3 punten." },
       active.map((p) => {
         const y = sum(p.id, (r) => (r.entry.stats[p.id]?.yellow && !r.entry.stats[p.id]?.red ? 1 : 0));
         const red = sum(p.id, (r) => (r.entry.stats[p.id]?.red ? 1 : 0));

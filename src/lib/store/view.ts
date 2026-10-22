@@ -1,4 +1,4 @@
-import { computeAwards, gameRows, playerImpacts, prizeLeads, type Award, type AwardKey, type GameRow, type PlayerImpact } from "@/lib/domain/awards";
+import { computeAwards, gameRows, keeperCompare, playerImpacts, prizeLeads, type Award, type AwardKey, type GameRow, type PlayerImpact } from "@/lib/domain/awards";
 import { fit, knownResults, type Fit } from "@/lib/domain/model";
 import { hotStreaks, type Streak } from "@/lib/domain/streaks";
 import { isPlayed, opponent, US, type Match, type MatchEntry, type StandingRow } from "@/lib/domain/types";
@@ -24,8 +24,10 @@ export interface AppView {
   /** Prijzen waar een speler koploper van is */
   leads: Record<string, AwardKey[]>;
   impacts: Record<string, PlayerImpact>;
-  /** Geblesseerd bij de laatst ingevoerde wedstrijd (pleistertje) */
+  /** Geblesseerd: bij de laatst ingevoerde wedstrijd of nu op geblesseerd gezet (pleistertje) */
   injuredLast: Set<string>;
+  /** Keepers met de minste tegengoals per duel van de hele competitie (geel shirt; anders groen) */
+  goldKeepers: Set<string>;
 }
 
 const strip = ({ code, ...m }: StoredMatch) => ({ m, code });
@@ -75,7 +77,17 @@ export function buildView(files: DataFiles): AppView {
     awards,
     leads: prizeLeads(awards),
     impacts: playerImpacts(players, rows),
-    injuredLast: new Set(rows.at(-1)?.entry.injured ?? []),
+    injuredLast: new Set([...(rows.at(-1)?.entry.injured ?? []), ...players.filter((p) => p.active && p.injured).map((p) => p.id)]),
+    goldKeepers: new Set(
+      players
+        .filter((p) => {
+          const kept = rows.filter((r) => r.entry.keeperId === p.id);
+          if (kept.length < 2) return false;
+          const ga = kept.reduce((n, r) => n + (r.match.home === US ? r.match.awayGoals! : r.match.homeGoals!), 0);
+          return keeperCompare(ga / kept.length, standings).rank === 1;
+        })
+        .map((p) => p.id),
+    ),
   };
 }
 

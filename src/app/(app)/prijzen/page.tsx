@@ -6,7 +6,7 @@ import { useData } from "@/components/DataProvider";
 import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
 import type { Award, KeeperCompare } from "@/lib/domain/awards";
-import { playerLabel, US } from "@/lib/domain/types";
+import { playerLabel } from "@/lib/domain/types";
 import type { StoredPlayer } from "@/lib/store/schema";
 
 const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
@@ -59,24 +59,36 @@ function AwardCard({ a, byId }: { a: Award; byId: Map<string, StoredPlayer> }) {
       </div>
 
       {leads.length ? (
-        <div className="award-lead">
-          <span className="award-shirts">
-            {leads.slice(0, 3).map(({ p }) => (
-              <Shirt key={p!.id} player={p!} size={shared ? 44 : 56} />
-            ))}
-          </span>
-          <div>
-            <div className="k">{shared ? `Gedeelde koplopers (${leads.length})` : "Koploper"}</div>
-            <div className="name">{leads.map(({ p }) => playerLabel(p)).join(" & ")}</div>
-            {!shared && <div className="meta">{leads[0].r.detail}</div>}
-          </div>
+        <div className={`award-lead ${shared ? "shared" : ""}`}>
+          {shared ? (
+            // Gedeeld: elke koploper als eigen kaartje naast elkaar, het getal één keer
+            <div className="co-leads">
+              <div className="k">Gedeeld eerste</div>
+              <div className="co-list">
+                {leads.map(({ p }) => (
+                  <span key={p!.id} className="co">
+                    <Shirt player={p!} size={44} />
+                    <span>{playerLabel(p)}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              <Shirt player={leads[0].p!} size={56} />
+              <div>
+                <div className="k">Koploper</div>
+                <div className="name">{playerLabel(leads[0].p)}</div>
+              </div>
+            </>
+          )}
           <div className="val">
             <span className="num">{leads[0].r.display}</span>
             <small>{leads[0].r.unit}</small>
           </div>
         </div>
       ) : (
-        <div className="award-empty">Nog geen koploper: nog niemand heeft genoeg duels of iets gepresteerd.</div>
+        <div className="award-empty">Nog geen koploper.</div>
       )}
 
       {a.compare && <Compare c={a.compare} />}
@@ -100,7 +112,6 @@ function AwardCard({ a, byId }: { a: Award; byId: Map<string, StoredPlayer> }) {
                       {p ? <Shirt player={p} size={28} /> : <span />}
                       <span className="who">
                         <b>{playerLabel(p)}</b>
-                        <small>{r.eligible ? r.detail : `${r.detail} · nog te weinig duels`}</small>
                       </span>
                       <span className="num">
                         {r.display}
@@ -119,40 +130,12 @@ function AwardCard({ a, byId }: { a: Award; byId: Map<string, StoredPlayer> }) {
   );
 }
 
-/** Gouden Handschoen: hoe onze keeper het doet tegenover de verdedigingen van de rest van de poule */
+/** Gouden Handschoen: korte regel hoe onze keeper het doet tegenover de rest van de competitie */
 function Compare({ c }: { c: KeeperCompare }) {
-  const best = c.best;
   return (
-    <p className="award-cmp">
-      <span aria-hidden="true">🏟️</span>
-      <span>
-        {c.rank === 1 ? (
-          <>
-            <b>Beste van de competitie:</b> {comma(c.perGame)} tegen per duel
-            {best && (
-              <>
-                , de beste andere verdediging ({best.team}) krijgt er {comma(best.perGame)}
-              </>
-            )}
-            .
-          </>
-        ) : (
-          <>
-            <b>
-              {c.rank}e van {c.teams}
-            </b>{" "}
-            als je zijn {comma(c.perGame)} tegen per duel naast de verdedigingen van de poule legt
-            {best && (
-              <>
-                {" "}
-                (beste: {best.team}, {comma(best.perGame)})
-              </>
-            )}
-            .
-          </>
-        )}{" "}
-        <span className="muted">Van andere teams is alleen het totaal bekend, niet per keeper. {US} zelf telt niet mee.</span>
-      </span>
+    <p className={`award-cmp ${c.rank === 1 ? "top" : ""}`}>
+      {c.rank === 1 ? "Beste keeper van de competitie" : `${c.rank}e van ${c.teams} in de competitie`}
+      <span className="num">{comma(c.perGame)} tegen/duel</span>
     </p>
   );
 }

@@ -1,10 +1,17 @@
+"use client";
+
 import type { Player } from "@/lib/domain/types";
+import { useData } from "./DataProvider";
 
-type ShirtPlayer = Pick<Player, "name" | "position" | "type" | "number" | "hiddenNo">;
+type ShirtPlayer = Pick<Player, "id" | "name" | "position" | "type" | "number" | "hiddenNo">;
 
-/** Kleuren: spelers rood met wit nummer, keeper geel met zwart, leenspelers grijs met zwart */
-function colors(p: ShirtPlayer) {
-  if (p.position === "Keeper") return { top: "#ffd21f", bottom: "#e0a800", trim: "#1b1315", text: "#1b1315" };
+/**
+ * Kleuren: spelers rood met wit nummer; keeper geel met zwart nummer als hij de beste keeper van
+ * de competitie is, anders groen; leenspelers grijs met zwart nummer.
+ */
+function colors(p: ShirtPlayer, gold: boolean) {
+  if (p.position === "Keeper" && gold) return { top: "#ffd21f", bottom: "#e0a800", trim: "#1b1315", text: "#1b1315" };
+  if (p.position === "Keeper") return { top: "#3fcf6e", bottom: "#1d9a48", trim: "#0f2a18", text: "#0f2a18" };
   if (p.type === "leen") return { top: "#b4b6ba", bottom: "#8a8c91", trim: "#4a4c50", text: "#1b1315" };
   return { top: "#e3262f", bottom: "#a3121c", trim: "#ffffff", text: "#ffffff" };
 }
@@ -17,19 +24,30 @@ function initials(name: string | null): string {
   return (first + last).toUpperCase();
 }
 
+/** Achternaam voor op de rug: het laatste woord met een hoofdletter ("van der Linden" → LINDEN) */
+function surname(name: string | null): string | null {
+  if (!name) return null;
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return null;
+  return parts.at(-1)!.toUpperCase();
+}
+
 /**
- * Achterkant van een kort shirtje met het rugnummer (of initialen zonder nummer, "?" voor een
+ * Achterkant van een kort shirtje met achternaam en rugnummer (of initialen zonder nummer, "?" voor een
  * afgeschermde speler). Vervangt een foto: niets persoonlijks online.
  */
 export function Shirt({ player, size = 48 }: { player: ShirtPlayer; size?: number }) {
-  const c = colors(player);
-  const label = player.number != null ? String(player.number) : initials(player.name);
-  const isNumber = player.number != null;
-  const fs = isNumber ? (label.length > 1 ? 34 : 38) : label.length > 1 ? 24 : 30;
+  const { view } = useData();
+  const c = colors(player, view.goldKeepers.has(player.id));
+  const hasNo = player.number != null;
+  const label = hasNo ? String(player.number) : initials(player.name);
+  // Achternaam alleen als het shirt groot genoeg is om hem te lezen
+  const name = size >= 44 ? surname(player.name) : null;
+  const fs = hasNo ? (label.length > 1 ? 36 : 40) : label.length > 1 ? 26 : 32;
   const id = `sh-${c.top.slice(1)}`;
 
   return (
-    <svg className="shirt" viewBox="0 0 100 100" width={size} height={size} role="img" aria-label={isNumber ? `Rugnummer ${label}` : `Shirt ${label}`}>
+    <svg className="shirt" viewBox="0 0 100 100" width={size} height={size} role="img" aria-label={hasNo ? `Rugnummer ${label}` : `Shirt ${label}`}>
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={c.top} />
@@ -54,7 +72,21 @@ export function Shirt({ player, size = 48 }: { player: ShirtPlayer; size?: numbe
       {/* Kraag en mouwboorden */}
       <path d="M36 9c4 3 9 4.5 14 4.5S60 12 64 9" fill="none" stroke={c.trim} strokeWidth="3.5" strokeLinecap="round" />
       <path d="M96 35l-14 8.5M4 35l14 8.5" stroke={c.trim} strokeWidth="3.5" strokeLinecap="round" />
-      <text x="50" y={isNumber ? 67 : 63} textAnchor="middle" dominantBaseline="middle" fontSize={fs} fill={c.text} letterSpacing="-1">
+      {name && (
+        <text
+          x="50"
+          y="31"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="11"
+          fill={c.text}
+          letterSpacing=".5"
+          {...(name.length > 8 ? { textLength: 46, lengthAdjust: "spacingAndGlyphs" } : {})}
+        >
+          {name}
+        </text>
+      )}
+      <text x="50" y={name ? 60 : 56} textAnchor="middle" dominantBaseline="middle" fontSize={fs} fill={c.text} letterSpacing="-1">
         {label}
       </text>
     </svg>

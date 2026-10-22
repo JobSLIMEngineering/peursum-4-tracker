@@ -46,6 +46,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body>
         <Script id="theme" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/* Bliksemachtergrond met lichtgolf */}
+        <div className="sky" aria-hidden="true">
+          <i />
+          <i />
+        </div>
         {children}
       </body>
     </html>

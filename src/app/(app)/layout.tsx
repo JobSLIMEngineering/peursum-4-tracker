@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { HeaderMatchup } from "@/components/HeaderMatchup";
 import { PageTransition } from "@/components/PageTransition";
 import { SaveStatus } from "@/components/SaveStatus";
+import { Settings } from "@/components/Settings";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,6 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Footer />
             <Gestures />
             <Dock />
+            <Settings />
           </DataProvider>
         </main>
       </div>

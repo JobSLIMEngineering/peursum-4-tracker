@@ -27,7 +27,10 @@ const GLYPH: Record<AwardKey, React.ReactNode> = {
     </>
   ),
   handschoen: (
-    <path d="M7 21v-8.5L5 9.8l1-1 3 2.2V5a1.1 1.1 0 0 1 2.2 0v5V4a1.1 1.1 0 0 1 2.2 0v6V5a1.1 1.1 0 0 1 2.2 0v6V8a1.1 1.1 0 0 1 2.2 0v6.5c0 4-2.4 6.5-6.2 6.5z" />
+    <>
+      <path d="M7.5 17.5 5 13.2a1.4 1.4 0 0 1 2.4-1.4l1.1 1.7V6a1.3 1.3 0 0 1 2.6 0v5.5V4.5a1.3 1.3 0 0 1 2.6 0v7V5.5a1.3 1.3 0 0 1 2.6 0v6.5-4a1.3 1.3 0 0 1 2.6 0v7.5c0 1.6-.6 2.8-1.5 3.5" />
+      <path d="M7.5 17.5h11.4V22H7.5z" />
+    </>
   ),
   muur: <path d="M3 5h18v14H3zM3 9.7h18M3 14.3h18M9 5v4.7M15 5v4.7M6 9.7v4.6M12 9.7v4.6M18 9.7v4.6M9 14.3V19M15 14.3V19" />,
   mvm: <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />,
@@ -39,28 +42,35 @@ const GLYPH: Record<AwardKey, React.ReactNode> = {
   ),
 };
 
-/** Gouden medaille met het teken van een prijs; `plain` = alleen het teken */
+/** Gouden medaille aan een rood-wit lint, met het teken van de prijs erin; `plain` = alleen het teken */
 export function Medal({ kind, size = 18, plain = false }: { kind: AwardKey; size?: number; plain?: boolean }) {
-  const svg = (
-    <svg
-      viewBox="0 0 24 24"
-      width={plain ? size * 0.6 : size * 0.62}
-      height={plain ? size * 0.6 : size * 0.62}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={plain ? 2 : 2.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {GLYPH[kind]}
-    </svg>
-  );
-  if (plain) return svg;
+  if (plain)
+    return (
+      <svg viewBox="0 0 24 24" width={size * 0.6} height={size * 0.6} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {GLYPH[kind]}
+      </svg>
+    );
+  const id = `md-${kind}`;
   return (
-    <span className="medal" style={{ width: size, height: size }} aria-hidden="true">
-      {svg}
-    </span>
+    <svg className="medal" viewBox="0 0 32 32" width={size} height={size} aria-hidden="true">
+      <defs>
+        <radialGradient id={id} cx=".35" cy=".3" r=".8">
+          <stop offset="0" stopColor="#fff4c2" />
+          <stop offset=".45" stopColor="#f4c542" />
+          <stop offset="1" stopColor="#a8770f" />
+        </radialGradient>
+      </defs>
+      {/* Lint */}
+      <path d="M9 0h6l3.5 11h-6z" fill="#e1242f" />
+      <path d="M23 0h-6l-3.5 11h6z" fill="#a3121c" />
+      <path d="M12.2 0h1.4l3.4 11h-1.4z" fill="#fff" opacity=".85" />
+      {/* Penning */}
+      <circle cx="16" cy="20.5" r="10.5" fill={`url(#${id})`} stroke="#8a6209" strokeWidth=".8" />
+      <circle cx="16" cy="20.5" r="8.2" fill="none" stroke="#fff3c4" strokeOpacity=".55" strokeWidth=".8" />
+      <g transform="translate(16 20.5) scale(.5) translate(-12 -12)" fill="none" stroke="#5b3f05" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+        {GLYPH[kind]}
+      </g>
+    </svg>
   );
 }
 
@@ -106,7 +116,7 @@ function Glove({ id }: { id: string }) {
   );
 }
 
-/** Pleister: geblesseerd bij de laatste wedstrijd */
+/** Pleister: geblesseerd */
 export function Plaster({ size = 18 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
@@ -145,7 +155,7 @@ export function Badges({ playerId }: { playerId: string }) {
   const reasons = [
     ...streaks.map((s) => ({ key: s.kind, icon: s.kind === "keeper" ? "🧤" : "🔥", text: `On fire: ${s.reason}` })),
     ...leads.map((k) => ({ key: k, icon: "🏆", text: `Koploper ${AWARD_TITLE[k]}` })),
-    ...(hurt ? [{ key: "hurt", icon: "🩹", text: "Geblesseerd bij de laatste wedstrijd" }] : []),
+    ...(hurt ? [{ key: "hurt", icon: "🩹", text: "Geblesseerd" }] : []),
   ];
 
   return (

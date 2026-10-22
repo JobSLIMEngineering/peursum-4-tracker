@@ -198,38 +198,56 @@ function Round({
 }) {
   const shown = onlyOurs ? g.matches.filter(isOurs) : g.matches;
   const side = g.kind !== "ronde";
-  const title = g.kind === "ronde" ? `Ronde ${g.round}` : g.kind === "inhaal" ? "Inhaal" : "Extra";
-  const badge = g.kind === "ronde" ? g.round : g.kind === "inhaal" ? "IN" : "+";
+  const o = ourMatch(g);
+  const label = g.kind === "ronde" ? `Ronde ${g.round}` : g.kind === "inhaal" ? "Inhaal" : "Extra";
+  const main = (
+    <>
+      <span className="rn" aria-label={label}>
+        {g.kind === "ronde" ? g.round : g.kind === "inhaal" ? "IN" : "+"}
+      </span>
+      <span className="rt">
+        <span className="rd">{g.date ? fmtDate(g.date).full : "datum onbekend"}</span>
+        <span className="rl">
+          <Summary g={g} view={view} />
+        </span>
+      </span>
+    </>
+  );
 
   return (
-    <details
-      id={`ronde-${g.key}`}
-      className={`rnd${side ? " side" : ""}`}
-      open={open}
-      onToggle={(e) => {
-        const isOpen = (e.currentTarget as HTMLDetailsElement).open;
-        if (isOpen !== open) onToggle(g.key, isOpen);
-      }}
-    >
-      <summary>
-        <span className="rn">{badge}</span>
-        <span className="rt">
-          <span className="rd">
-            {title} · {g.date ? fmtDate(g.date).full : "datum onbekend"}
-          </span>
-          <span className="rl">
-            <Summary g={g} view={view} />
-          </span>
-        </span>
-        <span className="chev" aria-hidden="true" />
-      </summary>
-      <div className="rnd-b">
-        {shown.map((m) => (
-          <MatchRow key={m.id} m={m as ViewMatch} view={view} />
-        ))}
-        {!shown.length && <div className="prow2 muted">Peursum 4 speelt deze ronde niet.</div>}
+    <div id={`ronde-${g.key}`} className={`rnd${side ? " side" : ""}${open ? " open" : ""}`}>
+      <div className="rnd-row">
+        {/* Grootste deel: direct naar onze wedstrijd; het pijltje rechts klapt de hele ronde open */}
+        {o ? (
+          <Link className="rnd-main" href={`/competitie/?w=${encodeURIComponent(o.id)}`}>
+            {main}
+          </Link>
+        ) : (
+          <button type="button" className="rnd-main" onClick={() => onToggle(g.key, !open)}>
+            {main}
+          </button>
+        )}
+        <button
+          type="button"
+          className="rnd-exp"
+          aria-expanded={open}
+          aria-label={`${open ? "Verberg" : "Toon"} alle wedstrijden van ${label.toLowerCase()}`}
+          onClick={() => onToggle(g.key, !open)}
+        >
+          <span className="chev" aria-hidden="true" />
+        </button>
       </div>
-    </details>
+      <div className={`reveal ${open ? "on" : ""}`}>
+        <div>
+          <div className="rnd-b">
+            {shown.map((m) => (
+              <MatchRow key={m.id} m={m as ViewMatch} view={view} />
+            ))}
+            {!shown.length && <div className="prow2 muted">Peursum 4 speelt deze ronde niet.</div>}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

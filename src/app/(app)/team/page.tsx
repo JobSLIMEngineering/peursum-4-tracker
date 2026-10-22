@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { todayNL } from "@/lib/format";
 import { Badges, AWARD_TITLE } from "@/components/Badges";
 import { sortPlayers } from "@/components/competition/EntryForm";
 import { useData } from "@/components/DataProvider";
@@ -13,13 +14,41 @@ import { playerLabel, POSITIONS, type Position } from "@/lib/domain/types";
 import type { StoredPlayer } from "@/lib/store/schema";
 
 const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
-const signed = (x: number) => (x >= 0 ? "+" : "−") + comma(Math.abs(x));
 
-/** Laat een wijziging in de tegels soepel verlopen (groeien/verschuiven) waar de browser dat kan */
-function withTransition(fn: () => void) {
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-  if (!doc.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) return fn();
-  doc.startViewTransition(() => flushSync(fn));
+const EASE = "cubic-bezier(.2,.8,.2,1)";
+
+/**
+ * Tegels soepel laten groeien, krimpen en verschuiven (FLIP): posities voor de wijziging onthouden,
+ * de wijziging doorvoeren en elke tegel vanaf zijn oude plek en maat terug laten bewegen.
+ * Alleen transform en opacity, zodat het ook op een telefoon vloeiend loopt.
+ */
+function flip(fn: () => void) {
+  const tiles = () => [...document.querySelectorAll<HTMLElement>("[data-tile]")];
+  const before = new Map(tiles().map((el) => [el.dataset.tile!, el.getBoundingClientRect()]));
+  flushSync(fn);
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  for (const el of tiles()) {
+    const a = before.get(el.dataset.tile!);
+    if (!a) continue;
+    const b = el.getBoundingClientRect();
+    const dx = a.left - b.left;
+    const dy = a.top - b.top;
+    const sx = a.width / b.width;
+    const sy = a.height / b.height;
+    const resized = Math.abs(sx - 1) > 0.01 || Math.abs(sy - 1) > 0.01;
+    if (!resized && Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+    el.animate(
+      [
+        { transformOrigin: "0 0", transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` },
+        { transformOrigin: "0 0", transform: "none" },
+      ],
+      { duration: 380, easing: EASE },
+    );
+    // De inhoud van een tegel die van maat verandert even laten invagen (anders zie je hem uitrekken)
+    if (resized)
+      for (const child of el.children)
+        (child as HTMLElement).animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], { duration: 380, easing: "ease-out" });
+  }
 }
 
 /** Spelers: tegels (2 per rij op de telefoon) die uitvouwen naar 2×2 met alle stats */
@@ -39,7 +68,7 @@ export default function TeamPage() {
   const [name, setName] = useState("");
   const [pos, setPos] = useState<Position>("Onbekend");
 
-  const toggle = (id: string | null) => withTransition(() => setOpen((o) => (o === id ? null : id)));
+  const toggle = (id: string | null) => flip(() => setOpen((o) => (o === id ? null : id)));
 
   const update = (id: string, patch: Partial<StoredPlayer>, msg: string) =>
     mutate("players.json", (f) => ({ players: f.players.map((p) => (p.id === id ? { ...p, ...patch } : p)) }), msg);
@@ -72,19 +101,18 @@ export default function TeamPage() {
     </div>
   );
 
-  // Met of zonder: alleen voor de eigenaar (kan gevoelig liggen)
-  const impact = readOnly
-    ? []
-    : players
-        .filter((p) => view.impacts[p.id]?.games)
-        .sort((a, b) => view.impacts[b.id].pointsImpact - view.impacts[a.id].pointsImpact);
-  const maxImp = Math.max(0.3, ...impact.map((p) => Math.abs(view.impacts[p.id].pointsImpact)));
+  // Met hem erbij: alleen vaste spelers met genoeg duels en een plus (nooit minnen laten zien)
+  const impact = vast
+    .filter((p) => view.impacts[p.id]?.eligible && view.impacts[p.id].pointsImpact > 0)
+    .sort((a, b) => view.impacts[b.id].pointsImpact - view.impacts[a.id].pointsImpact)
+    .slice(0, 5);
+  const maxImp = Math.max(0.3, ...impact.map((p) => view.impacts[p.id].pointsImpact));
 
   return (
     <>
       <div className="sec-h">
         <p className="lbl">Selectie</p>
-        <span className="meta">{vast.length} spelers · tik voor stats</span>
+        <span className="meta">{vast.length}</span>
       </div>
       {tiles(vast)}
 
@@ -92,7 +120,7 @@ export default function TeamPage() {
         <>
           <div className="sec-h">
             <p className="lbl">Leenspelers</p>
-            <span className="meta">via de aanwezigheidslijst</span>
+            <span className="meta">{leen.length}</span>
           </div>
           {tiles(leen)}
         </>
@@ -121,7 +149,7 @@ export default function TeamPage() {
       )}
 
       <div className="grid2" style={{ marginTop: 16 }}>
-        <Box label="Doelpunten" right={<span className="meta">per soort</span>} bodyClass={scorers.length ? "tbl-wrap" : "box-b muted"}>
+        <Box label="Doelpunten" bodyClass={scorers.length ? "tbl-wrap" : "box-b muted"}>
           {scorers.length ? (
             <table className="compact">
               <thead>
@@ -157,7 +185,7 @@ export default function TeamPage() {
           )}
         </Box>
 
-        <Box label="Keepers" right={<span className="meta">wie stond er op doel</span>} bodyClass={keepers.length ? "tbl-wrap" : "box-b muted"}>
+        <Box label="Keepers" bodyClass={keepers.length ? "tbl-wrap" : "box-b muted"}>
           {keepers.length ? (
             <table className="compact">
               <thead>
@@ -194,28 +222,26 @@ export default function TeamPage() {
 
       {impact.length > 0 && (
         <Box
-          label="Met of zonder"
+          label="Met hem erbij"
           style={{ marginTop: 16 }}
           bodyClass={null}
           right={
             <InfoTip label="Wat betekent dit?">
-              Punten per duel boven wat het model verwachtte (tegen deze tegenstanders) als hij er was, vergeleken met
-              als hij er niet was. Duels waarin hij geblesseerd was tellen niet. Afgevlakt, zodat een paar duels geen
-              gekke uitschieters geven. Alleen zichtbaar als je bent ingelogd.
+              Hoeveel punten per duel we meer halen dan verwacht als hij er is, vergeleken met als hij er niet is.
+              Duels waarin hij geblesseerd was tellen niet.
             </InfoTip>
           }
         >
           <div className="impact" style={{ paddingBottom: 8 }}>
             {impact.map((p) => {
               const i = view.impacts[p.id];
-              const w = (Math.abs(i.pointsImpact) / maxImp) * 50;
               return (
-                <div key={p.id} className={`imp-row ${i.eligible ? "" : "few"}`}>
+                <div key={p.id} className="imp-row">
                   <span>{playerLabel(p)}</span>
                   <span className="imp-bar" aria-hidden="true">
-                    <span className={i.pointsImpact >= 0 ? "up" : "down"} style={{ width: `${w}%` }} />
+                    <span style={{ width: `${(i.pointsImpact / maxImp) * 100}%` }} />
                   </span>
-                  <span className="num">{signed(i.pointsImpact)}</span>
+                  <span className="num">+{comma(i.pointsImpact, 2)}</span>
                 </div>
               );
             })}
@@ -243,7 +269,6 @@ function Tile({
   const [editing, setEditing] = useState(false);
   const ref = useRef<HTMLElement>(null);
   const keeper = p.position === "Keeper" || (t?.keeperGames ?? 0) > (t?.appearances ?? 0) / 2;
-  const style = { viewTransitionName: `tile-${p.id}` } as React.CSSProperties;
   const cls = `tile ${p.type === "leen" ? "leen" : ""} ${p.position === "Keeper" ? "keeper" : ""}`;
 
   useEffect(() => {
@@ -266,7 +291,7 @@ function Tile({
         role="button"
         tabIndex={0}
         className={cls}
-        style={style}
+        data-tile={p.id}
         onClick={onToggle}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle())}
         aria-expanded="false"
@@ -297,7 +322,6 @@ function Tile({
     );
   }
 
-  const i = view.impacts[p.id];
   const leads = view.leads[p.id] ?? [];
   const streaks = view.streaks[p.id] ?? [];
   const cards = (t?.yellow ?? 0) + (t?.red ?? 0);
@@ -309,7 +333,14 @@ function Tile({
   );
 
   return (
-    <article ref={ref} className={`${cls} open ${editing ? "editing" : ""}`} style={style} aria-label={playerLabel(p)}>
+    <article
+      ref={ref}
+      className={`${cls} open ${editing ? "editing" : ""}`}
+      data-tile={p.id}
+      aria-label={playerLabel(p)}
+      // Nog een keer tikken = weer klein (behalve op knoppen en velden)
+      onClick={(e) => !editing && !(e.target as Element).closest("button, input, select, label, a, form") && onToggle()}
+    >
       <button type="button" className="tile-close" aria-label="Inklappen" onClick={onToggle}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
           <path d="M6 6l12 12M18 6 6 18" />
@@ -331,7 +362,7 @@ function Tile({
       </div>
 
       {editing ? (
-        <EditForm p={p} update={update} onDone={() => withTransition(() => setEditing(false))} />
+        <EditForm p={p} update={update} onDone={() => setEditing(false)} />
       ) : (
         <>
           <div className="tile-stats">
@@ -368,25 +399,30 @@ function Tile({
                 <span aria-hidden="true">🏆</span> Koploper <b>{AWARD_TITLE[k]}</b>
               </div>
             ))}
-            {!readOnly && i?.games ? (
+            {p.injured && (
               <div>
-                <span aria-hidden="true">📈</span>
-                <span>
-                  Met hem erbij{" "}
-                  <b className={i.pointsImpact >= 0 ? "up" : "down"}>{signed(i.pointsImpact)} pnt/duel</b> t.o.v. zonder
-                </span>
+                <span aria-hidden="true">🩹</span> Geblesseerd
               </div>
-            ) : null}
-            {!readOnly && i?.injured ? (
-              <div>
-                <span aria-hidden="true">🩹</span> {i.injured}× geblesseerd (telt niet mee)
-              </div>
-            ) : null}
+            )}
           </div>
           {!readOnly && (
             <div className="tile-actions">
-              <button className="btn sm" type="button" onClick={() => withTransition(() => setEditing(true))}>
+              <button className="btn sm" type="button" onClick={() => setEditing(true)}>
                 Bewerken
+              </button>
+              <button
+                className={`btn sm ${p.injured ? "primary" : ""}`}
+                type="button"
+                aria-pressed={!!p.injured}
+                onClick={() =>
+                  void update(
+                    p.id,
+                    p.injured ? { injured: false, recoveredAt: todayNL() } : { injured: true },
+                    `${p.injured ? "weer fit" : "geblesseerd"}: ${playerLabel(p)}`,
+                  )
+                }
+              >
+                {p.injured ? "Weer fit" : "Geblesseerd"}
               </button>
             </div>
           )}

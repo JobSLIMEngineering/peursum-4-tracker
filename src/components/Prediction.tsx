@@ -1,6 +1,7 @@
 "use client";
 
 import { predict, verdict, type Verdict } from "@/lib/domain/model";
+import { InfoTip } from "./InfoTip";
 import { ScoreBoard } from "./ScoreBoard";
 import { TeamLogo } from "./TeamLogo";
 import { lastMatches } from "@/lib/domain/stats";
@@ -30,7 +31,18 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
   return (
     <>
       <div className="grid2">
-        <Box label="Voorspelling" right={<span className={`tag ${VERDICT_CLASS[v]}`}>{v}</span>}>
+        <Box
+          label="Voorspelling"
+          right={
+            <span className="tname">
+              <span className={`tag ${VERDICT_CLASS[v]}`}>{v}</span>
+              <InfoTip label="Hoe werkt de voorspelling?">
+                Het model schat per team aanvals- en verdedigingssterkte uit goals voor en tegen, gecorrigeerd voor hoe
+                sterk de tegenstanders waren. Elke nieuwe speelronde maakt dit scherper. Thuisvoordeel: +10%.
+              </InfoTip>
+            </span>
+          }
+        >
           <div className="probs">
             <div className="prob us">
               <div className="num">{pct(p.win)}%</div>
@@ -76,7 +88,10 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
           </div>
         </Box>
 
-        <Box label="Uitslagmatrix" right={<span className="meta">kans per uitslag</span>}>
+        <Box
+          label="Uitslagmatrix"
+          right={<InfoTip>Kans per uitslag in %. Rood = winst, geel = gelijk, grijs = verlies.</InfoTip>}
+        >
           <div className="axis">
             <span>↓ Peursum 4</span>
             <span>{opp} →</span>
@@ -111,14 +126,16 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
               }),
             ])}
           </div>
-          <p className="meta" style={{ margin: "8px 0 0" }}>
-            Rood = winst, geel = gelijk, grijs = verlies. Getallen in %.
-          </p>
         </Box>
 
         <Box
           label="Laatste 3 · Peursum 4"
-          right={<span className="meta">{ours.map((x) => OUTCOME_NL[outcome(x.goalsFor, x.goalsAgainst)]).join(" ")}</span>}
+          right={
+            <span className="tname">
+              <span className="meta">{ours.map((x) => OUTCOME_NL[outcome(x.goalsFor, x.goalsAgainst)]).join(" ")}</span>
+              <InfoTip>Het getal links is de huidige positie van de tegenstander.</InfoTip>
+            </span>
+          }
         >
           {ours.map((x) => {
             const pos = standingOf(view, x.opponent)?.position;
@@ -136,9 +153,6 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
               </div>
             );
           })}
-          <p className="meta" style={{ margin: "8px 0 0" }}>
-            Het getal links is de huidige positie van de tegenstander.
-          </p>
         </Box>
 
         <Box
@@ -175,13 +189,6 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
           )}
         </Box>
       </div>
-      <section className="box" style={{ marginTop: 14 }}>
-        <div className="box-b meta">
-          Het model schat per team aanvals- en verdedigingssterkte uit goals voor en tegen. Daarbij telt mee hoe sterk
-          de tegenstanders waren: 6 goals tegen de nummer 10 tellen minder dan 6 tegen de nummer 3. Elke nieuwe
-          speelronde maakt dit scherper. Thuisvoordeel: +10%.
-        </div>
-      </section>
     </>
   );
 }

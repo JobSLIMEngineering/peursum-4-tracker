@@ -5,6 +5,7 @@ import { simulateSeason, type SeasonOutlook } from "@/lib/domain/season";
 import { US } from "@/lib/domain/types";
 import { pct } from "@/lib/format";
 import type { AppView } from "@/lib/store/view";
+import { InfoTip } from "./InfoTip";
 import { TeamLogo } from "./TeamLogo";
 import { Box } from "./ui";
 
@@ -33,7 +34,15 @@ export function ChampionChance({ view }: { view: AppView }) {
   const us = out.champion[US] ?? 0;
 
   return (
-    <Box label="Kampioenskans" right={<span className="meta">nog {out.remaining} duels</span>}>
+    <Box
+      label="Kampioenskans"
+      right={
+        <InfoTip label="Hoe wordt dit berekend?">
+          De {out.remaining} nog te spelen poulewedstrijden zijn 5.000 keer nagespeeld met het winkansmodel. Vroeg in
+          het seizoen is dit nog grof; met elke ronde wordt het nauwkeuriger.
+        </InfoTip>
+      }
+    >
       <div className="cc-main">
         <span className="cc-pct num">{pct(us)}%</span>
         <span className="meta">
@@ -56,10 +65,6 @@ export function ChampionChance({ view }: { view: AppView }) {
           </div>
         ))}
       </div>
-      <p className="meta" style={{ margin: "8px 0 0" }}>
-        Het restant van het seizoen 5.000 keer nagespeeld met het winkansmodel. Vroeg in het seizoen is dit nog grof;
-        met elke ronde wordt het nauwkeuriger.
-      </p>
     </Box>
   );
 }

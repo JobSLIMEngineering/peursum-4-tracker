@@ -723,3 +723,17 @@ body::before {
 @media (max-width: 700px) {
   .pcard .pname-wrap { grid-area: name; }
 }
+
+/* ⓘ-uitleg */
+.info { position: relative; display: inline-flex; }
+.info-btn {
+  width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--muted); background: none; color: var(--muted);
+  font-family: Georgia, serif; font-style: italic; font-weight: 700; font-size: 12px; line-height: 1; cursor: pointer; padding: 0;
+  display: grid; place-items: center;
+}
+.info-btn[aria-expanded="true"], .info-btn:hover { border-color: #fff; color: #fff; }
+.info-pop {
+  position: absolute; right: 0; top: 26px; z-index: 30; width: min(280px, 80vw); padding: 10px 12px;
+  background: #2b2326; border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 8px 24px #000c;
+  font-size: 13px; line-height: 1.4; color: #e3dbdd; text-transform: none; letter-spacing: 0; font-weight: 400; text-align: left;
+}

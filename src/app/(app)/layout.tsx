@@ -1,6 +1,5 @@
-import { BottomNav } from "@/components/BottomNav";
 import { DataProvider } from "@/components/DataProvider";
-import { FeedbackButton } from "@/components/FeedbackButton";
+import { Dock } from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Gestures } from "@/components/Gestures";
 import { Header } from "@/components/Header";
@@ -20,11 +19,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <PageTransition>{children}</PageTransition>
             <Footer />
             <Gestures />
-            <FeedbackButton />
+            <Dock />
           </DataProvider>
         </main>
       </div>
-      <BottomNav />
     </>
   );
 }

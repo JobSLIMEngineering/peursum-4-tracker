@@ -24,6 +24,8 @@ export interface EntryDraft {
   cards: { playerId: string; kind: CardKind }[];
   /** Eigen doelpunten van onze spelers (ids, één per doelpunt) */
   ownGoals: string[];
+  /** Geblesseerd bij deze wedstrijd (nooit tegelijk aanwezig) */
+  injured: string[];
 }
 
 export const emptySlot = (): GoalSlot => ({ scorerId: undefined, assistId: null, kind: "spel" });
@@ -73,7 +75,14 @@ export function toDraft(entry: MatchEntry | undefined, ourGoals: number): EntryD
   });
   const ownGoals = Object.entries(stats).flatMap(([id, s]) => Array<string>(s.ownGoals ?? 0).fill(id));
 
-  return { attendance: [...(entry?.attendance ?? [])], keeperId: entry?.keeperId ?? null, goals, cards, ownGoals };
+  return {
+    attendance: [...(entry?.attendance ?? [])],
+    keeperId: entry?.keeperId ?? null,
+    goals,
+    cards,
+    ownGoals,
+    injured: [...(entry?.injured ?? [])],
+  };
 }
 
 const emptySlotWith = (scorerId: string | null): GoalSlot => ({ scorerId, assistId: null, kind: "spel" });
@@ -111,6 +120,7 @@ export function toEntry(draft: EntryDraft, matchId: string): MatchEntry {
     keeperId: draft.keeperId,
     opponentOwnGoals: filled.filter((g) => g.scorerId === null).length,
     goals: filled.map((g) => ({ scorerId: g.scorerId, assistId: g.scorerId ? g.assistId : null, kind: g.kind })),
+    ...(draft.injured.length ? { injured: draft.injured.filter((id) => !draft.attendance.includes(id)) } : {}),
   };
 }
 
@@ -124,5 +134,12 @@ export function removePlayer(d: EntryDraft, id: string): EntryDraft {
     ),
     cards: d.cards.filter((c) => c.playerId !== id),
     ownGoals: d.ownGoals.filter((x) => x !== id),
+    injured: d.injured,
   };
+}
+
+/** Speler geblesseerd melden (of weer niet): haalt hem ook uit de aanwezigen. */
+export function toggleInjured(d: EntryDraft, id: string): EntryDraft {
+  if (d.injured.includes(id)) return { ...d, injured: d.injured.filter((x) => x !== id) };
+  return { ...removePlayer(d, id), injured: [...d.injured, id] };
 }

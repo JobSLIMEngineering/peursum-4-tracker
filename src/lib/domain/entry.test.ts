@@ -16,6 +16,7 @@ const draft = (over: Partial<EntryDraft> = {}): EntryDraft => ({
     { playerId: "b", kind: "geel" },
   ],
   ownGoals: ["c"],
+  injured: [],
   ...over,
 });
 

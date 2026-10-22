@@ -11,7 +11,10 @@ describe("kijkversie voor gasten", () => {
     name: "Geheime Naam",
     aliases: ["Bijnaam"],
     clubName: "Naam, Geheime",
+    number: 13,
   };
+  files["players.json"].players[0] = { ...files["players.json"].players[0], number: 9 };
+  files["entries.json"].entries.m = { matchId: "m", attendance: [], stats: {}, keeperId: null, opponentOwnGoals: 0, injured: ["p1"] };
   files["feedback.json"].items.push({
     id: "1",
     createdAt: "",
@@ -28,6 +31,12 @@ describe("kijkversie voor gasten", () => {
     expect(json).not.toContain("Bijnaam");
     expect(json).not.toContain("privé opmerking");
     expect(pub["players.json"].players[17]).toMatchObject({ name: null, hiddenNo: 1 });
+  });
+
+  it("geen blessures, en geen rugnummer bij afgeschermde spelers", () => {
+    expect(pub["entries.json"].entries.m).not.toHaveProperty("injured");
+    expect(pub["players.json"].players[17]).not.toHaveProperty("number");
+    expect(pub["players.json"].players[0].number).toBe(9);
   });
 
   it("houdt de rest gelijk: stand, wedstrijden, gewone spelers", () => {

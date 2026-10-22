@@ -69,6 +69,8 @@ export interface Player {
   active: boolean;
   /** Andere schrijfwijzen of bijnamen uit de aanwezigheidslijst ("Bobbe", "Bowey") */
   aliases?: string[];
+  /** Rugnummer (handmatig ingevuld) */
+  number?: number | null;
 }
 
 export interface PlayerMatchStats {
@@ -102,6 +104,8 @@ export interface MatchEntry {
   opponentOwnGoals: number;
   /** Doelpunten in volgorde, zoals ingevoerd (vanaf de invoer per doelpunt) */
   goals?: GoalEvent[];
+  /** Spelers die bij deze wedstrijd geblesseerd waren (tellen voor prijzen niet als afwezig) */
+  injured?: string[];
 }
 
 export const isPlayed = <T extends Pick<Match, "homeGoals" | "awayGoals">>(

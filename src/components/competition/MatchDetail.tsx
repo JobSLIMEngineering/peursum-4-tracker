@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { MatchHero, PredictionBlocks } from "@/components/Prediction";
 import { Fireworks } from "@/components/Fireworks";
-import { SharePost } from "@/components/SharePost";
+import { Spotlights } from "@/components/Spotlights";
 import { isPlayed, opponent, ourScore, US, type MatchKind } from "@/lib/domain/types";
 import type { MatchEdit } from "@/lib/store/schema";
 import { hasPrediction, type ViewMatch } from "@/lib/store/view";
@@ -51,7 +51,6 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
           <EntryForm match={m} onDone={() => setMode("view")} />
         ) : (
           <>
-            <SharePost view={view} match={m} />
             <EntryView match={m} onEdit={() => setMode("entry")} />
           </>
         )
@@ -65,7 +64,10 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
             </button>
           </div>
           {hasPrediction(view, m) ? (
-            <PredictionBlocks view={view} match={m} />
+            <>
+              <Spotlights match={m} />
+              <PredictionBlocks view={view} match={m} />
+            </>
           ) : (
             <section className="box">
               <div className="box-b muted">

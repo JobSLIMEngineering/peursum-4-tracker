@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { ChampionChance } from "@/components/ChampionChance";
 import { Fireworks } from "@/components/Fireworks";
-import { OnFire } from "@/components/OnFire";
+import { Medal } from "@/components/Badges";
+import { Shirt } from "@/components/Shirt";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
 import { Box } from "@/components/ui";
-import { lastMatches, leaders, perMatchStats, playerTotals } from "@/lib/domain/stats";
+import { lastMatches, perMatchStats } from "@/lib/domain/stats";
 import { opponent, outcome, playerLabel, US } from "@/lib/domain/types";
 import { fmtDate, shortDate } from "@/lib/format";
 import { nextMatch, type AppView } from "@/lib/store/view";
@@ -17,7 +18,6 @@ export default function OverzichtPage() {
   const { view } = useData();
   const next = nextMatch(view);
   const opp = next ? opponent(next) : null;
-  const totals = playerTotals(view.players, view.matches, Object.values(view.entries));
   const per = perMatchStats(view.standings);
 
   return (
@@ -25,28 +25,7 @@ export default function OverzichtPage() {
       <div className="stack ovl">
         <LastMatch view={view} />
 
-        <section className="box tops">
-          {(["goals", "assists"] as const).map((k) => {
-            const l = leaders(view.players, totals, k);
-            return (
-              <div className="top" key={k}>
-                <div className="k">{k === "goals" ? "Topscorer" : "Topassist"}</div>
-                <div className="who">
-                  {l.value
-                    ? l.players.map((p, i) => (
-                        <span key={p.id}>
-                          {i > 0 && ", "}
-                          {playerLabel(p)}
-                          <OnFire playerId={p.id} />
-                        </span>
-                      ))
-                    : "Nog niets ingevoerd"}
-                </div>
-                {l.value > 0 && <div className="num">{l.value}</div>}
-              </div>
-            );
-          })}
-        </section>
+        <PrizeRace view={view} />
 
         <ChampionChance view={view} />
 
@@ -64,7 +43,7 @@ export default function OverzichtPage() {
               {per.items.map((i) => (
                 <div className="ts" key={i.label}>
                   <div className="k">{i.label}</div>
-                  <div className="num">{i.value.toFixed(2)}</div>
+                  <div className="num">{i.value.toFixed(2).replace(".", ",")}</div>
                   <div className="meta">
                     {i.rank}e van {per.teams}
                   </div>
@@ -125,5 +104,46 @@ function LastMatch({ view }: { view: AppView }) {
         <div className="board-meta">{fmtDate(last.match.date).full}</div>
       </ScoreBoard>
     </Link>
+  );
+}
+
+/** Koplopers van de prijzen, compact; tik = Prijzen */
+function PrizeRace({ view }: { view: AppView }) {
+  const leaders = view.awards.filter((a) => a.leader).slice(0, 4);
+  if (!leaders.length) return null;
+  return (
+    <Box
+      label="Prijzenrace"
+      right={
+        <Link className="link" href="/prijzen/">
+          Alle prijzen
+        </Link>
+      }
+      bodyClass={null}
+    >
+      <div className="race" style={{ paddingBottom: 6 }}>
+        {leaders.map((a) => {
+          const p = view.players.find((x) => x.id === a.leader);
+          const r = a.rows.find((x) => x.playerId === a.leader)!;
+          if (!p) return null;
+          return (
+            <Link key={a.key} href="/prijzen/" className="race-row">
+              <Medal kind={a.key} size={28} />
+              <span className="who">
+                <Shirt player={p} size={30} />
+                <span>
+                  <b>{playerLabel(p)}</b>
+                  <small>{a.title}</small>
+                </span>
+              </span>
+              <span className="num">
+                {r.display}
+                <small>{r.unit}</small>
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </Box>
   );
 }

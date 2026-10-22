@@ -1,5 +1,6 @@
 "use client";
 
+import { Plaster } from "@/components/Badges";
 import { useData } from "@/components/DataProvider";
 import { assignedGoals } from "@/lib/domain/stats";
 import { ourScore, playerLabel } from "@/lib/domain/types";
@@ -126,7 +127,7 @@ export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => v
           </div>
         </section>
       </div>
-      <section className="box" style={{ marginTop: 14 }}>
+      <section className="box" style={{ marginTop: 16 }}>
         <div className="box-h">
           <p className="lbl">Aanwezig ({present.length})</p>
           <span className="meta">{present.filter((p) => p.type === "leen").length} leenspelers</span>
@@ -136,6 +137,12 @@ export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => v
             <span className="chip" key={p.id}>
               {playerLabel(p)}
               {p.type === "leen" && <span className="t">leen</span>}
+            </span>
+          ))}
+          {(e.injured ?? []).map((id) => (
+            <span className="chip inj" aria-pressed="true" key={`i${id}`}>
+              <Plaster size={16} />
+              {name(id)}
             </span>
           ))}
         </div>

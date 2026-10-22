@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { normName } from "@/lib/domain/attendance";
 import { isPlayed, opponent, playerLabel, US, type Match } from "@/lib/domain/types";
 import { BASE } from "@/lib/base";
@@ -286,56 +287,60 @@ export function SharePost({ view, match }: { view: AppView; match: Match }) {
     setMsg("Opgeslagen in je downloads.");
   }
 
-  if (!img) {
-    return (
-      <div className="actions" style={{ margin: "0 0 14px" }}>
-        <button className="btn primary" type="button" onClick={() => make("post")}>
-          {played ? "Deel uitslag" : "Delen als post"}
-        </button>
-      </div>
-    );
-  }
+  const close = () => {
+    if (img) URL.revokeObjectURL(img.url);
+    setImg(null);
+    setMsg("");
+  };
 
   return (
-    <section className="box share" style={{ marginBottom: 14 }}>
-      <div className="box-h">
-        <p className="lbl">{played ? "Uitslag-post" : "Matchday-post"}</p>
-        <button
-          className="btn sm"
-          type="button"
-          onClick={() => {
-            URL.revokeObjectURL(img.url);
-            setImg(null);
-          }}
-        >
-          Sluiten
-        </button>
-      </div>
-      <div className="box-b share-b">
-        {/* eslint-disable-next-line @next/next/no-img-element -- lokaal gegenereerde afbeelding (blob-URL) */}
-        <img src={img.url} alt={`${played ? "Uitslag" : "Matchday"}-post Peursum 4 tegen ${opponent(match)}`} />
-        <div className="share-side">
-          <div className="seg" role="group" aria-label="Formaat">
-            <button type="button" aria-pressed={img.format === "post"} onClick={() => make("post")}>
-              Post 4:5
-            </button>
-            <button type="button" aria-pressed={img.format === "story"} onClick={() => make("story")}>
-              Story 9:16
-            </button>
-          </div>
-          <p className="meta">In de stijl van de Instagram van Peursum 4. Zonder winkans.</p>
-          <div className="actions">
-            <button className="btn primary" type="button" onClick={share}>
-              Delen of opslaan
-            </button>
-          </div>
-          {msg && (
-            <p className="meta" style={{ margin: "8px 0 0" }}>
-              {msg}
-            </p>
-          )}
-        </div>
-      </div>
-    </section>
+    <>
+      <button className="btn sm share-btn" type="button" onClick={() => make("post")} aria-label="Delen als post">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+        </svg>
+        Delen
+      </button>
+      {img &&
+        createPortal(
+          <>
+            <div className="scrim" onClick={close} />
+            <section className="box share-modal" role="dialog" aria-label={played ? "Uitslag-post" : "Matchday-post"}>
+              <div className="box-h">
+                <p className="lbl">{played ? "Uitslag-post" : "Matchday-post"}</p>
+                <button className="btn sm" type="button" onClick={close}>
+                  Sluiten
+                </button>
+              </div>
+              <div className="box-b share-b">
+                {/* eslint-disable-next-line @next/next/no-img-element -- lokaal gegenereerde afbeelding (blob-URL) */}
+                <img src={img.url} alt={`${played ? "Uitslag" : "Matchday"}-post Peursum 4 tegen ${opponent(match)}`} />
+                <div className="share-side">
+                  <div className="seg" role="group" aria-label="Formaat">
+                    <button type="button" aria-pressed={img.format === "post"} onClick={() => make("post")}>
+                      Post 4:5
+                    </button>
+                    <button type="button" aria-pressed={img.format === "story"} onClick={() => make("story")}>
+                      Story 9:16
+                    </button>
+                  </div>
+                  <p className="meta">In de stijl van de Instagram van Peursum 4. Zonder winkans.</p>
+                  <div className="actions">
+                    <button className="btn primary" type="button" onClick={share}>
+                      Delen of opslaan
+                    </button>
+                  </div>
+                  {msg && (
+                    <p className="meta" style={{ margin: "8px 0 0" }}>
+                      {msg}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          </>,
+          document.body,
+        )}
+    </>
   );
 }

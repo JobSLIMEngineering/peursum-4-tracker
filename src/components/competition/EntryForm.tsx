@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Plaster } from "@/components/Badges";
 import { useData } from "@/components/DataProvider";
 import { parseAttendance } from "@/lib/domain/attendance";
-import { removePlayer, toDraft, toEntry, type CardKind, type EntryDraft, type GoalSlot } from "@/lib/domain/entry";
+import { removePlayer, toDraft, toEntry, toggleInjured, type CardKind, type EntryDraft, type GoalSlot } from "@/lib/domain/entry";
 import { ourScore, playerLabel, POSITIONS, type GoalKind } from "@/lib/domain/types";
 import type { StoredPlayer } from "@/lib/store/schema";
 import type { ViewMatch } from "@/lib/store/view";
@@ -90,10 +91,22 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
       <Attendance
         players={players}
         attendance={draft.attendance}
-        onAdd={(ids) => setDraft((d) => ({ ...d, attendance: [...new Set([...d.attendance, ...ids])] }))}
-        onToggle={(id) =>
-          setDraft((d) => (d.attendance.includes(id) ? removePlayer(d, id) : { ...d, attendance: [...d.attendance, id] }))
+        injured={draft.injured}
+        onAdd={(ids) =>
+          setDraft((d) => ({
+            ...d,
+            attendance: [...new Set([...d.attendance, ...ids])],
+            injured: d.injured.filter((x) => !ids.includes(x)),
+          }))
         }
+        onToggle={(id) =>
+          setDraft((d) =>
+            d.attendance.includes(id)
+              ? removePlayer(d, id)
+              : { ...d, attendance: [...d.attendance, id], injured: d.injured.filter((x) => x !== id) },
+          )
+        }
+        onToggleInjured={(id) => setDraft((d) => toggleInjured(d, id))}
       />
 
       {present.length === 0 ? (
@@ -356,9 +369,9 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
       )}
 
       {/* Opslaan-balk: altijd in beeld */}
-      <div className="savebar">
+      <div className="savebar glass">
         <span className="meta">
-          {draft.attendance.length} aanwezig · {filled}/{us} goals
+          {draft.attendance.length} aanwezig{draft.injured.length ? ` · ${draft.injured.length} geblesseerd` : ""} · {filled}/{us} goals
         </span>
         {existing && (
           <button className="btn" type="button" onClick={remove} disabled={busy}>
@@ -380,14 +393,19 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
 function Attendance({
   players,
   attendance,
+  injured,
   onAdd,
   onToggle,
+  onToggleInjured,
 }: {
   players: StoredPlayer[];
   attendance: string[];
+  injured: string[];
   onAdd: (ids: string[]) => void;
   onToggle: (id: string) => void;
+  onToggleInjured: (id: string) => void;
 }) {
+  const [showInjured, setShowInjured] = useState(injured.length > 0);
   const { view, mutate } = useData();
   const [paste, setPaste] = useState("");
   // Nieuwe namen: leenspeler, vaste selectie, naam van een afgeschermde speler ("p:<id>"),
@@ -478,7 +496,7 @@ function Attendance({
         {ambiguous.map((a) => (
           <div key={a.name} style={{ marginTop: 12 }}>
             <p className="meta" style={{ margin: "0 0 6px" }}>
-              Welke <b style={{ color: "#fff" }}>{a.name}</b>?
+              Welke <b style={{ color: "var(--fg)" }}>{a.name}</b>?
             </p>
             <div className="chips">
               {a.options.map((id) => (
@@ -560,10 +578,37 @@ function Attendance({
             <button key={p.id} type="button" className="chip" aria-pressed={attendance.includes(p.id)} onClick={() => onToggle(p.id)}>
               {playerLabel(p)}
               {p.type === "leen" && <span className="t">leen</span>}
-              {p.injured && <span className="t inj">blessure</span>}
             </button>
           ))}
         </div>
+
+        {showInjured ? (
+          <>
+            <p className="meta" style={{ margin: "16px 0 6px" }}>
+              Wie was er geblesseerd? Telt bij de prijzen niet als gemist.
+            </p>
+            <div className="chips">
+              {players
+                .filter((p) => !attendance.includes(p.id))
+                .map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="chip inj"
+                    aria-pressed={injured.includes(p.id)}
+                    onClick={() => onToggleInjured(p.id)}
+                  >
+                    {injured.includes(p.id) && <Plaster size={16} />}
+                    {playerLabel(p)}
+                  </button>
+                ))}
+            </div>
+          </>
+        ) : (
+          <button className="link" type="button" style={{ marginTop: 16 }} onClick={() => setShowInjured(true)}>
+            Blessures aangeven
+          </button>
+        )}
       </div>
     </section>
   );

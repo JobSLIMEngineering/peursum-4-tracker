@@ -1,3 +1,4 @@
+import { computeAwards, gameRows, playerImpacts, prizeLeads, type Award, type AwardKey, type GameRow, type PlayerImpact } from "@/lib/domain/awards";
 import { fit, knownResults, type Fit } from "@/lib/domain/model";
 import { hotStreaks, type Streak } from "@/lib/domain/streaks";
 import { isPlayed, opponent, US, type Match, type MatchEntry, type StandingRow } from "@/lib/domain/types";
@@ -17,6 +18,14 @@ export interface AppView {
   logos: Record<string, string>;
   /** Spelers die "on fire" zijn (vlammetje / handschoen met vuur) */
   streaks: Record<string, Streak[]>;
+  /** Ingevoerde competitiewedstrijden met wat het model verwachtte (voor prijzen en impact) */
+  rows: GameRow[];
+  awards: Award[];
+  /** Prijzen waar een speler koploper van is */
+  leads: Record<string, AwardKey[]>;
+  impacts: Record<string, PlayerImpact>;
+  /** Geblesseerd bij de laatst ingevoerde wedstrijd (pleistertje) */
+  injuredLast: Set<string>;
 }
 
 const strip = ({ code, ...m }: StoredMatch) => ({ m, code });
@@ -44,17 +53,29 @@ export function buildView(files: DataFiles): AppView {
     status: isPlayed(m) ? "gespeeld" : m.date ? "gepland" : "niet ingepland",
   }));
 
+  const model = fit(standings, knownResults(matches, standings));
+  const pool = new Set(standings.map((s) => s.team));
+  const entries = files["entries.json"].entries;
+  const players = files["players.json"].players;
+  const rows = gameRows(matches, entries, model, pool);
+  const awards = computeAwards(players, rows, standings);
+
   return {
     standings,
     standingsDate: latest?.fetchedAt ?? null,
     snapshots,
     matches,
-    players: files["players.json"].players,
-    entries: files["entries.json"].entries,
-    model: fit(standings, knownResults(matches, standings)),
-    pool: new Set(standings.map((s) => s.team)),
+    players,
+    entries,
+    model,
+    pool,
     logos: files["logos.json"]?.logos ?? {},
-    streaks: hotStreaks(matches, files["entries.json"].entries),
+    streaks: hotStreaks(matches, entries),
+    rows,
+    awards,
+    leads: prizeLeads(awards),
+    impacts: playerImpacts(players, rows),
+    injuredLast: new Set(rows.at(-1)?.entry.injured ?? []),
   };
 }
 

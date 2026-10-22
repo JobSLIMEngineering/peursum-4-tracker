@@ -2,7 +2,7 @@
 
 import { useData } from "@/components/DataProvider";
 import { MatchHero, PredictionBlocks } from "@/components/Prediction";
-import { SharePost } from "@/components/SharePost";
+import { Spotlights } from "@/components/Spotlights";
 import { nextMatch } from "@/lib/store/view";
 
 /** Alleen over de eerstvolgende competitiewedstrijd (PLAN.md §3.4) */
@@ -21,7 +21,7 @@ export default function MatchCenterPage() {
   return (
     <>
       <MatchHero match={next} />
-      <SharePost view={view} match={next} />
+      <Spotlights match={next} />
       <PredictionBlocks view={view} match={next} />
     </>
   );

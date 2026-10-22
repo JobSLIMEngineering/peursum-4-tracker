@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { BASE } from "@/lib/base";
-import { Tabs } from "./Tabs";
 
 export function Header() {
   return (
@@ -11,7 +10,6 @@ export function Header() {
             Peursum <span className="no">4</span>
           </span>
         </Link>
-        <Tabs />
         {/* Hier zet HeaderMatchup de volgende wedstrijd neer; zonder data blijft het clublogo staan */}
         <div id="matchup-slot" className="matchup-slot">
           {/* eslint-disable-next-line @next/next/no-img-element -- statische export, geen beeldoptimalisatie */}

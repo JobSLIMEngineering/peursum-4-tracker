@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Barlow, Barlow_Condensed, Protest_Revolution } from "next/font/google";
 import { BASE } from "@/lib/base";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 // Labels, teamnamen, hoofdletters met letterafstand
@@ -28,7 +30,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0707",
+  // De kop is in beide thema's donkerrood
+  themeColor: "#5a0910",
   viewportFit: "cover",
 };
 
@@ -38,8 +41,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="nl"
       className={`${barlowCond.variable} ${barlow.variable} ${marker.variable}`}
       style={{ "--texture": `url(${BASE}/texture.jpg)`, "--brush": `url(${BASE}/brush.png)` } as React.CSSProperties}
+      // data-theme wordt vóór het laden gezet door THEME_SCRIPT
+      suppressHydrationWarning
     >
-      <body>{children}</body>
+      <body>
+        <Script id="theme" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {children}
+      </body>
     </html>
   );
 }

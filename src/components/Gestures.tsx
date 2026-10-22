@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { TABS, tabIndex } from "@/lib/tabs";
 
 /** Hier nooit swipen */
-const NO_SWIPE = "textarea, select, .fb-panel, [data-noswipe]";
+const NO_SWIPE = "textarea, select, .fb-panel, .sheet, .dock, [data-noswipe]";
 
 /**
  * Niet swipen als je in een veld aan het typen bent, of als je begint in iets dat zelf
@@ -58,6 +58,8 @@ export function Gestures() {
       }
       if (Math.abs(dx) < 55) return;
       done = true;
+      // Vegen alleen tussen de drie vaste schermen
+      if (tabIndex(path) >= TABS.length) return;
       const i = tabIndex(path) + (dx < 0 ? 1 : -1);
       if (i >= 0 && i < TABS.length) {
         navigator.vibrate?.(8);
@@ -92,7 +94,7 @@ export function Gestures() {
   return createPortal(
     <button
       type="button"
-      className={`top-btn ${showTop ? "on" : ""}`}
+      className={`top-btn glass ${showTop ? "on" : ""}`}
       aria-label="Naar boven"
       tabIndex={showTop ? 0 : -1}
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

@@ -1,13 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { predict, verdict, type Verdict } from "@/lib/domain/model";
 import { InfoTip } from "./InfoTip";
 import { ScoreBoard } from "./ScoreBoard";
 import { TeamLogo } from "./TeamLogo";
 import { lastMatches } from "@/lib/domain/stats";
-import { opponent, outcome, US, type Match } from "@/lib/domain/types";
-import { pct } from "@/lib/format";
-import { standingOf, type AppView } from "@/lib/store/view";
+import { isPlayed, opponent, ourScore, outcome, US, type Match } from "@/lib/domain/types";
+import { countdown, fmtDate, kickoff, pct } from "@/lib/format";
+import { standingOf, type AppView, type ViewMatch } from "@/lib/store/view";
+import { useData } from "./DataProvider";
+import { SharePost } from "./SharePost";
 import { Box, OUTCOME_NL, Score } from "./ui";
 
 const VERDICT_CLASS: Record<Verdict, string> = { Favoriet: "W", Pittig: "D", Lastig: "L" };
@@ -34,7 +37,7 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
         <Box
           label="Voorspelling"
           right={
-            <span className="tname">
+            <span className="box-right">
               <span className={`tag ${VERDICT_CLASS[v]}`}>{v}</span>
               <InfoTip label="Hoe werkt de voorspelling?">
                 Het model schat per team aanvals- en verdedigingssterkte uit goals voor en tegen, gecorrigeerd voor hoe
@@ -46,7 +49,7 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
           <div className="probs">
             <div className="prob us">
               <div className="num">{pct(p.win)}%</div>
-              <div className="k">Winst</div>
+              <div className="k">Peursum wint</div>
             </div>
             <div className="prob">
               <div className="num">{pct(p.draw)}%</div>
@@ -57,27 +60,30 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
               <div className="k">Verlies</div>
             </div>
           </div>
+          {/* Zelfde volgorde als de kop: thuisploeg links */}
           <div className="xg">
-            <div className="side">
-              Peursum 4
-              <div className="num" style={{ color: "var(--red)" }}>
-                {p.xgUs.toFixed(2)}
+            {[match.home, match.away].map((team, i) => (
+              <div key={team} className={`side ${i ? "r" : ""}`} style={{ order: i * 2 }}>
+                <span className="tname">
+                  {i === 0 && <TeamLogo team={team} size={18} />}
+                  <span>{team}</span>
+                  {i === 1 && <TeamLogo team={team} size={18} />}
+                </span>
+                <div className="num" style={team === US ? { color: "var(--red-text)" } : undefined}>
+                  {(team === US ? p.xgUs : p.xgThem).toFixed(2).replace(".", ",")}
+                </div>
               </div>
-            </div>
-            <div className="mid">
+            ))}
+            <div className="mid" style={{ order: 1 }}>
               Verwachte
               <br />
               goals
-            </div>
-            <div className="side r">
-              {opp}
-              <div className="num">{p.xgThem.toFixed(2)}</div>
             </div>
           </div>
           <div className="verdict">
             Meest waarschijnlijke uitslag{" "}
             <b>
-              {p.best.us}–{p.best.them}
+              {match.home === US ? `${p.best.us}–${p.best.them}` : `${p.best.them}–${p.best.us}`}
             </b>{" "}
             ({pct(p.best.p)}%).{" "}
             {o && (
@@ -131,7 +137,7 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
         <Box
           label="Laatste 3 · Peursum 4"
           right={
-            <span className="tname">
+            <span className="box-right">
               <span className="meta">{ours.map((x) => OUTCOME_NL[outcome(x.goalsFor, x.goalsAgainst)]).join(" ")}</span>
               <InfoTip>Het getal links is de huidige positie van de tegenstander.</InfoTip>
             </span>
@@ -193,30 +199,63 @@ export function PredictionBlocks({ view, match }: { view: AppView; match: Match 
   );
 }
 
-/** Rode hero: Peursum 4 vs tegenstander (of de uitslag) met datum en sportpark */
-export function MatchHero({ match }: { match: Match }) {
-  const played = match.homeGoals !== null && match.awayGoals !== null;
-  const d = match.date ? new Date(`${match.date}T12:00`) : null;
-  const DAY = ["zo", "ma", "di", "wo", "do", "vr", "za"];
-  const MON = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
-  const date = d ? `${DAY[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}` : "Datum onbekend";
-  const ours = match.home === US ? [match.homeGoals, match.awayGoals] : [match.awayGoals, match.homeGoals];
+/**
+ * Kop van een wedstrijd. Gespeeld: het UITSLAG-bord. Nog te spelen: een rustige kaart met beide
+ * wapens (thuisploeg links), aftrap en aftelling. De post met vonken komt via de deelknop.
+ */
+export function MatchHero({ match }: { match: ViewMatch }) {
+  const { view } = useData();
+  const [now, setNow] = useState(() => new Date());
+  const played = isPlayed(match);
+  const d = fmtDate(match.date);
+  const ours = ourScore(match);
   const kind = match.kind[0].toUpperCase() + match.kind.slice(1);
+  const where = match.venue ?? (match.home === US ? "Thuis" : "Uit");
 
+  useEffect(() => {
+    if (played) return;
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, [played]);
+
+  if (played) {
+    return (
+      <>
+        <ScoreBoard match={match} />
+        <div className="hero-meta">
+          <span>
+            {d.full}
+            {ours ? ` · ${OUTCOME_LABEL[outcome(ours[0], ours[1])]}` : ""}
+          </span>
+          <SharePost view={view} match={match} />
+        </div>
+      </>
+    );
+  }
+
+  const left = match.date ? countdown(kickoff(match.date, match.time), now) : null;
   return (
-    <>
-      <ScoreBoard match={match} />
-      <div className="hero-meta">
-        <span>
-          {date}
-          {match.time ? ` · ${match.time}` : ""}
-          {played && ours[0] !== null && ours[1] !== null ? ` · ${OUTCOME_LABEL[outcome(ours[0], ours[1])]}` : ""}
+    <section className="box fixture">
+      <div className="fixture-top">
+        <span className="k">
+          {kind} · {where}
         </span>
-        <span>
-          {match.venue ?? (match.home === US ? "Thuis" : "Uit")} · {kind}
-        </span>
+        <SharePost view={view} match={match} />
       </div>
-    </>
+      <div className="fixture-row">
+        {[match.home, match.away].map((team, i) => (
+          <div key={team} className={`fixture-team ${team === US ? "us" : ""}`} style={{ order: i * 2 }}>
+            <TeamLogo team={team} size={64} />
+            <span>{team}</span>
+          </div>
+        ))}
+        <div className="fixture-mid" style={{ order: 1 }}>
+          <span className="num">{match.time ?? "–"}</span>
+          <span className="k">{match.date ? d.full : "Datum onbekend"}</span>
+          {left && <span className="fixture-left">{left}</span>}
+        </div>
+      </div>
+    </section>
   );
 }
 

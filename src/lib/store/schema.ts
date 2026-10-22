@@ -26,7 +26,7 @@ export type MatchEdit = Pick<Match, "date" | "time" | "home" | "away" | "kind" |
 export interface StoredPlayer extends Player {
   /** Naam zoals op de clubsite ("Berg, Rien van den"), als de speler daarvandaan komt */
   clubName: string | null;
-  /** Geblesseerd (door de gebruiker aangegeven) */
+  /** Verouderd: blessures staan nu per wedstrijd in entries.json */
   injured?: boolean;
 }
 

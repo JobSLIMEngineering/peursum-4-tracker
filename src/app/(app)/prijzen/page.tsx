@@ -29,7 +29,7 @@ export default function PrijzenPage() {
   return (
     <>
       <div className="sec-h">
-        <p className="lbl big">Prijzenrace</p>
+        <p className="lbl">Prijzenrace</p>
         <span className="meta">na {view.rows.length} ingevoerde duels</span>
       </div>
       <div className="awards">

@@ -76,7 +76,7 @@ export function Spotlights({ match }: { match: Match }) {
   return (
     <section style={{ marginBottom: 16 }}>
       <div className="sec-h" style={{ marginTop: 0 }}>
-        <p className="lbl big">Let op tegen {opp}</p>
+        <p className="lbl">Let op tegen {opp}</p>
         <InfoTip label="Hoe komen deze kaartjes tot stand?">
           Uit de vorm van de laatste 3 duels, het hele seizoen en hoe {opp} ervoor staat. De kansen komen uit de
           voorspelling voor deze wedstrijd. Wie de laatste keer geblesseerd was, staat er niet tussen. Alleen zichtbaar

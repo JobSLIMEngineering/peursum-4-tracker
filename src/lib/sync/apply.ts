@@ -91,7 +91,10 @@ export function applyTeamPage(input: DataFiles, page: TeamPage, now: Date): Sync
       ? page.nextMatch.venue
       : null;
 
-  for (const s of [...page.program, ...page.results]) {
+  // De teampagina toont soms ook wedstrijden van andere Peursum-teams (Peursum 1, Peursum vr1).
+  // Alleen wedstrijden van Peursum 4, of van "Peursum" zonder nummer (oefenduels), horen erbij.
+  const isOurs = (team: string) => /^peursum( 4)?$/i.test(team.trim());
+  for (const s of [...page.program, ...page.results].filter((x) => isOurs(x.homeTeam) || isOurs(x.awayTeam))) {
     const kind = guessMatchType(s, US, pool);
     const id = matchId({ home: s.homeTeam, away: s.awayTeam, kind, date: s.date });
     const list = files["matches.json"].matches;

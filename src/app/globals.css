@@ -421,7 +421,7 @@ ol.steps li { margin-bottom: 2px; }
   .pcard.phead { display: none; }
   .pcard { grid-template-columns: 116px 1fr auto; grid-template-areas: "name name act" "pos stats stats"; padding: 10px; }
   .pcard .ppos { font-size: 13px; padding-inline: 4px; }
-  .pcard .pname { grid-area: name; }
+  .pcard > .pname { grid-area: name; }
   .pcard .ppos { grid-area: pos; }
   .pcard .pact { grid-area: act; }
   .pcard .pstats { grid-area: stats; background: #00000033; border-radius: 2px; padding: 6px 4px; }
@@ -712,3 +712,14 @@ body::before {
 .tabs a { background: #00000030; border-color: #ffffff14; }
 .tabs a:hover { background: #00000050; }
 .tabs a[aria-current="page"] { background: #0d0b0c; border-color: #0d0b0c; box-shadow: 3px 3px 0 #0007; }
+
+/* Blessures */
+.pname-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pname-wrap .pname { flex: 1; min-width: 0; }
+.inj-badge { flex: 0 0 auto; font-family: var(--f-cond); font-weight: 800; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--loss); padding: 1px 6px; border-radius: 2px; }
+.pcard.injured .pname { color: #d8b9bc; }
+.inj-btn.on { background: var(--loss); border-color: var(--loss); }
+.chip .t.inj { color: var(--loss); }
+@media (max-width: 700px) {
+  .pcard .pname-wrap { grid-area: name; }
+}

@@ -26,6 +26,8 @@ export type MatchEdit = Pick<Match, "date" | "time" | "home" | "away" | "kind" |
 export interface StoredPlayer extends Player {
   /** Naam zoals op de clubsite ("Berg, Rien van den"), als de speler daarvandaan komt */
   clubName: string | null;
+  /** Geblesseerd (door de gebruiker aangegeven) */
+  injured?: boolean;
 }
 
 export interface FeedbackItem {
@@ -47,7 +49,8 @@ export interface SyncStatus {
 export interface DataFiles {
   "standings.json": { snapshots: Snapshot[] };
   "matches.json": { matches: StoredMatch[] };
-  "overrides.json": { edits: Record<string, MatchEdit>; extra: StoredMatch[] };
+  /** `hidden`: wedstrijden die de gebruiker heeft verwijderd (ook als ze van de clubsite komen) */
+  "overrides.json": { edits: Record<string, MatchEdit>; extra: StoredMatch[]; hidden?: string[] };
   "players.json": { players: StoredPlayer[] };
   "entries.json": { entries: Record<string, MatchEntry> };
   "feedback.json": { items: FeedbackItem[] };

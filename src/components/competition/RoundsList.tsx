@@ -178,6 +178,7 @@ export function RoundsList() {
         )}
       </section>
     </div>
+    {!readOnly && <HiddenMatches />}
     </>
   );
 }
@@ -391,5 +392,43 @@ function SectionToggle({
       </span>
       <span className={`chev ${closed ? "" : "up"}`} aria-hidden="true" />
     </button>
+  );
+}
+
+/** Verwijderde wedstrijden van de clubsite terugzetten */
+function HiddenMatches() {
+  const { files, mutate } = useData();
+  const hidden = files["overrides.json"].hidden ?? [];
+  const [open, setOpen] = useState(false);
+  if (!hidden.length) return null;
+  const label = (id: string) => {
+    const m = files["matches.json"].matches.find((x) => x.id === id);
+    return m ? `${m.home} – ${m.away}${m.date ? ` (${fmtDate(m.date).full})` : ""}` : id;
+  };
+  return (
+    <div className="meta" style={{ marginTop: 14 }}>
+      <button className="link" type="button" onClick={() => setOpen((o) => !o)}>
+        {hidden.length} verwijderde wedstrijd{hidden.length > 1 ? "en" : ""}
+      </button>
+      {open &&
+        hidden.map((id) => (
+          <div className="ev" key={id}>
+            <span>{label(id)}</span>
+            <button
+              className="link"
+              type="button"
+              onClick={() =>
+                void mutate(
+                  "overrides.json",
+                  (o) => ({ ...o, hidden: (o.hidden ?? []).filter((x) => x !== id) }),
+                  `wedstrijd teruggezet: ${label(id)}`,
+                )
+              }
+            >
+              terugzetten
+            </button>
+          </div>
+        ))}
+    </div>
   );
 }

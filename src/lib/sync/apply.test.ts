@@ -83,6 +83,26 @@ describe("verwerken van de teampagina", () => {
     expect(r.changed).toContain("logos.json");
   });
 
+  it("neemt geen wedstrijden van andere Peursum-teams mee (Peursum 1, Peursum vr1)", () => {
+    const extra = (home: string, away: string) => ({
+      matchCode: null,
+      date: "2026-10-17",
+      time: null,
+      homeTeam: home,
+      awayTeam: away,
+      homeLogoUrl: null,
+      awayLogoUrl: null,
+      homeGoals: 0,
+      awayGoals: 7,
+    });
+    const page = { ...oldPage, results: [...oldPage.results, extra("Peursum vr1", "dubbeldam vr1"), extra("peursum 1", "SLIEDRECHT COMBI")] };
+    const r = applyTeamPage(initial, page, new Date("2026-10-18T12:00:00Z"));
+    const ids = r.files["matches.json"].matches.map((m) => m.home);
+    expect(ids).not.toContain("Peursum vr1");
+    expect(ids).not.toContain("peursum 1");
+    expect(ids).toContain("Peursum"); // oefenduel tegen Old Star blijft
+  });
+
   it("voegt het oefenduel toe als oefen en laat bestaande uitslagen staan", () => {
     const r = applyTeamPage(initial, oldPage, new Date("2026-10-11T12:00:00Z"));
     const m = r.files["matches.json"].matches;

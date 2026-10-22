@@ -24,9 +24,10 @@ export function buildView(files: DataFiles): AppView {
   const latest = snapshots.at(-1);
   const standings = latest ? [...latest.rows].sort((a, b) => a.position - b.position) : [];
   const { edits, extra } = files["overrides.json"];
+  const hidden = new Set(files["overrides.json"].hidden ?? []);
 
   const matches: ViewMatch[] = [
-    ...files["matches.json"].matches.map((s) => {
+    ...files["matches.json"].matches.filter((s) => !hidden.has(s.id)).map((s) => {
       const { m, code } = strip(s);
       const e = edits[m.id];
       return { ...m, ...(e ?? {}), edited: !!e, extra: false, code };

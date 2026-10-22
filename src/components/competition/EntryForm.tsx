@@ -560,6 +560,7 @@ function Attendance({
             <button key={p.id} type="button" className="chip" aria-pressed={attendance.includes(p.id)} onClick={() => onToggle(p.id)}>
               {playerLabel(p)}
               {p.type === "leen" && <span className="t">leen</span>}
+              {p.injured && <span className="t inj">blessure</span>}
             </button>
           ))}
         </div>

@@ -79,6 +79,7 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
           )}
         </>
       )}
+      {!readOnly && mode === "view" && <DeleteMatch match={m} />}
     </>
   );
 }
@@ -86,7 +87,6 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
 /** Wijzigen van een komende wedstrijd (PLAN.md §3.3). Wijzigingen staan los van de clubsite-data. */
 function FixtureForm({ match, onDone }: { match: ViewMatch; onDone: () => void }) {
   const { view, mutate } = useData();
-  const router = useRouter();
   const teams = view.standings.map((s) => s.team).filter((t) => t !== US);
   const [f, setF] = useState({
     opp: opponent(match) === "Tegenstander" ? "" : opponent(match),
@@ -133,14 +133,6 @@ function FixtureForm({ match, onDone }: { match: ViewMatch; onDone: () => void }
     if (ok) onDone();
   }
 
-  async function remove() {
-    const ok = await mutate(
-      "overrides.json",
-      (o) => ({ ...o, extra: o.extra.filter((x) => x.id !== match.id) }),
-      `wedstrijd verwijderd: ${match.home} - ${match.away}`,
-    );
-    if (ok) router.push("/competitie/");
-  }
 
   return (
     <form className="box" onSubmit={save}>
@@ -197,18 +189,44 @@ function FixtureForm({ match, onDone }: { match: ViewMatch; onDone: () => void }
         <button className="btn" type="button" onClick={onDone}>
           Annuleren
         </button>
-        {match.extra ? (
-          <button className="btn" type="button" onClick={remove}>
-            Wedstrijd verwijderen
+        {match.edited && !match.extra && (
+          <button className="btn" type="button" onClick={reset}>
+            Terug naar clubsite
           </button>
-        ) : (
-          match.edited && (
-            <button className="btn" type="button" onClick={reset}>
-              Terug naar clubsite
-            </button>
-          )
         )}
       </div>
     </form>
+  );
+}
+
+/**
+ * Wedstrijd verwijderen: eigen wedstrijden echt weg, wedstrijden van de clubsite worden verborgen
+ * (de ophaalfunctie zet ze dan niet terug). Terugzetten kan onderaan Competitie.
+ */
+export function DeleteMatch({ match }: { match: ViewMatch }) {
+  const { mutate } = useData();
+  const router = useRouter();
+  const [armed, setArmed] = useState(false);
+
+  async function remove() {
+    if (!armed) return setArmed(true);
+    const ok = await mutate(
+      "overrides.json",
+      (o) =>
+        match.extra
+          ? { ...o, extra: o.extra.filter((x) => x.id !== match.id) }
+          : { ...o, hidden: [...new Set([...(o.hidden ?? []), match.id])] },
+      `wedstrijd verwijderd: ${match.home} - ${match.away}`,
+    );
+    if (ok) router.push("/competitie/");
+  }
+
+  return (
+    <div className="actions" style={{ marginTop: 18 }}>
+      <button className="btn sm" type="button" onClick={remove} onBlur={() => setArmed(false)}>
+        {armed ? "Zeker? Tik nog een keer" : "Wedstrijd verwijderen"}
+      </button>
+      {armed && <span className="meta">Hoort deze wedstrijd niet bij Peursum 4? Dan verdwijnt hij uit de app.</span>}
+    </div>
   );
 }

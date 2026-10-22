@@ -211,19 +211,22 @@ function PlayerRow({
   );
 
   return (
-    <div className="pcard">
-      <input
-        className="pname"
-        type="text"
-        aria-label="Naam"
-        readOnly={readOnly}
-        value={name}
-        placeholder={p.hiddenNo ? (readOnly ? `Afgeschermde speler ${p.hiddenNo}` : `Afgeschermd ${p.hiddenNo} · naam invullen`) : ""}
-        onChange={(e) => setName(e.target.value)}
-        onBlur={saveName}
-        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-        style={{ borderColor: p.name || readOnly ? "transparent" : "var(--draw)" }}
-      />
+    <div className={`pcard ${p.injured ? "injured" : ""}`}>
+      <div className="pname-wrap">
+        <input
+          className="pname"
+          type="text"
+          aria-label="Naam"
+          readOnly={readOnly}
+          value={name}
+          placeholder={p.hiddenNo ? (readOnly ? `Afgeschermde speler ${p.hiddenNo}` : `Afgeschermd ${p.hiddenNo} · naam invullen`) : ""}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={saveName}
+          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+          style={{ borderColor: p.name || readOnly ? "transparent" : "var(--draw)" }}
+        />
+        {p.injured && <span className="inj-badge">geblesseerd</span>}
+      </div>
       <select
         className="ppos"
         aria-label="Positie"
@@ -266,6 +269,14 @@ function PlayerRow({
         </span>
       </span>
       <span className="pact" hidden={readOnly}>
+        <button
+          className={`btn sm inj-btn ${p.injured ? "on" : ""}`}
+          type="button"
+          aria-pressed={!!p.injured}
+          onClick={() => void update(p.id, { injured: !p.injured }, `${p.injured ? "hersteld" : "geblesseerd"}: ${playerLabel(p)}`)}
+        >
+          {p.injured ? "Hersteld" : "Blessure"}
+        </button>
         {isLeen && (
           <button className="btn sm" type="button" onClick={() => void update(p.id, { type: "vast" }, `naar selectie: ${playerLabel(p)}`)}>
             → Selectie

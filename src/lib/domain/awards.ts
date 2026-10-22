@@ -213,7 +213,7 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
         .map((p) => ({
           playerId: p.id,
           value: impact[p.id].defenceImpact,
-          display: signed(impact[p.id].defenceImpact),
+          display: signed(impact[p.id].defenceImpact, 2),
           unit: "per duel",
           detail: inGames(p.id),
           eligible: impact[p.id].eligible,
@@ -231,7 +231,7 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
         .map((p) => ({
           playerId: p.id,
           value: impact[p.id].pointsImpact,
-          display: signed(impact[p.id].pointsImpact),
+          display: signed(impact[p.id].pointsImpact, 2),
           unit: "pnt/duel",
           detail: inGames(p.id),
           eligible: impact[p.id].eligible,

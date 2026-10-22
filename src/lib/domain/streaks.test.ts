@@ -52,6 +52,27 @@ describe("on fire", () => {
     expect(out.b).toBeUndefined();
   });
 
+  it("vlammetje bij goal + assist in de laatste wedstrijd", () => {
+    const e2 = { ...entries, m3: entry("m3", ["a", "b", "c", "k"], { a: st(2), b: { ...st(1), assists: 1 }, c: st(1) }, "k") };
+    expect(hotStreaks(matches, e2).b).toEqual([{ kind: "scorer", reason: "goal + assist in de laatste wedstrijd" }]);
+  });
+
+  it("na een grote zege krijgen alleen de 3 heetste spelers een vlam", () => {
+    const big = match("m4", "2026-10-10", 8, 0);
+    const stats = {
+      p1: { ...st(3), assists: 0 },
+      p2: { ...st(2), assists: 1 },
+      p3: { ...st(1), assists: 1 },
+      p4: { ...st(1), assists: 1 },
+      p5: { ...st(1), assists: 1 },
+    };
+    const out2 = hotStreaks([big], { m4: entry("m4", Object.keys(stats), stats, null) });
+    const hot = Object.keys(out2);
+    expect(hot).toHaveLength(3);
+    expect(hot).toContain("p1");
+    expect(hot).toContain("p2");
+  });
+
   it("handschoen met vuur bij 2+ clean sheets op rij", () => {
     expect(out.k).toEqual([{ kind: "keeper", reason: "2 clean sheets op rij" }]);
   });

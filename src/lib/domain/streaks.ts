@@ -4,8 +4,10 @@ import { isPlayed, ourScore, type Match, type MatchEntry } from "./types";
  * "On fire": spelers die het de laatste wedstrijden uitzonderlijk goed doen.
  * Alleen gespeelde competitiewedstrijden met ingevoerde stats tellen mee, in volgorde van datum.
  *
- * Scorer (vlammetje): 2+ goals in de laatste wedstrijd, of 3+ goals in de laatste 3,
- *   of in 3 wedstrijden achter elkaar gescoord (waarin hij meedeed).
+ * Scorer (vlammetje): 2+ doelpuntbetrokkenheid (goals + assists) in de laatste wedstrijd,
+ *   of 3+ goals / 4+ betrokkenheid in de laatste 3, of in 3 wedstrijden achter elkaar gescoord.
+ *   Zodat niet iedereen na een grote zege een vlam krijgt: alleen de MAX_HOT heetste spelers
+ *   (goal telt zwaarder dan assist, de laatste wedstrijd telt het zwaarst).
  * Keeper (handschoen met vuur): 2+ clean sheets achter elkaar als keeper.
  */
 
@@ -15,6 +17,18 @@ export interface Streak {
   kind: StreakKind;
   /** Korte uitleg, bijv. "3 goals in de laatste 2 duels" */
   reason: string;
+}
+
+const MAX_HOT = 3;
+const ASSIST = 0.7;
+
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+function involvement(goals: number, assists: number): string {
+  const parts = [];
+  if (goals) parts.push(goals === 1 ? "goal" : `${goals} goals`);
+  if (assists) parts.push(assists === 1 ? "assist" : `${assists} assists`);
+  return parts.join(" + ");
 }
 
 export function hotStreaks(matches: Match[], entries: Record<string, MatchEntry>): Record<string, Streak[]> {
@@ -30,11 +44,15 @@ export function hotStreaks(matches: Match[], entries: Record<string, MatchEntry>
   const recent = games.slice(-3);
   const last = games.at(-1)!;
   const goalsIn = (m: Match, id: string) => entries[m.id].stats[id]?.goals ?? 0;
+  const assistsIn = (m: Match, id: string) => entries[m.id].stats[id]?.assists ?? 0;
   const players = new Set(games.flatMap((m) => Object.keys(entries[m.id].stats)));
 
+  const candidates: { id: string; heat: number; reason: string }[] = [];
   for (const id of players) {
-    const lastGoals = goalsIn(last, id);
-    const recentGoals = recent.reduce((s, m) => s + goalsIn(m, id), 0);
+    const lg = goalsIn(last, id);
+    const la = assistsIn(last, id);
+    const rg = recent.reduce((s, m) => s + goalsIn(m, id), 0);
+    const ra = recent.reduce((s, m) => s + assistsIn(m, id), 0);
     // Reeks: opeenvolgende wedstrijden (waarin hij meedeed) met een goal, vanaf de laatste terug
     let run = 0;
     for (let i = games.length - 1; i >= 0; i--) {
@@ -44,10 +62,21 @@ export function hotStreaks(matches: Match[], entries: Record<string, MatchEntry>
       else break;
     }
 
-    if (lastGoals >= 2) add(id, { kind: "scorer", reason: `${lastGoals} goals in de laatste wedstrijd` });
-    else if (recentGoals >= 3) add(id, { kind: "scorer", reason: `${recentGoals} goals in de laatste ${recent.length} duels` });
-    else if (run >= 3) add(id, { kind: "scorer", reason: `${run} duels op rij gescoord` });
+    let reason: string | null = null;
+    if (lg + la >= 2) reason = `${involvement(lg, la)} in de laatste wedstrijd`;
+    else if (rg >= 3) reason = `${count(rg, "goal", "goals")} in de laatste ${recent.length} duels`;
+    else if (rg + ra >= 4) reason = `${involvement(rg, ra)} in de laatste ${recent.length} duels`;
+    else if (run >= 3) reason = `${run} duels op rij gescoord`;
+    if (!reason) continue;
+
+    // Hitte: de laatste wedstrijd dubbel, plus de laatste 3 en een eventuele reeks
+    const heat = 2 * (lg + ASSIST * la) + rg + ASSIST * ra + 0.5 * run;
+    candidates.push({ id, heat, reason });
   }
+  candidates
+    .sort((a, b) => b.heat - a.heat)
+    .slice(0, MAX_HOT)
+    .forEach((c) => add(c.id, { kind: "scorer", reason: c.reason }));
 
   // --- Keeper: clean sheets op rij, vanaf de laatste wedstrijd waarin hij keepte ---
   const keepers = new Set(games.map((m) => entries[m.id].keeperId).filter((k): k is string => !!k));

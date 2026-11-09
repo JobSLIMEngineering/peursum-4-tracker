@@ -77,7 +77,7 @@ export function buildView(files: DataFiles): AppView {
     awards,
     leads: prizeLeads(awards),
     impacts: playerImpacts(players, rows),
-    injuredLast: new Set([...(rows.at(-1)?.entry.injured ?? []), ...players.filter((p) => p.active && p.injured).map((p) => p.id)]),
+    injuredLast: injuredNow(players, rows),
     goldKeepers: new Set(
       players
         .filter((p) => {
@@ -89,6 +89,22 @@ export function buildView(files: DataFiles): AppView {
         .map((p) => p.id),
     ),
   };
+}
+
+/**
+ * Pleistertje: nu op geblesseerd gezet, of geblesseerd bij de laatste wedstrijd. Wie na die wedstrijd
+ * weer fit is gemeld (of nu niet meer op geblesseerd staat terwijl hij dat wel was), krijgt hem niet.
+ */
+function injuredNow(players: StoredPlayer[], rows: GameRow[]): Set<string> {
+  const last = rows.at(-1);
+  const lastDate = last?.match.date ?? "";
+  const out = new Set<string>();
+  for (const p of players) {
+    if (!p.active) continue;
+    if (p.injured) out.add(p.id);
+    else if (last?.entry.injured?.includes(p.id) && !(p.recoveredAt && p.recoveredAt >= lastDate) && p.injured !== false) out.add(p.id);
+  }
+  return out;
 }
 
 const byKickoff = (a: Match, b: Match) =>

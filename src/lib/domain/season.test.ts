@@ -37,8 +37,24 @@ describe("kampioenskans", () => {
     );
   });
 
-  it("zonder resterende wedstrijden is de koploper zeker kampioen", () => {
-    const done = simulateSeason(model, standings, [], 100);
+  it("als iedereen alles gespeeld heeft, is de koploper zeker kampioen", () => {
+    const full = standings.map((r) => ({ ...r, played: 22 }));
+    const done = simulateSeason(model, full, [], 100);
     expect(done.champion[US]).toBe(1);
+    expect(done.remaining).toBe(0);
+  });
+
+  it("een wedstrijd die een ander nog moet inhalen telt mee, ook zonder datum in het programma", () => {
+    // Twee teams, wij 1 punt voor maar met een wedstrijd meer gespeeld
+    const two = [
+      { team: US, position: 1, played: 22, won: 10, drawn: 0, lost: 12, goalsFor: 30, goalsAgainst: 30, points: 30 },
+      { team: "X", position: 2, played: 21, won: 9, drawn: 2, lost: 10, goalsFor: 30, goalsAgainst: 30, points: 29 },
+    ].map((r) => ({ ...r, played: r.team === US ? 2 : 1 }));
+    const m = fit(two, []);
+    const out = simulateSeason(m, two, [], 2000);
+    expect(out.remaining).toBeCloseTo(0.5, 5);
+    // X kan ons met die wedstrijd nog inhalen: geen 100% voor ons
+    expect(out.champion[US]).toBeLessThan(0.9);
+    expect(out.champion.X).toBeGreaterThan(0.1);
   });
 });

@@ -10,7 +10,7 @@ import { predict } from "@/lib/domain/model";
 import { buildRounds, isRoundDone, ourMatch, splitRounds, type RoundGroup } from "@/lib/domain/rounds";
 import { isOurs, isPlayed, opponent, ourScore, outcome, US } from "@/lib/domain/types";
 import { fmtDate, pct, todayNL } from "@/lib/format";
-import { hasPrediction, type AppView, type ViewMatch } from "@/lib/store/view";
+import { hasPrediction, nextMatch, type AppView, type ViewMatch } from "@/lib/store/view";
 
 const OPEN_KEY = "p4-open-rounds";
 const ONLY_OURS_KEY = "p4-only-ours";
@@ -140,7 +140,9 @@ export function RoundsList() {
 
   if (!open) return null;
 
-  const nextKey = defaultOpen[0];
+  // "Volgende" = de ronde van onze echte volgende wedstrijd (ook als die verplaatst is)
+  const nm = nextMatch(view);
+  const nextKey = (nm && groups.find((g) => g.matches.some((m) => m.id === nm.id))?.key) ?? defaultOpen[0];
   return (
     <>
     <RoundBar groups={groups} nextKey={nextKey} onJump={jump} />
@@ -206,7 +208,12 @@ function Round({
         {g.kind === "ronde" ? g.round : g.kind === "inhaal" ? "IN" : "+"}
       </span>
       <span className="rt">
-        <span className="rd">{g.date ? fmtDate(g.date).full : "datum onbekend"}</span>
+        {/* Datum en aftrap van ónze wedstrijd (kan verplaatst zijn), anders van de ronde */}
+        <span className="rd">
+          {(o?.date ?? g.date) ? fmtDate(o?.date ?? g.date).full : "datum onbekend"}
+          {o?.time && !isPlayed(o) ? ` · ${o.time}` : ""}
+          {o && !isPlayed(o) && o.date && g.date && o.date !== g.date ? " · verplaatst" : ""}
+        </span>
         <span className="rl">
           <Summary g={g} view={view} />
         </span>
@@ -272,8 +279,8 @@ function Summary({ g, view }: { g: RoundGroup; view: AppView }) {
   return (
     <>
       <span className="rs-us">
-        <TeamLogo team={opponent(o)} size={18} /> <b>{opponent(o)}</b>{" "}
-        <span className="muted">{o.home === US ? "thuis" : "uit"}</span>
+        <span className={`ha ${o.home === US ? "h" : "a"}`}>{o.home === US ? "Thuis" : "Uit"}</span>
+        <TeamLogo team={opponent(o)} size={18} /> <b>{opponent(o)}</b>
       </span>
       {chip}
     </>
@@ -368,11 +375,13 @@ function RoundBar({
       {rounds.map((g) => {
         const o = ourMatch(g);
         const score = o ? ourScore(o) : null;
-        const cls = score ? outcome(score[0], score[1]) : o && !o.date ? "nd" : !o ? "free" : "";
+        // Verplaatst: onze wedstrijd is niet gespeeld en staat (nog) niet op de rondedatum
+        const moved = !!o && !score && (!o.date || (!!g.date && o.date !== g.date));
+        const cls = score ? outcome(score[0], score[1]) : moved ? "moved" : !o ? "free" : "";
         const label = score
           ? `Ronde ${g.round}: ${score[0]}-${score[1]}`
           : o
-            ? `Ronde ${g.round}: ${opponent(o)}${o.date ? "" : " (niet ingepland)"}`
+            ? `Ronde ${g.round}: ${opponent(o)}${moved ? (o.date ? ` (verplaatst naar ${fmtDate(o.date).full})` : " (verplaatst, nog geen datum)") : ""}`
             : `Ronde ${g.round}: vrij`;
         return (
           <button

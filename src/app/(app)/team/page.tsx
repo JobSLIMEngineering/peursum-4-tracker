@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { todayNL } from "@/lib/format";
+import { bestPartner, duos } from "@/lib/domain/insights";
 import { Badges, AWARD_TITLE } from "@/components/Badges";
 import { sortPlayers } from "@/components/competition/EntryForm";
 import { useData } from "@/components/DataProvider";
@@ -323,6 +324,7 @@ function Tile({
   }
 
   const leads = view.leads[p.id] ?? [];
+  const partner = bestPartner(duos(view.matches, view.entries), p.id);
   const streaks = view.streaks[p.id] ?? [];
   const cards = (t?.yellow ?? 0) + (t?.red ?? 0);
   const box = (v: number | string, label: string, zero = !v) => (
@@ -399,6 +401,11 @@ function Tile({
                 <span aria-hidden="true">🏆</span> Koploper <b>{AWARD_TITLE[k]}</b>
               </div>
             ))}
+            {partner && (
+              <div>
+                <span aria-hidden="true">🤝</span> Beste maatje <b>{playerLabel(view.players.find((x) => x.id === partner.partnerId))}</b> ({partner.goals}×)
+              </div>
+            )}
             {p.injured && (
               <div>
                 <span aria-hidden="true">🩹</span> Geblesseerd

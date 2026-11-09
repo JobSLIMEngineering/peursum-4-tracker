@@ -21,7 +21,11 @@ export interface Snapshot {
 /** Wedstrijd zoals opgeslagen; `edited` wordt pas bij het samenvoegen met overrides bepaald. */
 export type StoredMatch = Omit<Match, "edited"> & { code: string | null };
 
-export type MatchEdit = Pick<Match, "date" | "time" | "home" | "away" | "kind" | "venue">;
+export type MatchEdit = Pick<Match, "date" | "time" | "home" | "away" | "kind" | "venue"> & {
+  /** Zelf ingevulde uitslag; de uitslag van de clubsite gaat altijd voor zodra die er is */
+  homeGoals?: number | null;
+  awayGoals?: number | null;
+};
 
 export interface StoredPlayer extends Player {
   /** Naam zoals op de clubsite ("Berg, Rien van den"), als de speler daarvandaan komt */

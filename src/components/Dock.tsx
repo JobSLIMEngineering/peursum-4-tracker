@@ -33,6 +33,11 @@ const MORE_ICONS: React.ReactNode[] = [
   <svg key="s" {...ICON}>
     <path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3c-.5 1.5-2 2.5-4 2.5S8.5 4.5 8 3z" />
   </svg>,
+  // Statistieken: lijn omhoog
+  <svg key="t" {...ICON}>
+    <path d="M3 3v18h18" />
+    <path d="M7 15l4-4 3 3 5-6" />
+  </svg>,
 ];
 
 /**

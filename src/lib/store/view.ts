@@ -4,7 +4,12 @@ import { hotStreaks, type Streak } from "@/lib/domain/streaks";
 import { isPlayed, opponent, US, type Match, type MatchEntry, type StandingRow } from "@/lib/domain/types";
 import type { DataFiles, Snapshot, StoredMatch, StoredPlayer } from "./schema";
 
-export type ViewMatch = Match & { extra: boolean; code: string | null };
+export type ViewMatch = Match & {
+  extra: boolean;
+  code: string | null;
+  /** Uitslag zelf ingevuld (de clubsite heeft hem nog niet) */
+  manualScore?: boolean;
+};
 
 export interface AppView {
   standings: StandingRow[];
@@ -44,7 +49,18 @@ export function buildView(files: DataFiles): AppView {
     ...files["matches.json"].matches.filter((s) => !hidden.has(s.id)).map((s) => {
       const { m, code } = strip(s);
       const e = edits[m.id];
-      return { ...m, ...(e ?? {}), edited: !!e, extra: false, code };
+      // Uitslag: die van de clubsite gaat voor; anders de zelf ingevulde
+      const manual = m.homeGoals === null && e?.homeGoals != null && e?.awayGoals != null;
+      return {
+        ...m,
+        ...(e ?? {}),
+        homeGoals: manual ? e!.homeGoals! : m.homeGoals,
+        awayGoals: manual ? e!.awayGoals! : m.awayGoals,
+        manualScore: manual,
+        edited: !!e,
+        extra: false,
+        code,
+      };
     }),
     ...extra.map((s) => {
       const { m, code } = strip(s);

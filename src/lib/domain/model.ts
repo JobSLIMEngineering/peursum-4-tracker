@@ -98,7 +98,11 @@ export function predict(model: Fit, us: string, opp: string, usAtHome: boolean):
   const h = usAtHome ? HOME_ADVANTAGE : 1 / HOME_ADVANTAGE;
   const xgUs = model.mu * model.attack[us] * model.defence[opp] * h;
   const xgThem = (model.mu * model.attack[opp] * model.defence[us]) / h;
+  return fromXg(xgUs, xgThem);
+}
 
+/** Kansen en uitslagmatrix bij gegeven verwachte goals (Poisson per kant) */
+export function fromXg(xgUs: number, xgThem: number): Prediction {
   let win = 0;
   let draw = 0;
   let loss = 0;

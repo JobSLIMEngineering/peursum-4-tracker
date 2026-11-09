@@ -11,6 +11,7 @@ import { countdown, fmtDate, kickoff, pct } from "@/lib/format";
 import { standingOf, type AppView, type ViewMatch } from "@/lib/store/view";
 import { useData } from "./DataProvider";
 import { SharePost } from "./SharePost";
+import { WeatherTag } from "@/lib/weather";
 import { Box, OUTCOME_NL, Score } from "./ui";
 
 const VERDICT_CLASS: Record<Verdict, string> = { Favoriet: "W", Pittig: "D", Lastig: "L" };
@@ -225,7 +226,7 @@ export function MatchHero({ match }: { match: ViewMatch }) {
         <div className="hero-meta">
           <span>
             {d.full}
-            {ours ? ` · ${OUTCOME_LABEL[outcome(ours[0], ours[1])]}` : ""}
+            {ours ? ` · ${OUTCOME_LABEL[outcome(ours[0], ours[1])]}` : ""} <WeatherTag date={match.date} time={match.time} />
           </span>
           <SharePost view={view} match={match} />
         </div>
@@ -253,6 +254,7 @@ export function MatchHero({ match }: { match: ViewMatch }) {
           <span className="num">{match.time ?? "–"}</span>
           <span className="k">{match.date ? d.full : "Datum onbekend"}</span>
           {left && <span className="fixture-left">{left}</span>}
+          <WeatherTag date={match.date} time={match.time} />
         </div>
       </div>
     </section>

@@ -9,13 +9,15 @@ export const TABS = [
 export const MORE = [
   { href: "/prijzen/", label: "Prijzen", sub: "Wie gaat er met de bekers vandoor?" },
   { href: "/team/", label: "Spelers", sub: "Selectie, rugnummers en stats" },
+  { href: "/statistieken/", label: "Statistieken", sub: "Vorm, duo's en Wrapped" },
 ];
 
 const ALL = [...TABS, ...MORE];
 
 /** Index van het scherm bij een pad ("/competitie/?w=…" hoort bij Competitie); menu-schermen na de tabs */
 export function tabIndex(path: string): number {
-  const p = path.replace(/\/?$/, "/");
+  // Wrapped hoort bij Statistieken
+  const p = path.replace(/\/?$/, "/").replace(/^\/wrapped\//, "/statistieken/");
   const i = ALL.findIndex((t) => t.href !== "/" && p.startsWith(t.href));
   return i === -1 ? 0 : i;
 }

@@ -8,7 +8,7 @@ import { isPlayed, US, type Match, type MatchEntry, type Player, type StandingRo
  * inhaalwedstrijden, wie terug is van een blessure, koplopers van de prijzen en wie on fire is.
  */
 
-export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur";
+export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped";
 
 export interface NewsItem {
   key: string;
@@ -34,6 +34,8 @@ export interface NewsInput {
   entries: Record<string, MatchEntry>;
   awards: Award[];
   streaks: Record<string, Streak[]>;
+  /** Beste duo (aangever → scorer), als die er is */
+  topDuo?: { assistId: string; scorerId: string; goals: number } | null;
   label: (id: string) => string;
 }
 
@@ -112,6 +114,23 @@ export function buildNews(i: NewsInput): NewsItem[] {
       href: "/prijzen/",
     });
   }
+
+  // --- Duo van het seizoen (vanaf 3 samen) ---
+  if (i.topDuo && i.topDuo.goals >= 3)
+    out.push({
+      key: "duo",
+      kind: "duo",
+      kicker: "Duo van het seizoen",
+      title: `${i.label(i.topDuo.assistId)} → ${i.label(i.topDuo.scorerId)}`,
+      text: `${i.topDuo.goals}× assist en goal samen`,
+      playerId: i.topDuo.scorerId,
+      href: "/statistieken/",
+    });
+
+  // --- Wrapped rond de winterstop (november t/m februari) en aan het eind van het seizoen (mei, juni) ---
+  const month = i.today.slice(5, 7);
+  if (["11", "12", "01", "02", "05", "06"].includes(month))
+    out.push({ key: "wrapped", kind: "wrapped", kicker: "Nieuw", title: "Peursum 4 Wrapped", text: "Het seizoen tot nu toe in beeld", href: "/wrapped/" });
 
   // --- On fire ---
   for (const [id, list] of Object.entries(i.streaks))

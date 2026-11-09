@@ -394,7 +394,7 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
 }
 
 /** 1 · Aanwezig: lijst plakken (met herkenning van namen) of spelers aantikken */
-function Attendance({
+export function Attendance({
   players,
   attendance,
   injured,

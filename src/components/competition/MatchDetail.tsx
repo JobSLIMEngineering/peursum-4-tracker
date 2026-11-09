@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { MatchHero, PredictionBlocks } from "@/components/Prediction";
 import { Fireworks } from "@/components/Fireworks";
+import { LineupChance } from "@/components/LineupChance";
 import { Spotlights } from "@/components/Spotlights";
 import { isPlayed, opponent, ourScore, US, type MatchKind } from "@/lib/domain/types";
 import type { MatchEdit } from "@/lib/store/schema";
@@ -16,7 +17,7 @@ import { EntryView } from "./EntryView";
 export function MatchDetail({ id, startEditing }: { id: string; startEditing: boolean }) {
   const { view, readOnly } = useData();
   const m = view.matches.find((x) => x.id === id);
-  const [mode, setMode] = useState<"view" | "fixture" | "entry">(startEditing && !readOnly ? "fixture" : "view");
+  const [mode, setMode] = useState<"view" | "fixture" | "entry" | "score">(startEditing && !readOnly ? "fixture" : "view");
 
   const back = (
     <Link className="btn sm" href="/competitie/" style={{ marginBottom: 12 }}>
@@ -49,22 +50,38 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
       {played ? (
         mode === "entry" ? (
           <EntryForm match={m} onDone={() => setMode("view")} />
+        ) : mode === "score" ? (
+          <ScoreForm match={m} onDone={() => setMode("view")} />
         ) : (
           <>
+            {m.manualScore && !readOnly && (
+              <p className="note warn" style={{ marginTop: 0, marginBottom: 14 }}>
+                Uitslag zelf ingevuld; de clubsite heeft hem nog niet.{" "}
+                <button className="link" type="button" onClick={() => setMode("score")}>
+                  Aanpassen
+                </button>
+              </p>
+            )}
             <EntryView match={m} onEdit={() => setMode("entry")} />
           </>
         )
+      ) : mode === "score" ? (
+        <ScoreForm match={m} onDone={() => setMode("view")} />
       ) : mode === "fixture" ? (
         <FixtureForm match={m} onDone={() => setMode("view")} />
       ) : (
         <>
           <div className="actions" style={{ margin: "0 0 14px" }} hidden={readOnly}>
+            <button className="btn primary" type="button" onClick={() => setMode("score")}>
+              Uitslag invullen
+            </button>
             <button className="btn" type="button" onClick={() => setMode("fixture")}>
               Wijzigen
             </button>
           </div>
           {hasPrediction(view, m) ? (
             <>
+              <LineupChance match={m} />
               <Spotlights match={m} />
               <PredictionBlocks view={view} match={m} />
             </>
@@ -83,6 +100,85 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
       )}
       {!readOnly && mode === "view" && <DeleteMatch match={m} />}
     </>
+  );
+}
+
+/**
+ * Zelf de uitslag invullen, zonder te wachten op de clubsite. Staat los van de clubsite-data:
+ * zodra de clubsite de uitslag heeft, gaat die voor.
+ */
+function ScoreForm({ match, onDone }: { match: ViewMatch; onDone: () => void }) {
+  const { mutate } = useData();
+  const [h, setH] = useState(match.homeGoals != null ? String(match.homeGoals) : "");
+  const [a, setA] = useState(match.awayGoals != null ? String(match.awayGoals) : "");
+  const valid = /^\d{1,2}$/.test(h) && /^\d{1,2}$/.test(a);
+
+  const base = (o: { edits: Record<string, MatchEdit> }): MatchEdit =>
+    o.edits[match.id] ?? { home: match.home, away: match.away, date: match.date, time: match.time, kind: match.kind, venue: match.venue };
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valid) return;
+    const homeGoals = Number(h);
+    const awayGoals = Number(a);
+    const ok = await mutate(
+      "overrides.json",
+      (o) =>
+        match.extra
+          ? { ...o, extra: o.extra.map((x) => (x.id === match.id ? { ...x, homeGoals, awayGoals } : x)) }
+          : { ...o, edits: { ...o.edits, [match.id]: { ...base(o), homeGoals, awayGoals } } },
+      `uitslag ingevuld: ${match.home} ${homeGoals}-${awayGoals} ${match.away}`,
+    );
+    if (ok) onDone();
+  }
+
+  async function clear() {
+    const ok = await mutate(
+      "overrides.json",
+      (o) =>
+        match.extra
+          ? { ...o, extra: o.extra.map((x) => (x.id === match.id ? { ...x, homeGoals: null, awayGoals: null } : x)) }
+          : { ...o, edits: { ...o.edits, [match.id]: { ...base(o), homeGoals: null, awayGoals: null } } },
+      `uitslag gewist: ${match.home} - ${match.away}`,
+    );
+    if (ok) onDone();
+  }
+
+  return (
+    <form className="box" onSubmit={save}>
+      <div className="box-h">
+        <p className="lbl">Uitslag invullen</p>
+      </div>
+      <div className="box-b">
+        <div className="score-form">
+          <label className="f">
+            {match.home}
+            <input type="number" inputMode="numeric" min={0} max={99} value={h} onChange={(e) => setH(e.target.value)} required autoFocus />
+          </label>
+          <span className="num">–</span>
+          <label className="f">
+            {match.away}
+            <input type="number" inputMode="numeric" min={0} max={99} value={a} onChange={(e) => setA(e.target.value)} required />
+          </label>
+        </div>
+        <p className="meta" style={{ margin: "10px 0 0" }}>
+          Zodra de uitslag op de clubsite staat, neemt de app die over.
+        </p>
+      </div>
+      <div className="box-b actions" style={{ marginTop: 0 }}>
+        <button className="btn primary" type="submit" disabled={!valid}>
+          Opslaan
+        </button>
+        <button className="btn" type="button" onClick={onDone}>
+          Annuleren
+        </button>
+        {match.manualScore && (
+          <button className="btn" type="button" onClick={clear}>
+            Uitslag wissen
+          </button>
+        )}
+      </div>
+    </form>
   );
 }
 
@@ -116,7 +212,7 @@ function FixtureForm({ match, onDone }: { match: ViewMatch; onDone: () => void }
       (o) =>
         match.extra
           ? { ...o, extra: o.extra.map((x) => (x.id === match.id ? { ...x, ...edit } : x)) }
-          : { ...o, edits: { ...o.edits, [match.id]: edit } },
+          : { ...o, edits: { ...o.edits, [match.id]: { ...o.edits[match.id], ...edit } } },
       `wedstrijd gewijzigd: ${edit.home} - ${edit.away}`,
     );
     if (ok) onDone();

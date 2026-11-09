@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { duos } from "@/lib/domain/insights";
 import { buildNews, type NewsKind } from "@/lib/domain/news";
 import { playerLabel } from "@/lib/domain/types";
 import { todayNL } from "@/lib/format";
@@ -17,6 +18,8 @@ const ICON: Record<NewsKind, string> = {
   terug: "💪",
   prijs: "🏆",
   vuur: "🔥",
+  duo: "🤝",
+  wrapped: "🎬",
 };
 
 const EVERY = 5500;
@@ -36,6 +39,7 @@ export function NewsTicker() {
         entries: readOnly ? {} : view.entries,
         awards: view.awards,
         streaks: view.streaks,
+        topDuo: duos(view.matches, view.entries)[0] ?? null,
         label: (id) => playerLabel(view.players.find((p) => p.id === id)),
       }),
     [view, readOnly],

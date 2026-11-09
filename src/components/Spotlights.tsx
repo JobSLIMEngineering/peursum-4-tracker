@@ -64,7 +64,10 @@ export function Spotlights({ match }: { match: Match }) {
 
   const p = predict(view.model, US, opp, match.home === US);
   const cards = spotlights({
-    players: view.players,
+    // Is de aanwezigheid al ingevuld, dan alleen wie er echt bij is
+    players: view.entries[match.id]?.attendance.length
+      ? view.players.filter((p) => view.entries[match.id].attendance.includes(p.id))
+      : view.players,
     rows: view.rows,
     prediction: p,
     opponent: opp,

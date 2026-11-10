@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useData } from "@/components/DataProvider";
-import { FormChart } from "@/components/FormChart";
+import { SeasonChart } from "@/components/SeasonChart";
 import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
 import { PotmPack } from "@/components/PotmPack";
@@ -27,7 +27,7 @@ const short = (p: StoredPlayer | undefined) => {
 
 /** Statistieken: vorm door het seizoen (gecorrigeerd voor de tegenstanders) en de duo's */
 export default function StatistiekenPage() {
-  const { view } = useData();
+  const { view, readOnly } = useData();
   const form = useMemo(() => seasonForm(view.model, view.matches, view.pool), [view]);
   const pairs = useMemo(() => duos(view.matches, view.entries).slice(0, 6), [view]);
   // Spelersklassement: alleen wie er iets bij heeft (geen minnen in beeld), top 10
@@ -81,7 +81,7 @@ export default function StatistiekenPage() {
             )}
           </div>
         )}
-        <FormChart points={form} />
+        <SeasonChart points={form} entries={view.entries} showInjuries={!readOnly} />
       </Box>
 
       {potm && (

@@ -1309,3 +1309,11 @@ html, body { overflow-x: clip; }
 .pp-txt { display: grid; flex: 1; min-width: 0; gap: 2px; }
 .pp-txt .k { color: #f4c542; }
 .pp-txt b { font: 900 italic 20px/1.1 var(--f-cond); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Keuze in de seizoensgrafiek */
+.chart-pick { display: flex; gap: 6px; overflow-x: auto; margin: 0 -2px 10px; padding: 2px; scrollbar-width: none; touch-action: pan-x pan-y; }
+.chart-pick::-webkit-scrollbar { display: none; }
+.chart-pick button { flex: 0 0 auto; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--fg-2); font: 800 12px var(--f-cond); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.chart-pick button[aria-selected="true"] { background: var(--red); border-color: var(--red); color: var(--on-red); }
+.chart .grid.zero { stroke: var(--line-strong); stroke-width: 1.5; }
+.chart .dot.n { fill: var(--red); }

@@ -20,6 +20,11 @@ export interface FormPoint {
    * Zo schommelt het niet elke week, maar zie je het verloop over het seizoen.
    */
   form: number;
+  /** Goals voor en tegen, en wat het model verwachtte (sterkte van de tegenstander, thuis/uit) */
+  goalsFor: number;
+  goalsAgainst: number;
+  xgFor: number;
+  xgAgainst: number;
 }
 
 const WINDOW = 5;
@@ -51,6 +56,10 @@ export function seasonForm(model: Fit, matches: Match[], pool: Set<string>, team
       cumPoints: cp,
       cumExpected: ce,
       form: recent.reduce((s, x) => s + x, 0) / recent.length,
+      goalsFor: f,
+      goalsAgainst: a,
+      xgFor: p.xgUs,
+      xgAgainst: p.xgThem,
     });
   }
   return out;

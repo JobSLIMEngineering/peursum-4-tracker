@@ -96,8 +96,9 @@ export interface MonthWinner {
 /**
  * Speler van de maand: meeste punten in die maand. Wie maar één wedstrijd meedeed in een maand met
  * meer wedstrijden, telt niet mee (anders wint een invaller met één uitschieter).
+ * `until` (yyyy-mm): alleen maanden vóór deze maand, want een lopende maand is nog niet klaar.
  */
-export function playersOfTheMonth(rows: GameRow[], players: Pick<Player, "id" | "position">[]): MonthWinner[] {
+export function playersOfTheMonth(rows: GameRow[], players: Pick<Player, "id" | "position">[], until?: string): MonthWinner[] {
   const months = new Map<string, GameRow[]>();
   for (const r of rows) {
     const m = (r.match.date ?? "").slice(0, 7);
@@ -105,6 +106,7 @@ export function playersOfTheMonth(rows: GameRow[], players: Pick<Player, "id" | 
   }
   const out: MonthWinner[] = [];
   for (const [month, rs] of [...months.entries()].sort()) {
+    if (until && month >= until) continue;
     const min = rs.length >= 2 ? 2 : 1;
     const best = seasonRatings(rs, players).filter((s) => s.games >= min && s.total > 0)[0];
     if (best) out.push({ month, playerId: best.playerId, total: best.total, games: best.games });

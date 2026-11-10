@@ -204,7 +204,15 @@ export interface PlayerSeason {
   hattricks: number;
 }
 
-export function playerSeason(id: string, rows: GameRow[], players: RolePlayer[], matches: Match[], entries: Record<string, MatchEntry>): PlayerSeason {
+export function playerSeason(
+  id: string,
+  rows: GameRow[],
+  players: RolePlayer[],
+  matches: Match[],
+  entries: Record<string, MatchEntry>,
+  /** Lopende maand (yyyy-mm): telt nog niet mee voor speler van de maand */
+  until?: string,
+): PlayerSeason {
   const mine = rows.filter((r) => r.entry.attendance.includes(id));
   const fit = rows.filter((r) => !r.entry.injured?.includes(id));
   const rated = seasonRatings(rows, players).find((s) => s.playerId === id);
@@ -224,7 +232,7 @@ export function playerSeason(id: string, rows: GameRow[], players: RolePlayer[],
     points: rated?.total ?? 0,
     perGame: rated?.perGame ?? 0,
     motm: mine.filter((r) => rateMatch(r, players)[0]?.playerId === id && rateMatch(r, players)[0].total > 0).length,
-    potm: playersOfTheMonth(rows, players).filter((m) => m.playerId === id).length,
+    potm: playersOfTheMonth(rows, players, until).filter((m) => m.playerId === id).length,
     record,
     partner: bestPartner(duos(matches, entries), id),
     keeper: kept.length

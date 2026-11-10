@@ -1317,3 +1317,4 @@ html, body { overflow-x: clip; }
 .chart-pick button[aria-selected="true"] { background: var(--red); border-color: var(--red); color: var(--on-red); }
 .chart .grid.zero { stroke: var(--line-strong); stroke-width: 1.5; }
 .chart .dot.n { fill: var(--red); }
+.fut-down { padding: 1px 5px; border-radius: 6px; background: var(--loss); color: #fff; font: 800 11px var(--f-cond); }

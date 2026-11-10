@@ -8,7 +8,8 @@ import { ourScore, POSITION_ROLE, ROLE_CODE, type Player, type Position } from "
  *
  * Elk cijfer is een rangorde binnen de selectie (wie het best scoort op dat onderdeel krijgt het hoogst),
  * afgevlakt met het aantal duels: wie weinig speelde, zit dichter bij het midden. Niemand is "slecht":
- * iedereen heeft een gouden kaart (cijfers vanaf 70). Speciale kaarten (team van de maand, speler van
+ * iedereen heeft een gouden kaart (cijfers vanaf 70). Wie twee of meer wedstrijden op rij afwezig is (niet
+ * door een blessure), zakt: 2 op rij −1, daarna −1 per extra wedstrijd. Speciale kaarten (team van de maand, speler van
  * de maand, team van het seizoen) worden in de view bepaald, zoals bij FIFA.
  *
  * Veldspelers: AAN aanval · PAS aangeven · VER verdedigen · VRM vorm (laatste 3) · INZ inzet (opkomst)
@@ -27,6 +28,10 @@ export interface PlayerCard {
   stats: { key: StatKey; value: number }[];
   /** Basis is altijd goud */
   tier: "goud";
+  /** Wedstrijden op rij afwezig (zonder blessure), tot de laatste wedstrijd */
+  absentRun: number;
+  /** Aftrek op het totaal: 2 op rij afwezig = −1, daarna −1 per extra wedstrijd */
+  penalty: number;
   games: number;
 }
 
@@ -93,10 +98,20 @@ export function playerCards(
     const stats = keys.map((key) => ({ key, value: scale(key, p.id) }));
     const w = WEIGHTS[p.position];
     const sumW = keys.reduce((s, k) => s + (w[k] ?? 0), 0) || 1;
-    const overall = Math.round(stats.reduce((s, x) => s + x.value * (w[x.key] ?? 0), 0) / sumW);
+    // Afwezig zonder blessure, op rij vanaf de laatste wedstrijd terug (blessure-duels worden overgeslagen)
+    let absentRun = 0;
+    for (let i = rows.length - 1; i >= 0 && raw[p.id].games > 0; i--) {
+      if (rows[i].entry.attendance.includes(p.id)) break;
+      if (rows[i].entry.injured?.includes(p.id)) continue;
+      absentRun++;
+    }
+    const penalty = absentRun >= 2 ? absentRun - 1 : 0;
+    const overall = Math.max(60, Math.round(stats.reduce((s, x) => s + x.value * (w[x.key] ?? 0), 0) / sumW) - penalty);
     out[p.id] = {
       playerId: p.id,
       overall,
+      absentRun,
+      penalty,
       pos: ROLE_CODE[p.role ?? POSITION_ROLE[p.position]],
       stats,
       tier: "goud",

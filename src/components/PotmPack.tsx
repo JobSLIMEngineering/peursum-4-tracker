@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { playersOfTheMonth } from "@/lib/domain/rating";
+import { useEffect, useState } from "react";
 import { playerLabel, US } from "@/lib/domain/types";
 import { MON_FULL } from "@/lib/format";
 import { useData } from "./DataProvider";
@@ -16,7 +15,7 @@ const KEY = "p4-potm-opened";
  */
 export function PotmPack({ compact = false }: { compact?: boolean }) {
   const { view } = useData();
-  const potm = useMemo(() => playersOfTheMonth(view.rows, view.players).at(-1), [view]);
+  const potm = view.potms.at(-1);
   const [open, setOpen] = useState(false);
   const [seen, setSeen] = useState(false);
   const key = potm ? `${potm.month}:${potm.playerId}` : "";

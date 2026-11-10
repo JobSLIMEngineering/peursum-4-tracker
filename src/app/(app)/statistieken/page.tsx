@@ -10,7 +10,7 @@ import { PotmPack } from "@/components/PotmPack";
 import { TeamOfMonth } from "@/components/TeamOfMonth";
 import { Box } from "@/components/ui";
 import { duos, seasonForm } from "@/lib/domain/insights";
-import { playersOfTheMonth, seasonRatings } from "@/lib/domain/rating";
+import { seasonRatings } from "@/lib/domain/rating";
 import { MON_FULL } from "@/lib/format";
 import type { StoredPlayer } from "@/lib/store/schema";
 import { playerLabel, splitName } from "@/lib/domain/types";
@@ -32,7 +32,7 @@ export default function StatistiekenPage() {
   const pairs = useMemo(() => duos(view.matches, view.entries).slice(0, 6), [view]);
   // Spelersklassement: alleen wie er iets bij heeft (geen minnen in beeld), top 10
   const ranking = useMemo(() => seasonRatings(view.rows, view.players).filter((r) => r.total > 0).slice(0, 10), [view]);
-  const months = useMemo(() => playersOfTheMonth(view.rows, view.players), [view]);
+  const months = view.potms;
   const potm = months.at(-1);
   const last = form.at(-1);
   const byId = (id: string) => view.players.find((p) => p.id === id);

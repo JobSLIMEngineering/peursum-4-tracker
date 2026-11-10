@@ -91,3 +91,13 @@ describe("tijdelijke plek", () => {
     expect(d(moved)).toBe(rateMatch(moved, players).find((x) => x.playerId === "v")!.defence);
   });
 });
+
+describe("speler van de maand pas na afloop van de maand", () => {
+  it("lopende maand telt nog niet", () => {
+    const rows = [
+      row("a1", "2026-10-03", 2, 0, { s: st(2) }, { pts: 1, ga: 1, gf: 1 }),
+      row("a2", "2026-11-07", 2, 0, { m: st(2) }, { pts: 1, ga: 1, gf: 1 }),
+    ];
+    expect(playersOfTheMonth(rows, players, "2026-11").map((m) => m.month)).toEqual(["2026-10"]);
+  });
+});

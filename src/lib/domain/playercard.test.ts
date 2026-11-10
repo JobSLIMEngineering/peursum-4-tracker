@@ -71,3 +71,20 @@ describe("spelerskaart", () => {
   });
 
 });
+
+describe("afwezig: kaart zakt", () => {
+  it("2 op rij afwezig −1, 3 op rij −2; blessure telt niet", () => {
+    const extra = [
+      row("4", 1, 0, ["k", "s", "v"], {}),
+      row("5", 1, 0, ["k", "s", "v"], {}),
+    ];
+    const c = playerCards([...rows, ...extra], players, {});
+    // m deed mee in 1 en 2, miste 3, 4 en 5
+    expect(c.m.absentRun).toBe(3);
+    expect(c.m.penalty).toBe(2);
+    const hurt = extra.map((r) => ({ ...r, entry: { ...r.entry, injured: ["m"] } }));
+    const c2 = playerCards([...rows, ...hurt], players, {});
+    expect(c2.m.absentRun).toBe(1);
+    expect(c2.m.penalty).toBe(0);
+  });
+});

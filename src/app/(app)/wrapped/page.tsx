@@ -11,7 +11,6 @@ import { Walkout } from "@/components/Walkout";
 import { TeamLogo } from "@/components/TeamLogo";
 import type { AwardKey } from "@/lib/domain/awards";
 import { duos, seasonForm } from "@/lib/domain/insights";
-import { playersOfTheMonth } from "@/lib/domain/rating";
 import { lastMatches, playerTotals } from "@/lib/domain/stats";
 import { playerLabel, US } from "@/lib/domain/types";
 import { MON_FULL, todayNL } from "@/lib/format";
@@ -61,7 +60,7 @@ export default function WrappedPage() {
     const form = seasonForm(view.model, view.matches, view.pool).at(-1);
     const games = lastMatches(view.matches, US, 99);
     const best = [...games].sort((a, b) => b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst))[0];
-    const potm = playersOfTheMonth(view.rows, view.players).at(-1);
+    const potm = view.potms.at(-1);
     const done = !!us && us.played >= 2 * (view.standings.length - 1);
     const out: Slide[] = [
       {

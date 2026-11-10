@@ -116,9 +116,14 @@ export default function TeamPage() {
                       banner={view.special[p.id]?.banner}
                     />
                     {/* Onder de kaart: upgrade en icoontjes, zodat er niets over de kaart heen valt */}
-                    {(view.upgrades[p.id] || view.injuredLast.has(p.id) || view.streaks[p.id] || view.leads[p.id]) && (
+                    {(view.upgrades[p.id] || c.penalty > 0 || view.injuredLast.has(p.id) || view.streaks[p.id] || view.leads[p.id]) && (
                       <span className="card-under" onClick={(e) => e.stopPropagation()}>
                         {view.upgrades[p.id] && <span className="fut-up">▲{view.upgrades[p.id]}</span>}
+                        {c.penalty > 0 && (
+                          <span className="fut-down" title={`${c.absentRun} wedstrijden op rij afwezig`}>
+                            ▼{c.penalty}
+                          </span>
+                        )}
                         <Badges playerId={p.id} />
                       </span>
                     )}

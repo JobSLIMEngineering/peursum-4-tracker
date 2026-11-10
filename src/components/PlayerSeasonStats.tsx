@@ -10,7 +10,7 @@ const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
 /** Compacte lijst met de seizoensstatistieken van één speler, onder zijn kaart */
 export function PlayerSeasonStats({ playerId }: { playerId: string }) {
   const { view } = useData();
-  const s = playerSeason(playerId, view.rows, view.players, view.matches, view.entries);
+  const s = playerSeason(playerId, view.rows, view.players, view.matches, view.entries, view.thisMonth);
   const months = view.monthly.months;
   const trend = view.monthly.overall[playerId] ?? [];
   const partner = s.partner && view.players.find((p) => p.id === s.partner!.partnerId);
@@ -20,6 +20,9 @@ export function PlayerSeasonStats({ playerId }: { playerId: string }) {
     ["Goals · assists", `${s.goals} · ${s.assists}${s.games ? ` (${comma((s.goals + s.assists) / s.games)} per duel)` : ""}`],
     ["Met hem erbij", `${s.record.w}W ${s.record.d}G ${s.record.l}V`],
   ];
+  const card = view.cards[playerId];
+  if (card?.penalty)
+    rows.push(["Afwezig", <span key="a" className="down">{card.absentRun} wedstrijden op rij (kaart −{card.penalty})</span>]);
   if (s.hattricks) rows.push(["Hattricks", `⚽⚽⚽ ${s.hattricks}×`]);
   if (s.points > 0) rows.push(["Spelerspunten", `${comma(s.points)} · ${comma(s.perGame)} per duel`]);
   if (s.motm || s.potm)

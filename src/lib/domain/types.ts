@@ -164,3 +164,21 @@ export const outcome = (forGoals: number, against: number): Outcome =>
 
 export const playerLabel = (p: Pick<Player, "name" | "hiddenNo"> | undefined) =>
   !p ? "Onbekend" : p.name || `Afgeschermde speler ${p.hiddenNo ?? ""}`.trim();
+
+const PREFIXES = new Set(["van", "der", "den", "de", "het", "ten", "ter", "te", "'t", "in", "op", "la", "le", "von"]);
+
+/**
+ * Voornaam en achternaam (met tussenvoegsel) uit een volledige naam. Is de achternaam langer dan `max`,
+ * dan wordt het tussenvoegsel afgekort: "van der Linden" → "v.d. Linden".
+ */
+export function splitName(name: string | null, max = 12): { first: string; last: string } {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return { first: "", last: parts[0] ?? "" };
+  const first = parts[0];
+  const rest = parts.slice(1);
+  const full = rest.join(" ");
+  if (full.length <= max) return { first, last: full };
+  const prefix = rest.filter((w, i) => i < rest.length - 1 && PREFIXES.has(w.toLowerCase()));
+  if (!prefix.length) return { first, last: full };
+  return { first, last: `${prefix.map((w) => `${w[0].toLowerCase()}.`).join("")} ${rest.slice(prefix.length).join(" ")}` };
+}

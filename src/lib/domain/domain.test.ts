@@ -314,3 +314,13 @@ describe("aanwezigheidslijst: kopjes overslaan", () => {
     expect(r.unknown).toEqual([]);
   });
 });
+
+describe("namen op kaarten", () => {
+  it("tussenvoegsel bij de achternaam, afgekort als die lang is", async () => {
+    const { splitName } = await import("./types");
+    expect(splitName("Tim Boer")).toEqual({ first: "Tim", last: "Boer" });
+    expect(splitName("Niels de Groot")).toEqual({ first: "Niels", last: "de Groot" });
+    expect(splitName("Damian van der Linden")).toEqual({ first: "Damian", last: "v.d. Linden" });
+    expect(splitName("Tim van Houwelingen")).toEqual({ first: "Tim", last: "v. Houwelingen" });
+  });
+});

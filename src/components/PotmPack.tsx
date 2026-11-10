@@ -1,0 +1,61 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { playersOfTheMonth } from "@/lib/domain/rating";
+import { playerLabel, US } from "@/lib/domain/types";
+import { MON_FULL } from "@/lib/format";
+import { useData } from "./DataProvider";
+import { TeamLogo } from "./TeamLogo";
+import { Walkout } from "./Walkout";
+
+const KEY = "p4-potm-opened";
+
+/**
+ * Speler van de maand als dicht pakje: pas na openen (walk-out) zie je wie het is.
+ * Per apparaat onthouden dat je hem al geopend hebt, dan staat de naam erbij.
+ */
+export function PotmPack({ compact = false }: { compact?: boolean }) {
+  const { view } = useData();
+  const potm = useMemo(() => playersOfTheMonth(view.rows, view.players).at(-1), [view]);
+  const [open, setOpen] = useState(false);
+  const [seen, setSeen] = useState(false);
+  const key = potm ? `${potm.month}:${potm.playerId}` : "";
+
+  useEffect(() => {
+    try {
+      if (key && localStorage.getItem(KEY) === key) queueMicrotask(() => setSeen(true));
+    } catch {
+      // geen opslag: gewoon dicht laten
+    }
+  }, [key]);
+
+  if (!potm || !view.cards[potm.playerId]) return null;
+  const month = MON_FULL[Number(potm.month.slice(5, 7)) - 1];
+  const player = view.players.find((p) => p.id === potm.playerId);
+
+  const close = () => {
+    setOpen(false);
+    setSeen(true);
+    try {
+      localStorage.setItem(KEY, key);
+    } catch {
+      // niet onthouden is geen probleem
+    }
+  };
+
+  return (
+    <section className={`potm-pack ${compact ? "compact" : ""}`}>
+      <div className="pp-logo" aria-hidden="true">
+        <TeamLogo team={US} size={compact ? 44 : 56} />
+      </div>
+      <div className="pp-txt">
+        <span className="k">Speler van {month}</span>
+        <b>{seen ? playerLabel(player) : "Wie is het geworden?"}</b>
+      </div>
+      <button className="btn primary sm" type="button" onClick={() => setOpen(true)}>
+        {seen ? "Bekijk kaart" : "Open het pakje"}
+      </button>
+      {open && <Walkout playerId={potm.playerId} special banner={`Speler van ${month}`} onClose={close} />}
+    </section>
+  );
+}

@@ -47,14 +47,18 @@ export function kickoff(date: string, time: string | null): Date {
   return new Date(guess - (asIfUtc - guess));
 }
 
-/** "nog 19 dagen", "nog 1 dag 4u", "nog 2u 15m", "nu bezig" of null als hij voorbij is */
+/**
+ * Aftellen in kalenderdagen (Nederlandse tijd), zoals je het zegt: "nog 3 dagen", "morgen 14:30",
+ * op de dag zelf "vandaag 14:30" en de laatste uren "nog 2u 15m"; "nu bezig" of null als hij voorbij is.
+ */
 export function countdown(to: Date, now: Date = new Date()): string | null {
   const min = Math.floor((to.getTime() - now.getTime()) / 60000);
   if (min <= -120) return null;
   if (min <= 0) return "nu bezig";
-  const days = Math.floor(min / 1440);
-  const hours = Math.floor((min % 1440) / 60);
+  const days = Math.round((Date.parse(`${todayNL(to)}T12:00Z`) - Date.parse(`${todayNL(now)}T12:00Z`)) / 864e5);
+  const time = new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" }).format(to);
   if (days >= 2) return `nog ${days} dagen`;
-  if (days === 1) return `nog 1 dag ${hours}u`;
-  return `nog ${hours}u ${min % 60}m`;
+  if (days === 1) return `morgen ${time}`;
+  if (min >= 180) return `vandaag ${time}`;
+  return `nog ${Math.floor(min / 60)}u ${min % 60}m`;
 }

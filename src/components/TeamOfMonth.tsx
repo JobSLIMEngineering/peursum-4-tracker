@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { monthsOf, ROLES, teamOfTheMonth, teamOfTheSeason } from "@/lib/domain/season-stats";
-import { playerLabel } from "@/lib/domain/types";
+import { playerLabel, splitName } from "@/lib/domain/types";
 import { MON_FULL } from "@/lib/format";
 import { useData } from "./DataProvider";
 import { InfoTip } from "./InfoTip";
@@ -12,7 +12,7 @@ import { CardView } from "./CardView";
 const ROLE = Object.fromEntries(ROLES.map((r) => [r.key, r.label]));
 const monthName = (ym: string) => MON_FULL[Number(ym.slice(5, 7)) - 1];
 /** Achternaam (of voornaam) zodat het op het veldje past */
-const short = (name: string | null, label: string) => (name ? name.split(/\s+/).at(-1)! : label);
+const short = (name: string | null, label: string) => (name ? splitName(name, 9).last : label);
 
 /** Team van de maand in een 1-4-3-3 op een veldje; blader per maand, tik op een speler voor zijn kaart */
 export function TeamOfMonth() {

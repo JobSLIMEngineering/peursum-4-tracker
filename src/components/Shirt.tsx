@@ -10,10 +10,10 @@ type ShirtPlayer = Pick<Player, "id" | "name" | "position" | "type" | "number" |
  * de competitie is, anders groen; leenspelers grijs met zwart nummer.
  */
 function colors(p: ShirtPlayer, gold: boolean) {
-  if (p.position === "Keeper" && gold) return { top: "#ffd21f", bottom: "#e0a800", trim: "#1b1315", text: "#1b1315" };
-  if (p.position === "Keeper") return { top: "#3fcf6e", bottom: "#1d9a48", trim: "#0f2a18", text: "#0f2a18" };
-  if (p.type === "leen") return { top: "#b4b6ba", bottom: "#8a8c91", trim: "#4a4c50", text: "#1b1315" };
-  return { top: "#e3262f", bottom: "#a3121c", trim: "#ffffff", text: "#ffffff" };
+  if (p.position === "Keeper" && gold) return { top: "#ffd21f", bottom: "#e0a800", trim: "#1b1315", text: "#1b1315", stripe: "#b07c00" };
+  if (p.position === "Keeper") return { top: "#3fcf6e", bottom: "#1d9a48", trim: "#0f2a18", text: "#0f2a18", stripe: "#137036" };
+  if (p.type === "leen") return { top: "#b4b6ba", bottom: "#8a8c91", trim: "#4a4c50", text: "#1b1315", stripe: "" };
+  return { top: "#e3262f", bottom: "#a3121c", trim: "#ffffff", text: "#ffffff", stripe: "" };
 }
 
 function initials(name: string | null): string {
@@ -64,6 +64,9 @@ export function ShirtSvg({ player, size = 48, gold = false }: { player: ShirtPla
           <stop offset=".78" stopColor="#000" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity=".22" />
         </linearGradient>
+        <clipPath id={`${id}-body`}>
+          <path d="M36 9c4 3 9 4.5 14 4.5S60 12 64 9l18 6.5L96 35l-14 8.5-5-6.5V91c-9 3-18 4-27 4s-18-1-27-4V37l-5 6.5L4 35l14-19.5z" />
+        </clipPath>
       </defs>
       {/* Romp en korte mouwen */}
       <path
@@ -74,6 +77,20 @@ export function ShirtSvg({ player, size = 48, gold = false }: { player: ShirtPla
         d="M36 9c4 3 9 4.5 14 4.5S60 12 64 9l18 6.5L96 35l-14 8.5-5-6.5V91c-9 3-18 4-27 4s-18-1-27-4V37l-5 6.5L4 35l14-19.5z"
         fill={`url(#${id}-side)`}
       />
+      {/* Keeper: lichte tijgerprint, alleen hier en daar, in een donkerdere tint van het shirt */}
+      {player.position === "Keeper" && (
+        <g clipPath={`url(#${id}-body)`} fill={c.stripe} opacity=".55">
+          <path d="M24 40c6 2 9 6 10 12-4-3-7-4-12-4z" />
+          <path d="M23 58c7 1 11 4 13 9-5-2-9-3-14-2z" />
+          <path d="M24 76c6 0 10 2 12 6-4-1-8-1-13 0z" />
+          <path d="M77 44c-6 2-9 6-10 11 4-3 7-4 11-4z" />
+          <path d="M78 62c-7 1-11 4-13 9 5-2 9-3 14-2z" />
+          <path d="M77 80c-6 0-10 2-12 6 4-1 8-1 13 0z" />
+          <path d="M6 33c4 1 7 3 8 6-3-1-6-2-9-2z" />
+          <path d="M94 33c-4 1-7 3-8 6 3-1 6-2 9-2z" />
+          <path d="M42 86c3 0 6 2 8 5-3-1-6-1-9 0z" />
+        </g>
+      )}
       {/* Kraag en mouwboorden */}
       <path d="M36 9c4 3 9 4.5 14 4.5S60 12 64 9" fill="none" stroke={c.trim} strokeWidth="3.5" strokeLinecap="round" />
       <path d="M96 35l-14 8.5M4 35l14 8.5" stroke={c.trim} strokeWidth="3.5" strokeLinecap="round" />

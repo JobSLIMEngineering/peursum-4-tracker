@@ -62,10 +62,12 @@ describe("team van de maand", () => {
     expect(team.flat().some((s) => s.playerId === "bank")).toBe(false);
   });
 
-  it("in oktober speelde rv niet: dan staat er een andere aanvaller", () => {
+  it("strikt één speler per plek: speelde de rechtsbuiten niet, dan blijft die plek leeg", () => {
     const team = teamOfTheMonth(rows, players, "2026-10");
     expect(team.flat().some((s) => s.playerId === "rv")).toBe(false);
-    expect(team.flat().some((s) => s.playerId === "bank")).toBe(true);
+    expect(team[3][2].playerId).toBeNull();
+    // geen tweede spits op de vleugel
+    expect(team.flat().filter((s) => s.playerId === "bank" || s.playerId === "sp").length).toBe(1);
   });
 });
 

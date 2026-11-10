@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChampionChance } from "@/components/ChampionChance";
 import { Fireworks } from "@/components/Fireworks";
 import { NewsTicker } from "@/components/NewsTicker";
+import { PotmPack } from "@/components/PotmPack";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
@@ -29,6 +30,7 @@ export default function OverzichtPage() {
       <div className="stack ovl">
         <MatchPair view={view} startOnNext={soon} />
         <NewsTicker />
+        <PotmPack compact />
 
         <ChampionChance view={view} />
 

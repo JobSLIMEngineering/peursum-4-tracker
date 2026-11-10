@@ -1,27 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useData } from "@/components/DataProvider";
 import { FormChart } from "@/components/FormChart";
 import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
+import { PotmPack } from "@/components/PotmPack";
 import { TeamOfMonth } from "@/components/TeamOfMonth";
-import { Walkout } from "@/components/Walkout";
 import { Box } from "@/components/ui";
 import { duos, seasonForm } from "@/lib/domain/insights";
 import { playersOfTheMonth, seasonRatings } from "@/lib/domain/rating";
 import { MON_FULL } from "@/lib/format";
 import type { StoredPlayer } from "@/lib/store/schema";
-import { playerLabel } from "@/lib/domain/types";
+import { playerLabel, splitName } from "@/lib/domain/types";
 
 const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
 const signed = (x: number, d = 1) => (x >= 0 ? "+" : "−") + comma(Math.abs(x), d);
 const monthName = (ym: string) => MON_FULL[Number(ym.slice(5, 7)) - 1];
 /** Voornaam + eerste letter achternaam, zodat duo's op een telefoon leesbaar blijven */
 const short = (p: StoredPlayer | undefined) => {
-  const parts = playerLabel(p).split(/\s+/);
-  return parts.length > 1 && p?.name ? `${parts[0]} ${parts.at(-1)![0]}.` : playerLabel(p);
+  if (!p?.name) return playerLabel(p);
+  const n = splitName(p.name, 9);
+  return n.first ? `${n.first} ${n.last}` : n.last;
 };
 
 /** Statistieken: vorm door het seizoen (gecorrigeerd voor de tegenstanders) en de duo's */
@@ -33,7 +34,6 @@ export default function StatistiekenPage() {
   const ranking = useMemo(() => seasonRatings(view.rows, view.players).filter((r) => r.total > 0).slice(0, 10), [view]);
   const months = useMemo(() => playersOfTheMonth(view.rows, view.players), [view]);
   const potm = months.at(-1);
-  const [pack, setPack] = useState(false);
   const last = form.at(-1);
   const byId = (id: string) => view.players.find((p) => p.id === id);
   // Vorm nu (laatste 5) en hoe het begon (eerste 5), om de lijn over het seizoen te duiden
@@ -95,24 +95,9 @@ export default function StatistiekenPage() {
               kans, van keeper tot spits. Wie in een maand maar één duel speelde, telt niet mee.
             </InfoTip>
           </div>
-          <div className="potm-main">
-            {byId(potm.playerId) && <Shirt player={byId(potm.playerId)!} size={84} />}
-            <div>
-              <span className="k">{monthName(potm.month)}</span>
-              <b>{playerLabel(byId(potm.playerId))}</b>
-              <span className="meta">
-                {comma(potm.total)} spelerspunten in {potm.games} duels
-              </span>
-            </div>
-          </div>
           <div className="potm-open">
-            <button className="btn primary" type="button" onClick={() => setPack(true)}>
-              Open het pakje
-            </button>
+            <PotmPack />
           </div>
-          {pack && (
-            <Walkout playerId={potm.playerId} special banner={`Speler van ${monthName(potm.month)}`} onClose={() => setPack(false)} />
-          )}
           {months.length > 1 && (
             <div className="potm-prev">
               {months

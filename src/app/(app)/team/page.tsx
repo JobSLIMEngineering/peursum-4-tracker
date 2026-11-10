@@ -88,7 +88,7 @@ export default function TeamPage() {
           .sort((a, b) => ROLE_ORDER.indexOf(roleOf(a)) - ROLE_ORDER.indexOf(roleOf(b)) || (view.cards[b.id]?.overall ?? 0) - (view.cards[a.id]?.overall ?? 0));
         if (!list.length) return null;
         return (
-          <section key={line.key} className="squad-line">
+          <section key={line.key} className="squad-line glass">
             <div className="sec-h">
               <p className="lbl">{line.label}</p>
               <span className="meta">{list.length}</span>
@@ -115,9 +115,10 @@ export default function TeamPage() {
                       variant={view.special[p.id]?.variant}
                       banner={view.special[p.id]?.banner}
                     />
-                    {view.upgrades[p.id] && <span className="fut-up card-up">▲{view.upgrades[p.id]}</span>}
-                    {(view.injuredLast.has(p.id) || view.streaks[p.id] || view.leads[p.id]) && (
-                      <span className="card-badges" onClick={(e) => e.stopPropagation()}>
+                    {/* Onder de kaart: upgrade en icoontjes, zodat er niets over de kaart heen valt */}
+                    {(view.upgrades[p.id] || view.injuredLast.has(p.id) || view.streaks[p.id] || view.leads[p.id]) && (
+                      <span className="card-under" onClick={(e) => e.stopPropagation()}>
+                        {view.upgrades[p.id] && <span className="fut-up">▲{view.upgrades[p.id]}</span>}
                         <Badges playerId={p.id} />
                       </span>
                     )}

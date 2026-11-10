@@ -11,7 +11,7 @@ import { isPlayed, opponent, ourScore, US, type Match, type MatchEntry, type Pla
  *   hij fit was.
  */
 
-const K = 3;
+const K = 4;
 export const MIN_GAMES = 3;
 
 export type AwardPlayer = Pick<Player, "id" | "name" | "position" | "type" | "hiddenNo" | "active">;
@@ -69,7 +69,8 @@ export function playerImpacts(players: Pick<Player, "id">[], rows: GameRow[]): R
       injured: rows.length - avail.length,
       pointsImpact: withP.length ? shrunk(withP.map((r) => r.ptsDiff)) - shrunk(without.map((r) => r.ptsDiff)) : 0,
       defenceImpact: shrunk(withP.map((r) => r.gaDiff)),
-      eligible: withP.length >= MIN_GAMES && withP.length >= avail.length / 2,
+      // Ook minstens 2 duels zonder hem (fit): één keer afwezig zegt te weinig
+      eligible: withP.length >= MIN_GAMES && withP.length >= avail.length / 2 && without.length >= 2,
     };
   }
   return out;

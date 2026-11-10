@@ -165,6 +165,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
   }, [phase, files, saving, error]);
 
+  // Automatisch verversen (nieuwe uitslagen, stand, nieuws): elke 5 minuten en als de app weer in beeld komt
+  useEffect(() => {
+    if (phase.kind !== "ready") return;
+    const store = phase.store;
+    let last = Date.now();
+    const refresh = () => {
+      if (document.hidden || saving || Date.now() - last < 60_000) return;
+      last = Date.now();
+      store
+        .readAll()
+        .then((f) => setFiles((cur) => (JSON.stringify(cur) === JSON.stringify(f) ? cur : f)))
+        .catch(() => {
+          // volgende keer opnieuw
+        });
+    };
+    const t = setInterval(refresh, 5 * 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [phase, saving]);
+
   if (phase.kind === "start") return <p className="meta">Laden…</p>;
   if (phase.kind === "login") return <Login onLogin={login} onGuest={guest} error={phase.error} />;
   if (!ctx) return null;

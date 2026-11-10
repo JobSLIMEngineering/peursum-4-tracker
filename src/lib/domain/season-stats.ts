@@ -14,7 +14,6 @@ export const ROLES: { key: Role; label: string }[] = (["K", "LB", "CV", "RB", "C
   key,
   label: `${ROLE_CODE[key]} · ${ROLE_NAME[key]}`,
 }));
-const GROUP: Record<Role, "K" | "D" | "M" | "A"> = { K: "K", LB: "D", CV: "D", RB: "D", CM: "M", LV: "A", SP: "A", RV: "A" };
 const FROM_POSITION: Record<Position, Role> = { Keeper: "K", Verdediger: "CV", Middenvelder: "CM", Aanvaller: "SP", Onbekend: "CM" };
 
 type RolePlayer = Pick<Player, "id" | "position" | "active"> & { role?: Role | null };
@@ -35,7 +34,8 @@ export interface TeamSlot {
 /**
  * Team van de maand: de beste spelerspunten van die maand per plek in een 1-4-3-3.
  * Alleen wie die maand echt meedeed (bij 3+ duels in de maand minstens 2 keer).
- * Eerst iemand met precies die rol, anders iemand uit dezelfde linie, anders de beste die over is.
+ * Strikt één speler per plek: alleen wie die plek die maand speelde (vast of tijdelijk). Is er niemand, dan
+ * blijft de plek leeg (bijv. geen tweede linksback op centraal).
  * Keeper: wie die maand het vaakst keepte of de rol keeper heeft.
  */
 export function teamOfTheMonth(rows: GameRow[], players: RolePlayer[], ym: string): TeamSlot[][] {
@@ -65,10 +65,8 @@ function bestEleven(rs: GameRow[], players: RolePlayer[], minGames: (matches: nu
 
   const pick = (slot: Role) => {
     const free = ratings.filter((s) => !used.has(s.playerId));
-    const exact = free.find((s) => role(s.playerId) === slot);
-    const line = free.find((s) => GROUP[role(s.playerId)] === GROUP[slot]);
-    const any = slot === "K" ? undefined : free.find((s) => role(s.playerId) !== "K");
-    const got = exact ?? line ?? any;
+    // Strikt: alleen wie die plek speelde (vaste of tijdelijke plek); anders blijft hij leeg
+    const got = free.find((s) => role(s.playerId) === slot);
     if (got) used.add(got.playerId);
     return { role: slot, playerId: got?.playerId ?? null, points: got?.total ?? 0 };
   };

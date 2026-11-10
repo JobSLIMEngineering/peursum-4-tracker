@@ -33,11 +33,12 @@ export interface PlayerCard {
 
 /** Gewicht van elk cijfer in het totaal, per positie */
 const WEIGHTS: Record<Position, Partial<Record<StatKey, number>>> = {
-  Aanvaller: { AAN: 0.35, PAS: 0.15, VER: 0.05, VRM: 0.2, INZ: 0.1, IMP: 0.15 },
-  Middenvelder: { AAN: 0.2, PAS: 0.25, VER: 0.15, VRM: 0.15, INZ: 0.1, IMP: 0.15 },
-  Verdediger: { AAN: 0.05, PAS: 0.1, VER: 0.4, VRM: 0.15, INZ: 0.15, IMP: 0.15 },
-  Keeper: { NUL: 0.35, VER: 0.3, VRM: 0.15, INZ: 0.1, IMP: 0.1 },
-  Onbekend: { AAN: 0.2, PAS: 0.15, VER: 0.2, VRM: 0.2, INZ: 0.1, IMP: 0.15 },
+  // Impact telt maar licht mee: het zegt vooral of je erbij was als we wonnen, niet wat je zelf deed
+  Aanvaller: { AAN: 0.4, PAS: 0.15, VER: 0.05, VRM: 0.2, INZ: 0.15, IMP: 0.05 },
+  Middenvelder: { AAN: 0.2, PAS: 0.3, VER: 0.15, VRM: 0.15, INZ: 0.15, IMP: 0.05 },
+  Verdediger: { AAN: 0.05, PAS: 0.1, VER: 0.45, VRM: 0.15, INZ: 0.2, IMP: 0.05 },
+  Keeper: { NUL: 0.4, VER: 0.35, VRM: 0.15, INZ: 0.1 },
+  Onbekend: { AAN: 0.2, PAS: 0.2, VER: 0.2, VRM: 0.2, INZ: 0.15, IMP: 0.05 },
 };
 
 const LOW = 70;

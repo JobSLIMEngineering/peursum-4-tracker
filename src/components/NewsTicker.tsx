@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { duos } from "@/lib/domain/insights";
-import { manOfTheMatch, playersOfTheMonth } from "@/lib/domain/rating";
+import { manOfTheMatch } from "@/lib/domain/rating";
 import { newMilestones } from "@/lib/domain/season-stats";
 import { buildNews, type NewsKind } from "@/lib/domain/news";
 import { opponent, playerLabel } from "@/lib/domain/types";
-import { MON_FULL, todayNL } from "@/lib/format";
+import { todayNL } from "@/lib/format";
 import { useData } from "./DataProvider";
 import { Flame, Glove } from "./Badges";
 import { Shirt } from "./Shirt";
@@ -29,6 +29,9 @@ const ICON: Record<NewsKind, string> = {
 };
 
 const EVERY = 5500;
+
+/** Volgorde van belangrijkheid als er te veel berichten zijn */
+const PRIORITY: NewsKind[] = ["motm", "stand", "mijlpaal", "upgrade", "terug", "inhaal", "verrassing", "uitschieter", "prijs", "vuur", "duo", "potm", "wrapped"];
 
 /** Nieuws: berichtjes die om de beurt rustig voorbij komen (tik op een bolletje om te kiezen) */
 export function NewsTicker() {
@@ -53,12 +56,13 @@ export function NewsTicker() {
           const m = last && manOfTheMatch(last, view.players);
           return m && last ? { playerId: m.playerId, total: m.total, opponent: opponent(last.match) } : null;
         })(),
-        potm: (() => {
-          const m = playersOfTheMonth(view.rows, view.players).at(-1);
-          return m ? { playerId: m.playerId, total: m.total, month: MON_FULL[Number(m.month.slice(5, 7)) - 1] } : null;
-        })(),
+        // Speler van de maand niet verklappen: die zit in het pakje op het Overzicht
+        potm: null,
         label: (id) => playerLabel(view.players.find((p) => p.id === id)),
-      }),
+      })
+        // Kort houden: de 6 belangrijkste berichten
+        .sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind))
+        .slice(0, 6),
     [view, readOnly],
   );
   const [i, setI] = useState(0);

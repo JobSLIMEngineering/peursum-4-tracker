@@ -1,5 +1,5 @@
 import type { PlayerCard } from "@/lib/domain/playercard";
-import { playerLabel, type Player } from "@/lib/domain/types";
+import { playerLabel, splitName, type Player } from "@/lib/domain/types";
 import { BASE } from "@/lib/base";
 import { ShirtSvg } from "./Shirt";
 
@@ -21,8 +21,9 @@ export type Tier = keyof typeof TIERS;
 /** Naam op twee regels: voornaam klein, achternaam (met tussenvoegsel) groot */
 function cardName(p: CardPlayer): { first: string; last: string } {
   if (!p.name) return { first: "Afgeschermd", last: playerLabel(p).replace("Afgeschermde speler", "Speler").toUpperCase() };
-  const parts = p.name.trim().split(/\s+/);
-  return parts.length > 1 ? { first: parts[0], last: parts.slice(1).join(" ").toUpperCase() } : { first: "", last: parts[0].toUpperCase() };
+  // Achternaam met tussenvoegsel; lang = tussenvoegsel afgekort ("V.D. LINDEN")
+  const n = splitName(p.name, 12);
+  return { first: n.first, last: n.last.toUpperCase() };
 }
 
 /** FIFA-vorm: afgeronde schouders, een inkeping bovenin het midden en een punt onderaan */

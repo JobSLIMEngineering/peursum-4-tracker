@@ -102,7 +102,11 @@ export function Calendar() {
                         <span>{score ? `${score[0]}-${score[1]}` : (m.time ?? (m.home === US ? "T" : "U"))}</span>
                       </span>
                     )}
-                    {training(d).length > 0 && !m && <span className="cal-train" aria-label="Training" />}
+                    {training(d).length > 0 && !m && (
+                      <span className="cal-train" aria-label="Training">
+                        <Cone />
+                      </span>
+                    )}
                   </span>
                 );
               })}
@@ -118,7 +122,10 @@ export function Calendar() {
                         <span className="cal-when">
                           <b>{DAYS[(d.getDay() + 6) % 7]}</b> {d.getDate()}
                         </span>
-                        <span>Training</span>
+                        <span className="tname">
+                          <Cone />
+                          <span>Training</span>
+                        </span>
                         <span className="time">{t.time}</span>
                       </div>
                     )),
@@ -148,6 +155,17 @@ export function Calendar() {
         </div>
       )}
     </section>
+  );
+}
+
+/** Pionnetje voor een training */
+function Cone() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path d="M10 3h4l5 15H5z" fill="#e1242f" />
+      <path d="M8.4 9h7.2l.8 3H7.6zM6.9 14h10.2l.7 2.2H6.2z" fill="#fff" opacity=".9" />
+      <rect x="3" y="18" width="18" height="3" rx="1" fill="#a3121c" />
+    </svg>
   );
 }
 

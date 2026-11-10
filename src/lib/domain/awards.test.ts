@@ -89,9 +89,10 @@ describe("impact: eerlijk bij blessures", () => {
     expect(imp.b.available).toBe(3);
     expect(imp.b.injured).toBe(3);
     expect(imp.b.games).toBe(3);
-    // Zonder b (fit) is er niets om mee te vergelijken: alleen zijn eigen duels tellen
-    expect(imp.b.pointsImpact).toBeCloseTo(1.5 / 6, 10);
-    expect(imp.b.eligible).toBe(true);
+    // Zonder b (fit) is er niets om mee te vergelijken: alleen zijn eigen duels tellen (afgevlakt met 4)
+    expect(imp.b.pointsImpact).toBeCloseTo(1.5 / 7, 10);
+    // …en daarom telt hij (nog) niet mee voor een impactprijs: minstens 2 duels zonder hem nodig
+    expect(imp.b.eligible).toBe(false);
   });
 
   it("met minder dan 3 duels geen kans op een impactprijs", () => {

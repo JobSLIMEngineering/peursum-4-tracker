@@ -9,6 +9,7 @@ import { sortPlayers } from "@/components/competition/EntryForm";
 import { useData } from "@/components/DataProvider";
 import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
+import { Walkout } from "@/components/Walkout";
 import { Box } from "@/components/ui";
 import { playerTotals, type PlayerTotals } from "@/lib/domain/stats";
 import { playerLabel, POSITIONS, type Position } from "@/lib/domain/types";
@@ -268,6 +269,7 @@ function Tile({
 }) {
   const { view, readOnly } = useData();
   const [editing, setEditing] = useState(false);
+  const [showCard, setShowCard] = useState(false);
   const ref = useRef<HTMLElement>(null);
   const keeper = p.position === "Keeper" || (t?.keeperGames ?? 0) > (t?.appearances ?? 0) / 2;
   const cls = `tile ${p.type === "leen" ? "leen" : ""} ${p.position === "Keeper" ? "keeper" : ""}`;
@@ -285,26 +287,31 @@ function Tile({
     </span>
   );
 
+  const card = view.cards[p.id];
   if (!open) {
     return (
       // Geen <button>: de iconen erin zijn zelf knoppen
       <div
         role="button"
         tabIndex={0}
-        className={cls}
+        className={`${cls} fut ${card?.tier ?? "brons"}`}
         data-tile={p.id}
         onClick={onToggle}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle())}
         aria-expanded="false"
       >
+        {/* Als een FIFA-kaartje: cijfer en positie linksboven, shirt in het midden */}
         <span className="tile-top">
-          <Shirt player={p} size={52} />
+          <span className="fut-rating">
+            <b>{card?.overall ?? "–"}</b>
+            <small>{card?.pos ?? ""}</small>
+          </span>
+          <Shirt player={p} size={58} />
           <span className="tile-badges">
             <Badges playerId={p.id} />
           </span>
         </span>
         <span className={`tile-name ${p.name ? "" : "anon"}`}>{playerLabel(p)}</span>
-        <span className="k tile-pos">{p.position === "Onbekend" ? "Positie onbekend" : p.position}</span>
         <span className="tile-line">
           {keeper ? (
             <>
@@ -412,8 +419,18 @@ function Tile({
               </div>
             )}
           </div>
+          {readOnly && (
+            <div className="tile-actions">
+              <button className="btn sm primary" type="button" onClick={() => setShowCard(true)}>
+                Spelerskaart
+              </button>
+            </div>
+          )}
           {!readOnly && (
             <div className="tile-actions">
+              <button className="btn sm primary" type="button" onClick={() => setShowCard(true)}>
+                Spelerskaart
+              </button>
               <button className="btn sm" type="button" onClick={() => setEditing(true)}>
                 Bewerken
               </button>
@@ -435,6 +452,7 @@ function Tile({
           )}
         </>
       )}
+      {showCard && <Walkout playerId={p.id} instant onClose={() => setShowCard(false)} />}
     </article>
   );
 }

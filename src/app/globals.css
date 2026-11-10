@@ -1115,3 +1115,67 @@ html, body { overflow-x: clip; }
 .wr-meter { width: min(260px, 80%); height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
 .wr-meter i { display: block; height: 100%; background: var(--red); transition: width .2s linear; }
 .wr-video { display: block; width: min(260px, 70%); margin: 12px auto 0; border-radius: 14px; border: 1px solid var(--line); }
+
+/* ==========================================================================
+   Walk-out (spelerskaart openen, zoals een FIFA-pakje)
+   ========================================================================== */
+.walkout {
+  --glow: #e0b43a;
+  position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; overflow: hidden; color: #fff;
+  background: radial-gradient(ellipse at 50% 60%, #1a0507 0%, #050203 70%); animation: fade .3s var(--ease);
+}
+.wo-beam {
+  position: absolute; left: 50%; bottom: -10%; width: 40vmin; height: 130%; transform: translateX(-50%) scaleX(.2); opacity: 0;
+  background: linear-gradient(to top, var(--glow), transparent 75%); filter: blur(18px); transition: opacity .6s, transform 1.2s var(--ease);
+}
+.walkout:not(.s0) .wo-beam { opacity: .7; transform: translateX(-50%) scaleX(1); }
+.walkout.s5 .wo-beam { opacity: .45; }
+.wo-flares i {
+  position: absolute; left: 50%; top: 55%; width: 4px; height: 4px; border-radius: 50%; background: var(--glow); opacity: 0;
+  box-shadow: 0 0 12px var(--glow);
+}
+.walkout.s1 .wo-flares i, .walkout.s5 .wo-flares i { animation: flare 1.6s var(--ease) both; animation-delay: calc(var(--i) * 60ms); }
+@keyframes flare {
+  0% { opacity: 0; transform: translate(0, 0) scale(.5); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc((var(--i) - 7) * 26px), calc(-120px - var(--i) * 14px)) scale(1.4); }
+}
+.wo-pack {
+  position: relative; z-index: 1; display: grid; justify-items: center; gap: 14px; width: 220px; height: 310px; padding: 30px 16px; cursor: pointer;
+  border: 2px solid var(--glow); border-radius: 20px; color: #fff; font: inherit;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--glow) 45%, #120304), #120304 70%);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--glow) 55%, transparent); animation: pack-float 2.4s ease-in-out infinite;
+}
+.wo-pack b { font: 900 italic 22px/1.1 var(--f-cond); text-transform: uppercase; text-align: center; }
+.wo-pack-logo { margin-top: 20px; filter: drop-shadow(0 6px 16px #000); }
+.wo-tap { margin-top: auto; font: 800 13px var(--f-cond); letter-spacing: .16em; text-transform: uppercase; color: color-mix(in srgb, var(--glow) 70%, #fff); animation: fade 1.2s ease-in-out infinite alternate; }
+@keyframes pack-float { 50% { transform: translateY(-8px) rotate(-1deg); } }
+.walkout.s1 .wo-pack { display: none; }
+.wo-reveal { position: relative; z-index: 1; animation: wo-pop .9s var(--ease) both; }
+@keyframes wo-pop { 0% { opacity: 0; transform: scale(.6); filter: blur(8px); } 30% { opacity: 1; transform: scale(1.06); filter: none; } 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+.wo-big { font: 900 italic 54px/1 var(--f-cond); text-transform: uppercase; text-shadow: 0 0 30px var(--glow); }
+.wo-club { display: grid; justify-items: center; gap: 10px; }
+.wo-club b { font: 900 italic 34px var(--f-cond); text-transform: uppercase; }
+.wo-rating { font: 900 140px/1 var(--f-cond); color: #fff; text-shadow: 0 0 50px var(--glow), 0 0 12px var(--glow); }
+.wo-card { position: relative; z-index: 1; filter: drop-shadow(0 0 30px color-mix(in srgb, var(--glow) 70%, transparent)); animation: wo-card 1s var(--ease) both; }
+@keyframes wo-card { 0% { opacity: 0; transform: perspective(800px) rotateY(90deg) scale(.7); } 60% { opacity: 1; transform: perspective(800px) rotateY(-8deg) scale(1.04); } 100% { transform: none; } }
+.wo-actions { position: absolute; left: 0; right: 0; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 2; display: flex; justify-content: center; gap: 8px; }
+.wo-actions .btn { background: rgb(255 255 255 / .12); border-color: rgb(255 255 255 / .2); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .wo-pack, .wo-tap { animation: none; } }
+
+/* Spelerslijst als FIFA-kaartjes */
+.tile.fut { border-width: 2px; }
+.tile.fut::after { opacity: .9; }
+.tile.fut.goud { background: linear-gradient(150deg, #fbeaa0 0%, #e0b43a 55%, #9c7410 100%); color: #3b2a05; border-color: #b88a1c; }
+.tile.fut.zilver { background: linear-gradient(150deg, #ffffff 0%, #c9ccd2 55%, #80858d 100%); color: #1d1f23; border-color: #9a9ea5; }
+.tile.fut.brons { background: linear-gradient(150deg, #f0c19b 0%, #b97a47 55%, #7a4520 100%); color: #2e1606; border-color: #8f5530; }
+.tile.fut::after { background: rgb(0 0 0 / .08); }
+.tile.fut .tile-top { align-items: flex-start; }
+.fut-rating { display: grid; justify-items: center; line-height: 1; min-width: 36px; }
+.fut-rating b { font: 900 30px var(--f-cond); }
+.fut-rating small { font: 800 12px var(--f-cond); letter-spacing: .06em; }
+.tile.fut .tile-name { font-family: var(--f-cond); font-weight: 900; text-transform: uppercase; font-size: 17px; letter-spacing: .01em; color: inherit; }
+.tile.fut .tile-line small, .tile.fut .tile-line .zero { color: inherit; opacity: .7; }
+.tile.fut .onfire-btn { background: rgb(0 0 0 / .18); border-radius: 999px; padding: 2px 4px; }
+.potm-open { padding: 0 16px 16px; }
+.wr-pack { margin-top: 6px; }

@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Medal } from "@/components/Badges";
 import { useData } from "@/components/DataProvider";
+import { PlayerCardSvg } from "@/components/PlayerCardSvg";
 import { Shirt, ShirtSvg } from "@/components/Shirt";
+import { Walkout } from "@/components/Walkout";
 import { TeamLogo } from "@/components/TeamLogo";
 import type { AwardKey } from "@/lib/domain/awards";
 import { duos, seasonForm } from "@/lib/domain/insights";
@@ -27,6 +29,8 @@ interface Slide {
   big?: string;
   sub?: string;
   shirts?: StoredPlayer[];
+  /** Speler van de maand: walk-out met zijn kaart */
+  walkout?: { playerId: string; banner: string };
   logo?: string;
   list?: { award: AwardKey; text: string }[];
 }
@@ -96,14 +100,16 @@ export default function WrappedPage() {
       });
     if (keeper && totals[keeper.id]?.cleanSheets)
       out.push({ key: "keeper", kicker: "De laatste man", title: playerLabel(keeper), big: `${totals[keeper.id].cleanSheets}× de nul`, shirts: [keeper] });
-    if (potm && by(potm.playerId))
+    if (potm && by(potm.playerId)) {
+      const banner = `Speler van ${MON_FULL[Number(potm.month.slice(5, 7)) - 1]}`;
       out.push({
         key: "potm",
-        kicker: `Speler van ${MON_FULL[Number(potm.month.slice(5, 7)) - 1]}`,
+        kicker: banner,
         title: playerLabel(by(potm.playerId)),
         big: `${comma(potm.total)} pnt`,
-        shirts: [by(potm.playerId)!],
+        walkout: { playerId: potm.playerId, banner },
       });
+    }
     if (best)
       out.push({
         key: "best",
@@ -125,6 +131,7 @@ export default function WrappedPage() {
   }, [view]);
 
   const [i, setI] = useState(0);
+  const [pack, setPack] = useState<{ playerId: string; banner: string } | null>(null);
   // Pas na het laden weten we of de browser video kan opnemen (niet tijdens het bouwen van de site)
   const [canVideo, setCanVideo] = useState(false);
   useEffect(() => queueMicrotask(() => setCanVideo(!!videoType())), []);
@@ -132,10 +139,10 @@ export default function WrappedPage() {
   const [video, setVideo] = useState<{ state: "idle" } | { state: "busy"; p: number } | { state: "done"; url: string; blob: Blob; ext: string } | { state: "error"; msg: string }>({ state: "idle" });
 
   useEffect(() => {
-    if (paused || i >= slides.length - 1 || video.state === "busy") return;
+    if (paused || pack || i >= slides.length - 1 || video.state === "busy") return;
     const t = setTimeout(() => setI((x) => x + 1), EVERY);
     return () => clearTimeout(t);
-  }, [i, paused, slides.length, video.state]);
+  }, [i, paused, pack, slides.length, video.state]);
 
   async function makeVideo() {
     setVideo({ state: "busy", p: 0 });
@@ -150,6 +157,14 @@ export default function WrappedPage() {
           svg: s.shirts?.map((p) => renderToStaticMarkup(<ShirtSvg player={p} size={380} gold={view.goldKeepers.has(p.id)} />)),
           logo: s.logo ? canvasLogoSrc(s.logo, view.logos) : null,
         },
+        card: (() => {
+          const w = s.walkout;
+          const c = w && view.cards[w.playerId];
+          const p = w && view.players.find((x) => x.id === w.playerId);
+          return c && p
+            ? renderToStaticMarkup(<PlayerCardSvg card={c} player={p} gold={view.goldKeepers.has(p.id)} special banner={w.banner} width={600} />)
+            : undefined;
+        })(),
       }));
       const { blob, ext } = await renderWrappedVideo(data, (p) => setVideo({ state: "busy", p }));
       setVideo({ state: "done", url: URL.createObjectURL(blob), blob, ext });
@@ -212,7 +227,19 @@ export default function WrappedPage() {
             </div>
           )}
           <h2 className="wr-title">{s.title}</h2>
-          {s.big && <div className="wr-big">{s.big}</div>}
+          {s.walkout ? (
+            <button
+              type="button"
+              className="btn primary wr-pack"
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onClick={() => setPack(s.walkout!)}
+            >
+              Open het pakje
+            </button>
+          ) : (
+            s.big && <div className="wr-big">{s.big}</div>
+          )}
           {s.sub && <div className="wr-sub">{s.sub}</div>}
           {s.list && (
             <span className="wr-sub wr-list">
@@ -268,6 +295,7 @@ export default function WrappedPage() {
         </Link>
       </div>
       {video.state === "error" && <p className="note warn">{video.msg}</p>}
+      {pack && <Walkout playerId={pack.playerId} special banner={pack.banner} onClose={() => setPack(null)} />}
       {video.state === "done" && (
         <video className="wr-video" src={video.url} controls playsInline loop />
       )}

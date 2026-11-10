@@ -17,6 +17,8 @@ export interface VideoSlide {
   art?: { svg?: string[]; logo?: string | null };
   /** Regels onder elkaar (bijv. de prijzenrace) */
   list?: string[];
+  /** Spelerskaart (svg-markup): walk-out met lichtbundel en de kaart die openklapt */
+  card?: string;
 }
 
 const W = 1080;
@@ -62,6 +64,7 @@ export async function renderWrappedVideo(slides: VideoSlide[], onProgress: (p: n
     slides.map(async (s) => ({
       shirts: await Promise.all((s.art?.svg ?? []).map((svg) => loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`))),
       logo: s.art?.logo ? await loadImage(s.art.logo) : null,
+      card: s.card ? await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(s.card)}`) : null,
     })),
   );
 
@@ -120,6 +123,39 @@ export async function renderWrappedVideo(slides: VideoSlide[], onProgress: (p: n
       const f = j < i ? 1 : j === i ? Math.min(1, t / PER) : 0;
       g.fillRect(60 + j * (bw + 10), 70, bw * f, 8);
     });
+
+    // Walk-out: lichtbundel, dan klapt de kaart open (draait in, groeit, gloed)
+    if (art[i].card) {
+      const card = art[i].card!;
+      const beam = g.createLinearGradient(0, H, 0, 0);
+      beam.addColorStop(0, "rgba(225,36,47,.85)");
+      beam.addColorStop(0.7, "rgba(225,36,47,0)");
+      g.globalAlpha = Math.min(1, t / 0.5) * 0.8;
+      g.fillStyle = beam;
+      const bw2 = 220 + 260 * ease(t / 0.8);
+      g.fillRect(cx - bw2 / 2, 0, bw2, H);
+      g.globalAlpha = 1;
+      const open = ease((t - 0.7) / 0.9);
+      if (open > 0) {
+        const cw = 640;
+        const ch = (cw * 420) / 300;
+        g.save();
+        g.translate(cx, H / 2 + 40);
+        g.scale(Math.max(0.02, open) * (1 + 0.04 * Math.sin(t * 3)), 0.85 + 0.15 * open);
+        g.shadowColor = "rgba(225,36,47,.9)";
+        g.shadowBlur = 60;
+        g.drawImage(card, -cw / 2, -ch / 2, cw, ch);
+        g.restore();
+      }
+      g.fillStyle = "#ff8a92";
+      g.font = `800 46px ${COND}`;
+      g.textAlign = "center";
+      g.fillText(s.kicker.toUpperCase(), cx, 300);
+      g.fillStyle = "rgba(255,255,255,.7)";
+      g.font = `800 44px ${COND}`;
+      g.fillText("#PEURSUM4", cx, H - 110);
+      return;
+    }
 
     // Inhoud schuift omhoog en vaagt in
     const k = ease(t / 0.6);

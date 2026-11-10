@@ -1,0 +1,71 @@
+import { describe, expect, it } from "vitest";
+import type { GameRow } from "./awards";
+import { playerCards } from "./playercard";
+import { US, type Match, type PlayerMatchStats } from "./types";
+
+const match = (id: string, us: number, them: number): Match => ({
+  id,
+  round: null,
+  makeup: false,
+  date: `2026-10-0${id.slice(1)}`,
+  time: null,
+  home: US,
+  away: "X",
+  homeGoals: us,
+  awayGoals: them,
+  venue: null,
+  kind: "competitie",
+  status: "gespeeld",
+  source: "seed",
+  edited: false,
+});
+const st = (goals: number, assists = 0): PlayerMatchStats => ({ goals, assists, yellow: false, red: false });
+const row = (id: string, us: number, them: number, att: string[], stats: Record<string, PlayerMatchStats>): GameRow => ({
+  match: match(id, us, them),
+  entry: { matchId: id, attendance: att, stats, keeperId: "k", opponentOwnGoals: 0 },
+  ptsDiff: 0.5,
+  gaDiff: 0.5,
+  gfDiff: 0.5,
+});
+
+const players = [
+  { id: "k", position: "Keeper" as const, active: true },
+  { id: "s", position: "Aanvaller" as const, active: true },
+  { id: "m", position: "Middenvelder" as const, active: true },
+  { id: "v", position: "Verdediger" as const, active: true },
+  { id: "x", position: "Aanvaller" as const, active: true },
+];
+const rows = [
+  row("1", 3, 0, ["k", "s", "m", "v"], { s: st(2), m: st(0, 2) }),
+  row("2", 2, 0, ["k", "s", "m", "v"], { s: st(1), m: st(1, 1) }),
+  row("3", 1, 1, ["k", "s", "v", "x"], { x: st(1) }),
+];
+const cards = playerCards(rows, players, {});
+
+describe("spelerskaart", () => {
+  it("de topscorer heeft het hoogste aanvalscijfer, de aangever het hoogste PAS-cijfer", () => {
+    const aan = (id: string) => cards[id].stats.find((s) => s.key === "AAN")!.value;
+    const pas = (id: string) => cards[id].stats.find((s) => s.key === "PAS")!.value;
+    expect(aan("s")).toBeGreaterThan(aan("v"));
+    expect(pas("m")).toBeGreaterThan(pas("s"));
+  });
+
+  it("keeper heeft NUL in plaats van AAN; cijfers tussen 45 en 99", () => {
+    expect(cards.k.stats.map((s) => s.key)).toEqual(["NUL", "PAS", "VER", "VRM", "INZ", "IMP"]);
+    for (const c of Object.values(cards))
+      for (const s of c.stats) {
+        expect(s.value).toBeGreaterThanOrEqual(45);
+        expect(s.value).toBeLessThanOrEqual(99);
+      }
+  });
+
+  it("wie maar één duel speelde zit dicht bij het midden", () => {
+    expect(cards.x.games).toBe(1);
+    expect(Math.abs(cards.x.overall - 58)).toBeLessThan(10);
+  });
+
+  it("positie en kleur van de kaart", () => {
+    expect(cards.s.pos).toBe("AAN");
+    expect(["brons", "zilver", "goud"]).toContain(cards.s.tier);
+  });
+});

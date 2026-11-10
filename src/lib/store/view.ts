@@ -1,5 +1,6 @@
 import { computeAwards, gameRows, keeperCompare, playerImpacts, prizeLeads, type Award, type AwardKey, type GameRow, type PlayerImpact } from "@/lib/domain/awards";
 import { fit, knownResults, type Fit } from "@/lib/domain/model";
+import { playerCards, type PlayerCard } from "@/lib/domain/playercard";
 import { hotStreaks, type Streak } from "@/lib/domain/streaks";
 import { isPlayed, opponent, US, type Match, type MatchEntry, type StandingRow } from "@/lib/domain/types";
 import type { DataFiles, Snapshot, StoredMatch, StoredPlayer } from "./schema";
@@ -33,6 +34,8 @@ export interface AppView {
   injuredLast: Set<string>;
   /** Keepers met de minste tegengoals per duel van de hele competitie (geel shirt; anders groen) */
   goldKeepers: Set<string>;
+  /** Spelerskaarten (FIFA-stijl) */
+  cards: Record<string, PlayerCard>;
 }
 
 const strip = ({ code, ...m }: StoredMatch) => ({ m, code });
@@ -94,6 +97,7 @@ export function buildView(files: DataFiles): AppView {
     leads: prizeLeads(awards),
     impacts: playerImpacts(players, rows),
     injuredLast: injuredNow(players, rows),
+    cards: playerCards(rows, players, playerImpacts(players, rows)),
     goldKeepers: new Set(
       players
         .filter((p) => {

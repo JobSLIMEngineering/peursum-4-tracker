@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { FormChart } from "@/components/FormChart";
 import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
+import { Walkout } from "@/components/Walkout";
 import { Box } from "@/components/ui";
 import { duos, seasonForm } from "@/lib/domain/insights";
 import { playersOfTheMonth, seasonRatings } from "@/lib/domain/rating";
@@ -31,6 +32,7 @@ export default function StatistiekenPage() {
   const ranking = useMemo(() => seasonRatings(view.rows, view.players).filter((r) => r.total > 0).slice(0, 10), [view]);
   const months = useMemo(() => playersOfTheMonth(view.rows, view.players), [view]);
   const potm = months.at(-1);
+  const [pack, setPack] = useState(false);
   const last = form.at(-1);
   const byId = (id: string) => view.players.find((p) => p.id === id);
   // Vorm nu (laatste 5) en hoe het begon (eerste 5), om de lijn over het seizoen te duiden
@@ -102,6 +104,14 @@ export default function StatistiekenPage() {
               </span>
             </div>
           </div>
+          <div className="potm-open">
+            <button className="btn primary" type="button" onClick={() => setPack(true)}>
+              Open het pakje
+            </button>
+          </div>
+          {pack && (
+            <Walkout playerId={potm.playerId} special banner={`Speler van ${monthName(potm.month)}`} onClose={() => setPack(false)} />
+          )}
           {months.length > 1 && (
             <div className="potm-prev">
               {months

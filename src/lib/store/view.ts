@@ -1,7 +1,9 @@
 import { computeAwards, gameRows, keeperCompare, playerImpacts, prizeLeads, type Award, type AwardKey, type GameRow, type PlayerImpact } from "@/lib/domain/awards";
 import { fit, knownResults, type Fit } from "@/lib/domain/model";
 import { playerCards, type PlayerCard } from "@/lib/domain/playercard";
-import { monthlyOveralls, upgrades } from "@/lib/domain/season-stats";
+import { monthlyOveralls, monthsOf, teamOfTheMonth, upgrades } from "@/lib/domain/season-stats";
+import { playersOfTheMonth } from "@/lib/domain/rating";
+import { MON_FULL } from "@/lib/format";
 import { hotStreaks, type Streak } from "@/lib/domain/streaks";
 import { isPlayed, opponent, US, type Match, type MatchEntry, type StandingRow } from "@/lib/domain/types";
 import type { DataFiles, Snapshot, StoredMatch, StoredPlayer } from "./schema";
@@ -37,6 +39,11 @@ export interface AppView {
   goldKeepers: Set<string>;
   /** Spelerskaarten (FIFA-stijl) */
   cards: Record<string, PlayerCard>;
+  /**
+   * Speciale kaart zoals bij FIFA: speler van de maand (POTM, rood-zwart) gaat voor team van de maand
+   * (TOTW/in-form, zwart-goud); anders de gewone gouden kaart. Banner = tekst bovenop de kaart.
+   */
+  special: Record<string, { variant: "potm" | "inform"; banner: string }>;
   /** Kaartcijfer per maand en de upgrades van de laatste maand */
   monthly: ReturnType<typeof monthlyOveralls>;
   upgrades: Record<string, number>;
@@ -105,6 +112,7 @@ export function buildView(files: DataFiles): AppView {
     cards: playerCards(rows, players, playerImpacts(players, rows)),
     monthly,
     upgrades: upgrades(monthly, rows),
+    special: specialCards(rows, players),
     goldKeepers: new Set(
       players
         .filter((p) => {
@@ -131,6 +139,19 @@ function injuredNow(players: StoredPlayer[], rows: GameRow[]): Set<string> {
     if (p.injured) out.add(p.id);
     else if (last?.entry.injured?.includes(p.id) && !(p.recoveredAt && p.recoveredAt >= lastDate) && p.injured !== false) out.add(p.id);
   }
+  return out;
+}
+
+/** Speciale kaarten van de laatste maand: speler van de maand en het team van de maand */
+function specialCards(rows: GameRow[], players: StoredPlayer[]): AppView["special"] {
+  const out: AppView["special"] = {};
+  const last = monthsOf(rows).at(-1);
+  if (!last) return out;
+  const name = MON_FULL[Number(last.slice(5, 7)) - 1];
+  for (const s of teamOfTheMonth(rows, players, last).flat())
+    if (s.playerId) out[s.playerId] = { variant: "inform", banner: `Team van ${name}` };
+  const potm = playersOfTheMonth(rows, players).find((m) => m.month === last);
+  if (potm) out[potm.playerId] = { variant: "potm", banner: `Speler van ${name}` };
   return out;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { monthsOf, ROLES, teamOfTheMonth } from "@/lib/domain/season-stats";
+import { monthsOf, ROLES, teamOfTheMonth, teamOfTheSeason } from "@/lib/domain/season-stats";
 import { playerLabel } from "@/lib/domain/types";
 import { MON_FULL } from "@/lib/format";
 import { useData } from "./DataProvider";
@@ -20,15 +20,27 @@ export function TeamOfMonth() {
   const months = useMemo(() => monthsOf(view.rows), [view]);
   const [i, setI] = useState(months.length - 1);
   const [open, setOpen] = useState<string | null>(null);
+  const [season, setSeason] = useState(false);
   const ym = months[Math.min(i, months.length - 1)];
-  const team = useMemo(() => (ym ? teamOfTheMonth(view.rows, view.players, ym) : []), [view, ym]);
+  const team = useMemo(
+    () => (season ? teamOfTheSeason(view.rows, view.players) : ym ? teamOfTheMonth(view.rows, view.players, ym) : []),
+    [view, ym, season],
+  );
   if (!ym) return null;
 
   return (
-    <section className="box totm" style={{ marginTop: 16 }}>
+    <section className={`box totm ${season ? "tots" : ""}`} style={{ marginTop: 16 }}>
+      <div className="seg totm-switch" role="group" aria-label="Team van de maand of van het seizoen">
+        <button type="button" aria-pressed={!season} onClick={() => setSeason(false)}>
+          Maand
+        </button>
+        <button type="button" aria-pressed={season} onClick={() => setSeason(true)}>
+          Seizoen
+        </button>
+      </div>
       <div className="box-h">
-        <p className="lbl">Team van de maand</p>
-        <span className="box-right">
+        <p className="lbl">{season ? "Team van het seizoen" : "Team van de maand"}</p>
+        <span className="box-right" hidden={season}>
           <button type="button" className="cal-nav sm" aria-label="Vorige maand" disabled={i <= 0} onClick={() => setI((x) => x - 1)}>
             ‹
           </button>
@@ -52,7 +64,7 @@ export function TeamOfMonth() {
                 <button key={j} type="button" className="pitch-p" onClick={() => setOpen(p.id)} title={ROLE[s.role]}>
                   <Shirt player={p} size={40} />
                   <span>{short(p.name, playerLabel(p))}</span>
-                  <small>{view.cards[p.id]?.overall ?? ""}</small>
+                  <small className={season ? "tots" : ""}>{view.cards[p.id]?.overall ?? ""}</small>
                 </button>
               ) : (
                 <span key={j} className="pitch-p empty">
@@ -63,7 +75,13 @@ export function TeamOfMonth() {
           </div>
         ))}
       </div>
-      {open && <CardView playerId={open} onClose={() => setOpen(null)} />}
+      {open && (
+        <CardView
+          playerId={open}
+          onClose={() => setOpen(null)}
+          {...(season ? { variant: "tots" as const, banner: "Team van het seizoen" } : {})}
+        />
+      )}
     </section>
   );
 }

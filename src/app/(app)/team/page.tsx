@@ -108,7 +108,13 @@ export default function TeamPage() {
                     onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setOpen(p.id))}
                     aria-label={`${playerLabel(p)}, ${c.overall} ${c.pos}`}
                   >
-                    <PlayerCardSvg card={c} player={p} gold={view.goldKeepers.has(p.id)} />
+                    <PlayerCardSvg
+                      card={c}
+                      player={p}
+                      gold={view.goldKeepers.has(p.id)}
+                      variant={view.special[p.id]?.variant}
+                      banner={view.special[p.id]?.banner}
+                    />
                     {view.upgrades[p.id] && <span className="fut-up card-up">▲{view.upgrades[p.id]}</span>}
                     {(view.injuredLast.has(p.id) || view.streaks[p.id] || view.leads[p.id]) && (
                       <span className="card-badges" onClick={(e) => e.stopPropagation()}>

@@ -67,13 +67,7 @@ describe("spelerskaart", () => {
   it("positie en kleur van de kaart", () => {
     expect(cards.s.pos).toBe("ST");
     expect(cards.k.pos).toBe("GK");
-    expect(["goud", "zwartgoud"]).toContain(cards.s.tier);
+    expect(cards.s.tier).toBe("goud");
   });
 
-  it("iedereen goud, alleen de paar besten zwart-goud (met genoeg duels)", () => {
-    const black = Object.values(cards).filter((c) => c.tier === "zwartgoud");
-    expect(black.length).toBeLessThanOrEqual(3);
-    expect(black.every((c) => c.games >= 3)).toBe(true);
-    expect(cards.x.tier).toBe("goud");
-  });
 });

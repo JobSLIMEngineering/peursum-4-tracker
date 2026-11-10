@@ -39,8 +39,16 @@ export interface TeamSlot {
  * Keeper: wie die maand het vaakst keepte of de rol keeper heeft.
  */
 export function teamOfTheMonth(rows: GameRow[], players: RolePlayer[], ym: string): TeamSlot[][] {
-  const rs = rows.filter((r) => month(r) === ym);
-  const min = rs.length >= 3 ? 2 : 1;
+  return bestEleven(rows.filter((r) => month(r) === ym), players, (n) => (n >= 3 ? 2 : 1));
+}
+
+/** Team van het seizoen (tot nu toe): wie minstens de helft van de duels speelde */
+export function teamOfTheSeason(rows: GameRow[], players: RolePlayer[]): TeamSlot[][] {
+  return bestEleven(rows, players, (n) => Math.max(1, Math.ceil(n / 2)));
+}
+
+function bestEleven(rs: GameRow[], players: RolePlayer[], minGames: (matches: number) => number): TeamSlot[][] {
+  const min = minGames(rs.length);
   const ratings = seasonRatings(rs, players).filter((s) => s.games >= min);
   const byId = new Map(players.map((p) => [p.id, p]));
   const used = new Set<string>();

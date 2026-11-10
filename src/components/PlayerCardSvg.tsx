@@ -13,12 +13,16 @@ export const TIERS = {
   /** Zwart met goud, zoals de speciale kaarten bij FIFA: voor de paar besten */
   zwartgoud: { a: "#3d3423", b: "#17130c", c: "#050403", d: "#000000", ink: "#f4c542", line: "#d4a017", glow: "#f4c542" },
   special: { a: "#6a0d15", b: "#2a070b", c: "#0b0203", d: "#000000", ink: "#f4c542", line: "#e1242f", glow: "#ff5a63" },
+  /** Team van het seizoen (zoals TOTY/TOTS): diep blauw met goud */
+  tots: { a: "#4f86f0", b: "#1d3fae", c: "#0c1d63", d: "#050c2e", ink: "#fbe7a1", line: "#f4c542", glow: "#9cc0ff" },
 } as const;
 export type Tier = keyof typeof TIERS;
 
-/** Volledige naam op de kaart (afgeschermde spelers: "Speler 3") */
-function cardName(p: CardPlayer) {
-  return (p.name ?? playerLabel(p).replace("Afgeschermde speler", "Speler")).toUpperCase();
+/** Naam op twee regels: voornaam klein, achternaam (met tussenvoegsel) groot */
+function cardName(p: CardPlayer): { first: string; last: string } {
+  if (!p.name) return { first: "Afgeschermd", last: playerLabel(p).replace("Afgeschermde speler", "Speler").toUpperCase() };
+  const parts = p.name.trim().split(/\s+/);
+  return parts.length > 1 ? { first: parts[0], last: parts.slice(1).join(" ").toUpperCase() } : { first: "", last: parts[0].toUpperCase() };
 }
 
 /** FIFA-vorm: afgeronde schouders, een inkeping bovenin het midden en een punt onderaan */
@@ -37,6 +41,7 @@ export function PlayerCardSvg({
   player,
   gold = false,
   special = false,
+  variant = "goud",
   banner,
   width,
   hattricks = 0,
@@ -48,6 +53,8 @@ export function PlayerCardSvg({
   gold?: boolean;
   /** Speler van de maand: zwart-rode kaart */
   special?: boolean;
+  /** Speciale kaart: team van de maand (zwart-goud), speler van de maand (rood-zwart), team van het seizoen (blauw) */
+  variant?: "goud" | "inform" | "potm" | "tots";
   /** Tekst bovenaan, bijv. "Speler van november" */
   banner?: string;
   width?: number;
@@ -56,7 +63,7 @@ export function PlayerCardSvg({
   /** Clublogo (adres of data-URL; voor de video moet het een data-URL zijn) */
   logo?: string;
 }) {
-  const kind: Tier = special ? "special" : card.tier;
+  const kind: Tier = special || variant === "potm" ? "special" : variant === "inform" ? "zwartgoud" : variant === "tots" ? "tots" : card.tier;
   const t = TIERS[kind];
   const id = `card-${kind}`;
   const dark = kind !== "goud";
@@ -71,7 +78,7 @@ export function PlayerCardSvg({
       {...(width ? { width, height: (width * 420) / 300 } : { width: "100%" })}
       className="pcard-svg"
       role="img"
-      aria-label={`Spelerskaart ${playerLabel(player)}: ${card.overall} ${card.pos}`}
+      aria-label={`Spelerskaart ${playerLabel(player)}: ${card.overall} ${card.pos}${banner ? `, ${banner}` : ""}`}
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2=".9" y2="1">
@@ -107,6 +114,12 @@ export function PlayerCardSvg({
           <>
             <path d="M-20 300L320 40L320 72L-20 332Z" fill="#d4a017" opacity=".32" />
             <path d="M-20 362L320 102L320 113L-20 373Z" fill="#f4c542" opacity=".22" />
+          </>
+        )}
+        {kind === "tots" && (
+          <>
+            <path d="M-20 280L320 20L320 46L-20 306Z" fill="#9cc0ff" opacity=".28" />
+            <path d="M-20 350L320 90L320 100L-20 360Z" fill="#f4c542" opacity=".35" />
           </>
         )}
         {kind === "special" && (
@@ -157,22 +170,27 @@ export function PlayerCardSvg({
         <ShirtSvg player={player} size={178} gold={gold} />
       </g>
 
-      {/* Naam met sierlijn */}
+      {/* Naam: voornaam klein erboven, achternaam groot eronder */}
+      {name.first && (
+        <text x="150" y="250" textAnchor="middle" fontFamily={FONT} fontWeight="700" fontSize="16" letterSpacing="1.5" fill={t.ink} opacity=".85">
+          {name.first}
+        </text>
+      )}
       <text
         x="150"
-        y="268"
+        y={name.first ? 274 : 268}
         textAnchor="middle"
         fontFamily={FONT}
         fontWeight="900"
-        fontSize={name.length > 16 ? 22 : name.length > 12 ? 25 : 30}
+        fontSize={name.last.length > 14 ? 24 : name.last.length > 10 ? 27 : 31}
         letterSpacing=".5"
         fill={t.ink}
-        // Lange namen passend maken binnen de kaart
-        {...(name.length > 18 ? { textLength: 236, lengthAdjust: "spacingAndGlyphs" } : {})}
+        // Lange achternamen passend maken binnen de kaart
+        {...(name.last.length > 16 ? { textLength: 236, lengthAdjust: "spacingAndGlyphs" } : {})}
       >
-        {name}
+        {name.last}
       </text>
-      <path d="M40 282H128L150 288L172 282H260" fill="none" stroke={t.ink} strokeOpacity=".4" strokeWidth="1.5" />
+      <path d="M40 284H128L150 290L172 284H260" fill="none" stroke={t.ink} strokeOpacity=".4" strokeWidth="1.5" />
 
       {/* Zes cijfers in twee kolommen */}
       <line x1="150" x2="150" y1="296" y2="372" stroke={t.ink} strokeOpacity=".3" strokeWidth="1.5" />

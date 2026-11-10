@@ -16,7 +16,18 @@ import { playerSeason } from "@/lib/domain/season-stats";
  * Spelerskaart schermvullend: de kaart groot in beeld, de rest wazig erachter.
  * Naar beneden scrollen: de statistieken van het seizoen en (voor de eigenaar) bewerken.
  */
-export function CardView({ playerId, onClose }: { playerId: string; onClose: () => void }) {
+export function CardView({
+  playerId,
+  onClose,
+  variant,
+  banner,
+}: {
+  playerId: string;
+  onClose: () => void;
+  /** Andere kaart tonen dan normaal (bijv. blauw vanuit het team van het seizoen) */
+  variant?: "goud" | "inform" | "potm" | "tots";
+  banner?: string;
+}) {
   const { view, mutate, readOnly } = useData();
   const [editing, setEditing] = useState(false);
   const p = view.players.find((x) => x.id === playerId);
@@ -48,7 +59,14 @@ export function CardView({ playerId, onClose }: { playerId: string; onClose: () 
       </button>
       <div className="cv-body" onClick={(e) => e.stopPropagation()}>
         <div className="cv-card">
-          <PlayerCardSvg card={card} player={p} gold={view.goldKeepers.has(p.id)} hattricks={hattricks} />
+          <PlayerCardSvg
+            card={card}
+            player={p}
+            gold={view.goldKeepers.has(p.id)}
+            hattricks={hattricks}
+            variant={variant ?? view.special[p.id]?.variant}
+            banner={banner ?? view.special[p.id]?.banner}
+          />
         </div>
         <div className="cv-badges">
           <Badges playerId={p.id} />

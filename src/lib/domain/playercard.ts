@@ -8,8 +8,8 @@ import { ourScore, POSITION_ROLE, ROLE_CODE, type Player, type Position } from "
  *
  * Elk cijfer is een rangorde binnen de selectie (wie het best scoort op dat onderdeel krijgt het hoogst),
  * afgevlakt met het aantal duels: wie weinig speelde, zit dichter bij het midden. Niemand is "slecht":
- * iedereen heeft een gouden kaart (cijfers vanaf 70); alleen de paar besten (TOP_N op totaal, met
- * genoeg duels) krijgen een zwart-gouden kaart.
+ * iedereen heeft een gouden kaart (cijfers vanaf 70). Speciale kaarten (team van de maand, speler van
+ * de maand, team van het seizoen) worden in de view bepaald, zoals bij FIFA.
  *
  * Veldspelers: AAN aanval · PAS aangeven · VER verdedigen · VRM vorm (laatste 3) · INZ inzet (opkomst)
  *              · IMP impact (punten boven verwachting met hem erbij)
@@ -25,8 +25,8 @@ export interface PlayerCard {
   /** Engelse afkorting van de plek: GK, LB, CB, RB, CM, LW, ST, RW */
   pos: string;
   stats: { key: StatKey; value: number }[];
-  /** Iedereen goud; de paar besten zwart-goud */
-  tier: "goud" | "zwartgoud";
+  /** Basis is altijd goud */
+  tier: "goud";
   games: number;
 }
 
@@ -43,8 +43,6 @@ const WEIGHTS: Record<Position, Partial<Record<StatKey, number>>> = {
 const LOW = 70;
 const MID = 76;
 const HIGH = 95;
-/** Aantal zwart-gouden kaarten (de hoogste totalen) */
-const TOP_N = 3;
 
 export function playerCards(
   rows: GameRow[],
@@ -104,11 +102,5 @@ export function playerCards(
       games: raw[p.id].games,
     };
   }
-  // De paar besten (met minstens 3 duels) krijgen zwart-goud
-  Object.values(out)
-    .filter((c) => c.games >= 3)
-    .sort((a, b) => b.overall - a.overall)
-    .slice(0, TOP_N)
-    .forEach((c) => (c.tier = "zwartgoud"));
   return out;
 }

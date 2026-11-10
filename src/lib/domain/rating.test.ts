@@ -40,9 +40,15 @@ describe("spelerspunten", () => {
   const rated = Object.fromEntries(rateMatch(r, players).map((x) => [x.playerId, x]));
 
   it("wie keepte telt als keeper: veel punten voor de nul, niets voor de aanval", () => {
-    expect(rated.k.defence).toBe(2);
+    expect(rated.k.defence).toBe(1.5);
     expect(rated.k.attack).toBe(0);
     expect(rated.k.own).toBe(1); // clean sheet
+  });
+
+  it("zuinig met teampunten: alleen erbij zijn bij een zege levert weinig op, zelf scoren veel", () => {
+    // m deed mee zonder goal of assist, s scoorde twee keer
+    expect(rated.m.team + rated.m.attack + rated.m.defence).toBeLessThan(1.5);
+    expect(rated.s.total).toBeGreaterThan(3 * (rated.m.total - rated.m.own));
   });
 
   it("verdediger krijgt meer voor de verdediging, spits meer voor de aanval", () => {

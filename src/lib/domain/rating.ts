@@ -6,16 +6,19 @@ import { ourScore, ROLE_POSITION, type Player, type Position } from "./types";
  *
  * Het model weet per wedstrijd wat er verwacht werd (tegen deze tegenstander, thuis of uit). Wie meedoet
  * krijgt punten erbij als het beter gaat dan verwacht, en eraf als het slechter gaat:
- * - team:     1,5 × (punten − verwachte punten), voor iedereen die meedeed;
- * - verdedigen: 2 × (verwachte tegengoals − tegengoals) × gewicht van de positie (keeper het meest);
- * - aanvallen:  2 × (goals − verwachte goals) × gewicht van de positie (spits het meest);
+ * - team:     0,5 × (punten − verwachte punten), voor iedereen die meedeed;
+ * - verdedigen: (verwachte tegengoals − tegengoals) × gewicht van de positie (keeper het meest);
+ * - aanvallen:  (goals − verwachte goals) × gewicht van de positie (spits het meest);
  * - eigen bijdrage: goal +3, assist +2, clean sheet als keeper +1, geel −1, rood −3, eigen goal −2.
+ * Zuinig met teampunten: wat je zelf doet (goals, assists, de nul) weegt het zwaarst, alleen "erbij zijn
+ * als we winnen" levert weinig op. Werkt met terugwerkende kracht: alles wordt opnieuw berekend.
  * Wie keepte, telt die wedstrijd als keeper (ook als zijn positie anders is). Stond iemand die wedstrijd
  * tijdelijk ergens anders (bijv. middenvelder in de verdediging), dan tellen de gewichten van die plek.
  */
 
-const DEF: Record<Position, number> = { Keeper: 1, Verdediger: 0.7, Middenvelder: 0.35, Aanvaller: 0.1, Onbekend: 0.35 };
-const ATT: Record<Position, number> = { Keeper: 0, Verdediger: 0.15, Middenvelder: 0.35, Aanvaller: 0.7, Onbekend: 0.35 };
+const TEAM = 0.5;
+const DEF: Record<Position, number> = { Keeper: 1.5, Verdediger: 0.6, Middenvelder: 0.25, Aanvaller: 0.05, Onbekend: 0.25 };
+const ATT: Record<Position, number> = { Keeper: 0, Verdediger: 0.1, Middenvelder: 0.3, Aanvaller: 0.6, Onbekend: 0.3 };
 
 export interface MatchRating {
   playerId: string;
@@ -37,9 +40,9 @@ export function rateMatch(row: GameRow, players: Pick<Player, "id" | "position">
       const temp = row.entry.positions?.[id];
       const position: Position = row.entry.keeperId === id ? "Keeper" : temp ? ROLE_POSITION[temp] : (pos.get(id) ?? "Onbekend");
       const st = row.entry.stats[id];
-      const team = 1.5 * row.ptsDiff;
-      const defence = 2 * DEF[position] * row.gaDiff;
-      const attack = 2 * ATT[position] * row.gfDiff;
+      const team = TEAM * row.ptsDiff;
+      const defence = DEF[position] * row.gaDiff;
+      const attack = ATT[position] * row.gfDiff;
       const own =
         3 * (st?.goals ?? 0) +
         2 * (st?.assists ?? 0) +

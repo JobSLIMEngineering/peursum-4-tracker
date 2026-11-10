@@ -50,22 +50,29 @@ describe("spelerskaart", () => {
     expect(pas("m")).toBeGreaterThan(pas("s"));
   });
 
-  it("keeper heeft NUL in plaats van AAN; cijfers tussen 45 en 99", () => {
+  it("keeper heeft NUL in plaats van AAN; cijfers tussen 70 en 99", () => {
     expect(cards.k.stats.map((s) => s.key)).toEqual(["NUL", "PAS", "VER", "VRM", "INZ", "IMP"]);
     for (const c of Object.values(cards))
       for (const s of c.stats) {
-        expect(s.value).toBeGreaterThanOrEqual(45);
+        expect(s.value).toBeGreaterThanOrEqual(70);
         expect(s.value).toBeLessThanOrEqual(99);
       }
   });
 
   it("wie maar één duel speelde zit dicht bij het midden", () => {
     expect(cards.x.games).toBe(1);
-    expect(Math.abs(cards.x.overall - 58)).toBeLessThan(10);
+    expect(Math.abs(cards.x.overall - 76)).toBeLessThan(6);
   });
 
   it("positie en kleur van de kaart", () => {
     expect(cards.s.pos).toBe("AAN");
-    expect(["brons", "zilver", "goud"]).toContain(cards.s.tier);
+    expect(["goud", "zwartgoud"]).toContain(cards.s.tier);
+  });
+
+  it("iedereen goud, alleen de paar besten zwart-goud (met genoeg duels)", () => {
+    const black = Object.values(cards).filter((c) => c.tier === "zwartgoud");
+    expect(black.length).toBeLessThanOrEqual(3);
+    expect(black.every((c) => c.games >= 3)).toBe(true);
+    expect(cards.x.tier).toBe("goud");
   });
 });

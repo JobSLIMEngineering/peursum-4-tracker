@@ -7,8 +7,9 @@ import { ourScore, type Player, type Position } from "./types";
  * Spelerskaart in FIFA-stijl: zes cijfers (45–99) en een totaal, uit de eigen statistieken.
  *
  * Elk cijfer is een rangorde binnen de selectie (wie het best scoort op dat onderdeel krijgt het hoogst),
- * afgevlakt met het aantal duels: wie weinig speelde, zit dichter bij het midden. Zo is het eerlijk
- * en is een kaart nooit "slecht": de laagste waarde is 45.
+ * afgevlakt met het aantal duels: wie weinig speelde, zit dichter bij het midden. Niemand is "slecht":
+ * iedereen heeft een gouden kaart (cijfers vanaf 70); alleen de paar besten (TOP_N op totaal, met
+ * genoeg duels) krijgen een zwart-gouden kaart.
  *
  * Veldspelers: AAN aanval · PAS aangeven · VER verdedigen · VRM vorm (laatste 3) · INZ inzet (opkomst)
  *              · IMP impact (punten boven verwachting met hem erbij)
@@ -23,7 +24,8 @@ export interface PlayerCard {
   /** Korte positie op de kaart */
   pos: "K" | "VER" | "MID" | "AAN" | "SPL";
   stats: { key: StatKey; value: number }[];
-  tier: "brons" | "zilver" | "goud";
+  /** Iedereen goud; de paar besten zwart-goud */
+  tier: "goud" | "zwartgoud";
   games: number;
 }
 
@@ -38,9 +40,11 @@ const WEIGHTS: Record<Position, Partial<Record<StatKey, number>>> = {
   Onbekend: { AAN: 0.2, PAS: 0.15, VER: 0.2, VRM: 0.2, INZ: 0.1, IMP: 0.15 },
 };
 
-const LOW = 45;
-const MID = 58;
-const HIGH = 97;
+const LOW = 70;
+const MID = 76;
+const HIGH = 95;
+/** Aantal zwart-gouden kaarten (de hoogste totalen) */
+const TOP_N = 3;
 
 export function playerCards(
   rows: GameRow[],
@@ -77,7 +81,7 @@ export function playerCards(
     if (r.games === 0) return LOW;
     const others = pool.filter((x) => x !== id).map((x) => raw[x][key]);
     const p = others.length ? others.filter((v) => v < r[key]).length / others.length : 0.5;
-    const full = MID + (HIGH - MID) * p - (p < 0.5 ? (0.5 - p) * 20 : 0);
+    const full = MID + (HIGH - MID) * p - (p < 0.5 ? (0.5 - p) * 12 : 0);
     // Afvlakken naar het midden bij weinig duels
     const v = MID + (full - MID) * (r.games / (r.games + 2));
     return Math.round(Math.min(99, Math.max(LOW, v)));
@@ -96,9 +100,15 @@ export function playerCards(
       overall,
       pos: POS[p.position],
       stats,
-      tier: overall >= 75 ? "goud" : overall >= 65 ? "zilver" : "brons",
+      tier: "goud",
       games: raw[p.id].games,
     };
   }
+  // De paar besten (met minstens 3 duels) krijgen zwart-goud
+  Object.values(out)
+    .filter((c) => c.games >= 3)
+    .sort((a, b) => b.overall - a.overall)
+    .slice(0, TOP_N)
+    .forEach((c) => (c.tier = "zwartgoud"));
   return out;
 }

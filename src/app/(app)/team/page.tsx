@@ -294,7 +294,7 @@ function Tile({
       <div
         role="button"
         tabIndex={0}
-        className={`${cls} fut ${card?.tier ?? "brons"}`}
+        className={`${cls} fut ${card?.tier ?? "goud"}`}
         data-tile={p.id}
         onClick={onToggle}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle())}

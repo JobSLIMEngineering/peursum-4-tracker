@@ -46,7 +46,8 @@ export function Walkout({
 
   if (!card || !player) return null;
   const tier = special ? "special" : card.tier;
-  const glow = special ? "#e1242f" : TIERS[card.tier].b;
+  // Lichtbundel: rood voor de speler van de maand, fel goud voor zwart-goud, anders goud
+  const glow = special ? "#e1242f" : card.tier === "zwartgoud" ? "#f4c542" : TIERS.goud.b;
 
   return createPortal(
     <div

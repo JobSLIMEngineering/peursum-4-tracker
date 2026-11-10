@@ -9,8 +9,8 @@ const FONT = "'Barlow Condensed', 'Arial Narrow', Arial, sans-serif";
 /** Kleuren per soort kaart; "special" = speler van de maand (zwart-rood met goud) */
 export const TIERS = {
   goud: { a: "#fbeaa0", b: "#e0b43a", c: "#9c7410", ink: "#3b2a05", line: "#7a5a0c" },
-  zilver: { a: "#ffffff", b: "#c9ccd2", c: "#80858d", ink: "#1d1f23", line: "#6a6e75" },
-  brons: { a: "#f0c19b", b: "#b97a47", c: "#7a4520", ink: "#2e1606", line: "#6b3c1b" },
+  /** Zwart met goud, zoals de speciale kaarten bij FIFA: voor de paar besten */
+  zwartgoud: { a: "#3a3020", b: "#14110b", c: "#000000", ink: "#f4c542", line: "#d4a017" },
   special: { a: "#5a0b12", b: "#22060a", c: "#0a0203", ink: "#f4c542", line: "#e1242f" },
 } as const;
 export type Tier = keyof typeof TIERS;
@@ -74,6 +74,14 @@ export function PlayerCardSvg({
         <path d="M-10 240L120 420L-10 420Z" fill="#000" opacity=".1" />
         <rect x="-160" y="0" width="120" height="420" fill={`url(#${id}-shine)`} transform="rotate(20 150 210)" />
         {special && <path d="M0 0H300V6H0Z" fill={t.line} />}
+        {/* Zwart-goud: gouden schuine banen door het zwart */}
+        {!special && card.tier === "zwartgoud" && (
+          <>
+            <path d="M-20 300L320 40L320 70L-20 330Z" fill="#d4a017" opacity=".35" />
+            <path d="M-20 360L320 100L320 112L-20 372Z" fill="#f4c542" opacity=".25" />
+            <path d="M200 -10L320 -10L320 60Z" fill="#f4c542" opacity=".18" />
+          </>
+        )}
       </g>
       <path d="M24 10H276Q290 10 290 24V352Q290 370 276 378L150 408L24 378Q10 370 10 352V24Q10 10 24 10Z" fill="none" stroke={t.line} strokeOpacity=".55" strokeWidth="2" />
 

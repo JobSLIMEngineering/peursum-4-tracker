@@ -23,6 +23,8 @@ export interface GameRow {
   ptsDiff: number;
   /** Verwachte tegengoals min echte tegengoals (positief = beter dan verwacht) */
   gaDiff: number;
+  /** Gemaakte goals min verwachte goals (positief = beter dan verwacht) */
+  gfDiff: number;
 }
 
 /** Ingevoerde competitiewedstrijden tegen poule-teams, oud → nieuw, met wat het model ervan verwachtte */
@@ -34,7 +36,7 @@ export function gameRows(matches: Match[], entries: Record<string, MatchEntry>, 
       const p = predict(model, US, opponent(m), m.home === US);
       const [f, a] = ourScore(m)!;
       const pts = f > a ? 3 : f === a ? 1 : 0;
-      return { match: m, entry: entries[m.id], ptsDiff: pts - (3 * p.win + p.draw), gaDiff: p.xgThem - a };
+      return { match: m, entry: entries[m.id], ptsDiff: pts - (3 * p.win + p.draw), gaDiff: p.xgThem - a, gfDiff: f - p.xgUs };
     });
 }
 

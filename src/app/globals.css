@@ -975,16 +975,30 @@ html, body { overflow-x: clip; }
 }
 .chart-tip b { color: var(--fg); font-size: 13px; }
 
-.duos { display: grid; padding-bottom: 8px; }
-.duo { display: grid; grid-template-columns: 22px auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 16px; border-top: 1px solid var(--line); }
-.duo:first-child { border-top: 0; }
-.duo .rank { font: 800 16px var(--f-cond); color: var(--muted); text-align: center; }
-.duo-pair { display: inline-flex; align-items: center; gap: 2px; }
-.duo-arrow { color: var(--red-text); font-weight: 800; }
-.duo-names { display: grid; min-width: 0; }
-.duo-names b { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.duo-names small { font-size: 12px; color: var(--muted); }
-.duo .num { font-size: 20px; }
+.duos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; padding: 4px 12px 14px; }
+.duo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 4px; padding: 10px 6px; border-radius: var(--r-md); background: var(--surface-2); }
+.duo-p { display: grid; justify-items: center; gap: 2px; text-align: center; min-width: 0; }
+.duo-p > span { font-weight: 700; font-size: 13px; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.duo-p small { font: 700 10px var(--f-cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.duo-mid { display: grid; justify-items: center; }
+.duo-mid .num { font-size: 22px; line-height: 1; }
+.duo-arrow { color: var(--red-text); font-weight: 800; font-size: 18px; line-height: 1; }
+
+/* Speler van de maand en klassement */
+.potm-main { display: flex; align-items: center; gap: 16px; padding: 4px 16px 16px; }
+.potm-main > div { display: grid; gap: 2px; min-width: 0; }
+.potm-main b { font: 900 italic 24px/1.05 var(--f-cond); text-transform: uppercase; overflow-wrap: anywhere; }
+.potm { background: linear-gradient(120deg, color-mix(in srgb, var(--gold) 16%, var(--surface)), var(--surface) 60%); }
+.potm-prev { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 16px 14px; border-top: 1px solid var(--line); font-size: 13px; }
+.ranking { display: grid; padding-bottom: 8px; }
+.rank-row { display: grid; grid-template-columns: 22px 32px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 16px; border-top: 1px solid var(--line); }
+.rank-row:first-child { border-top: 0; }
+.rank-row .rank { font: 800 16px var(--f-cond); color: var(--muted); text-align: center; }
+.rank-row .who { display: grid; min-width: 0; }
+.rank-row .who b { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-row .who small { font-size: 12px; color: var(--muted); }
+.rank-row .num { display: grid; justify-items: end; font-size: 20px; line-height: 1.05; }
+.rank-row .num small { font-size: 12px; color: var(--muted); font-weight: 700; }
 
 .wrapped-banner {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-radius: var(--r-lg);
@@ -1021,3 +1035,83 @@ html, body { overflow-x: clip; }
 .wr-list { display: grid; gap: 10px; text-align: left; }
 .wr-list > span { display: flex; align-items: center; gap: 8px; }
 .wr-count { position: absolute; right: 14px; bottom: 12px; font: 700 12px var(--f-cond); color: rgb(255 255 255 / .6); }
+
+/* Man van de wedstrijd */
+.box.motm { display: flex; align-items: center; gap: 14px; padding: 12px 16px; margin-bottom: 16px; background: linear-gradient(120deg, color-mix(in srgb, var(--gold) 18%, var(--surface)), var(--surface) 65%); }
+.box.motm > div { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.box.motm b { font: 900 italic 22px/1.05 var(--f-cond); text-transform: uppercase; overflow-wrap: anywhere; }
+.motm-star { font-size: 28px; }
+.news-k.motm, .news-k.potm { color: var(--gold-deep); }
+:root:not([data-theme="light"]) .news-k.motm, :root:not([data-theme="light"]) .news-k.potm { color: var(--gold); }
+/* Selectie invullen: de uitkomst blijft bovenaan in beeld terwijl je de lijst aanpast */
+.lineup-edit { display: grid; gap: 12px; margin-bottom: 16px; }
+.lineup-edit > .box:first-child { position: sticky; top: 8px; z-index: 5; }
+
+/* Topper in Match center */
+.topper {
+  margin-bottom: 16px; padding: 16px; border-radius: var(--r-lg); color: #fff; position: relative; overflow: hidden;
+  background: linear-gradient(rgb(0 0 0 / .35), rgb(0 0 0 / .6)), #050404 var(--texture) center / cover;
+  border: 2px solid rgb(225 36 47 / .75); box-shadow: 0 0 24px rgb(225 36 47 / .25), var(--shadow);
+}
+.topper-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.topper-tag { font: 900 italic 30px/1 var(--f-cond); text-transform: uppercase; letter-spacing: .02em; color: #fff; text-shadow: 0 0 18px rgb(225 36 47 / .8); }
+.topper-vs { display: flex; align-items: center; gap: 10px; }
+.topper-vs > span { display: grid; justify-items: center; line-height: 1.05; }
+.topper-vs b { font: 900 18px var(--f-cond); }
+.topper-vs small { font: 700 11px var(--f-cond); color: rgb(255 255 255 / .7); }
+.topper-vs i { font: 800 12px var(--f-cond); color: #ff8a92; font-style: normal; text-transform: uppercase; }
+.topper-lead { margin: 12px 0; font-size: 14px; color: rgb(255 255 255 / .88); }
+.topper-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.topper-s { display: grid; gap: 2px; padding: 10px 8px; border-radius: var(--r-md); background: rgb(255 255 255 / .07); border-top: 3px solid; }
+.topper-s.W { border-color: var(--win); } .topper-s.G { border-color: var(--draw); } .topper-s.V { border-color: var(--loss); }
+.topper-s .k { color: rgb(255 255 255 / .75); font-size: 10px; }
+.topper-s .num { font-size: 30px; line-height: 1; }
+.topper-s .meta { color: rgb(255 255 255 / .7); font-size: 12px; }
+.topper-gap { font-size: 12px; font-weight: 600; line-height: 1.25; }
+.topper-p { margin-top: 4px; font: 800 12px var(--f-cond); color: #ff8a92; }
+
+/* ==========================================================================
+   Kalender (Competitie)
+   ========================================================================== */
+.cal { overflow: hidden; }
+.cal-h { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 6px; }
+.cal-h b { font: 800 18px var(--f-cond); text-transform: uppercase; letter-spacing: .04em; }
+.cal-nav { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font-size: 22px; line-height: 1; cursor: pointer; }
+.cal-days, .cal-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal-days { padding: 0 6px 4px; }
+.cal-days span { text-align: center; font: 700 11px var(--f-cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cal-week { border-top: 1px solid var(--line); }
+.cal-row { width: 100%; padding: 4px 6px; background: none; border: 0; cursor: pointer; color: inherit; transition: background .16s var(--ease); }
+.cal-row:hover, .cal-week.open .cal-row { background: var(--surface-2); }
+.cal-cell { position: relative; display: grid; justify-items: center; align-content: start; gap: 3px; min-height: 58px; padding: 4px 1px; border-radius: 10px; }
+.cal-cell.out { opacity: .4; }
+.cal-no { font: 700 13px var(--f-cond); color: var(--fg-2); }
+.cal-cell.today .cal-no { background: var(--red); color: var(--on-red); border-radius: 999px; min-width: 22px; padding: 0 5px; }
+.cal-match { display: grid; justify-items: center; gap: 1px; padding: 3px 2px 2px; border-radius: 7px; width: 100%; max-width: 46px; background: var(--surface-3); }
+.cal-match > span { font: 800 10px var(--f-cond); line-height: 1; white-space: nowrap; }
+.cal-match.h { box-shadow: inset 0 -2px 0 var(--red); }
+.cal-match.W { background: var(--win); color: var(--on-win); }
+.cal-match.D { background: var(--draw); color: var(--on-draw); }
+.cal-match.L { background: var(--loss); color: var(--on-loss); }
+.cal-train { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); margin-top: 6px; }
+.cal-detail { display: grid; gap: 6px; padding: 8px 12px 14px; background: var(--surface-2); }
+.cal-item { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r-md); background: var(--surface); text-decoration: none; color: inherit; font-size: 14px; }
+.cal-item.ours { border: 1px solid color-mix(in srgb, var(--red) 45%, var(--line)); padding: 10px; }
+.cal-item.train { color: var(--fg-2); }
+.cal-when { font: 700 12px var(--f-cond); color: var(--muted); text-transform: uppercase; }
+.cal-when b { display: block; color: var(--fg); font-size: 15px; }
+.cal-opp { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cal-opp > span:last-child { display: grid; min-width: 0; }
+.cal-opp b { font: 800 16px/1.1 var(--f-cond); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-opp small { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-others { display: grid; gap: 4px; padding-top: 4px; }
+.cal-others .link { justify-self: start; }
+.cal-other { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; font-size: 13px; padding: 4px 2px; }
+.cal-other .tname.r { justify-content: flex-end; text-align: right; }
+.cal-other .score { font-size: 14px; min-width: 40px; }
+.cal-undated { display: grid; gap: 6px; padding: 12px; border-top: 1px solid var(--line); }
+.cal-undated .cal-item { grid-template-columns: auto minmax(0, 1fr); }
+.wr-making { display: grid; gap: 6px; justify-items: center; font-size: 13px; color: var(--fg-2); width: 100%; }
+.wr-meter { width: min(260px, 80%); height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.wr-meter i { display: block; height: 100%; background: var(--red); transition: width .2s linear; }
+.wr-video { display: block; width: min(260px, 70%); margin: 12px auto 0; border-radius: 14px; border: 1px solid var(--line); }

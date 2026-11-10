@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { duos } from "@/lib/domain/insights";
+import { manOfTheMatch, playersOfTheMonth } from "@/lib/domain/rating";
 import { buildNews, type NewsKind } from "@/lib/domain/news";
-import { playerLabel } from "@/lib/domain/types";
-import { todayNL } from "@/lib/format";
+import { opponent, playerLabel } from "@/lib/domain/types";
+import { MON_FULL, todayNL } from "@/lib/format";
 import { useData } from "./DataProvider";
 import { Flame, Glove } from "./Badges";
 import { Shirt } from "./Shirt";
@@ -20,6 +21,8 @@ const ICON: Record<NewsKind, string> = {
   vuur: "🔥",
   duo: "🤝",
   wrapped: "🎬",
+  motm: "⭐",
+  potm: "🌟",
 };
 
 const EVERY = 5500;
@@ -40,6 +43,15 @@ export function NewsTicker() {
         awards: view.awards,
         streaks: view.streaks,
         topDuo: duos(view.matches, view.entries)[0] ?? null,
+        motm: (() => {
+          const last = view.rows.at(-1);
+          const m = last && manOfTheMatch(last, view.players);
+          return m && last ? { playerId: m.playerId, total: m.total, opponent: opponent(last.match) } : null;
+        })(),
+        potm: (() => {
+          const m = playersOfTheMonth(view.rows, view.players).at(-1);
+          return m ? { playerId: m.playerId, total: m.total, month: MON_FULL[Number(m.month.slice(5, 7)) - 1] } : null;
+        })(),
         label: (id) => playerLabel(view.players.find((p) => p.id === id)),
       }),
     [view, readOnly],

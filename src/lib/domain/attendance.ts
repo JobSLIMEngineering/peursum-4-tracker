@@ -54,11 +54,18 @@ const NOT_NAMES = new Set(
     "mannen", "heren", "jongens", "allen", "allemaal", "groet", "groeten", "gr", "grt", "succes", "top",
     "toppers", "aanwezig", "afwezig", "afgemeld", "selectie", "opstelling", "reserve", "reserves", "wissel",
     "wissels", "keeper", "keepers", "verzamelen", "thuis", "uit", "ok", "oke", "en",
+    "wedstrijd", "tegen", "vs", "training", "lijst", "spelers", "team", "basis", "bank",
+    "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag",
+    "januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december",
   ].map(normName),
 );
 
-/** Te lang of met een tijdstip: een zin, geen naam ("Morgen thuis tegen Spijk om 12:30 …") */
-const isSentence = (line: string) => line.split(/\s+/).filter(Boolean).length > 4 || /\d{1,2}[:.]\d{2}/.test(line);
+/**
+ * Te lang, met een tijdstip of een kopje met dubbele punt: een zin, geen naam
+ * ("Morgen thuis tegen Spijk om 12:30 …", "Selectie zaterdag:")
+ */
+const isSentence = (line: string) =>
+  line.split(/\s+/).filter(Boolean).length > 4 || /\d{1,2}[:.]\d{2}/.test(line) || /:\s*$/.test(line);
 
 /** Teamaanduiding achter een naam ("Milan 5e", "Kees (6)"): waarschijnlijk een leenspeler */
 const TEAM_MARK = /\(?\b\d{1,2}\s*(?:e|ste|de)?\b\)?/gi;

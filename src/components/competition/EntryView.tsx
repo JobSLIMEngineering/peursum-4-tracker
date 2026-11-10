@@ -1,6 +1,8 @@
 "use client";
 
 import { Plaster } from "@/components/Badges";
+import { Shirt } from "@/components/Shirt";
+import { manOfTheMatch } from "@/lib/domain/rating";
 import { useData } from "@/components/DataProvider";
 import { assignedGoals } from "@/lib/domain/stats";
 import { ourScore, playerLabel } from "@/lib/domain/types";
@@ -38,8 +40,25 @@ export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => v
   const sum = assignedGoals(e);
   const present = e.attendance.map((id) => view.players.find((p) => p.id === id)).filter((p) => !!p);
 
+  const row = view.rows.find((r) => r.match.id === match.id);
+  const motm = row ? manOfTheMatch(row, view.players) : null;
+  const mp = motm ? view.players.find((p) => p.id === motm.playerId) : undefined;
+
   return (
     <>
+      {motm && mp && (
+        <section className="box motm">
+          <Shirt player={mp} size={56} />
+          <div>
+            <span className="k">Man van de wedstrijd</span>
+            <b>{name(mp.id)}</b>
+            <span className="meta">{motm.total.toFixed(1).replace(".", ",")} spelerspunten</span>
+          </div>
+          <span className="motm-star" aria-hidden="true">
+            ⭐
+          </span>
+        </section>
+      )}
       <div className="grid2">
         <section className="box">
           <div className="box-h">

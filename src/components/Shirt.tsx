@@ -38,7 +38,12 @@ function surname(name: string | null): string | null {
  */
 export function Shirt({ player, size = 48 }: { player: ShirtPlayer; size?: number }) {
   const { view } = useData();
-  const c = colors(player, view.goldKeepers.has(player.id));
+  return <ShirtSvg player={player} size={size} gold={view.goldKeepers.has(player.id)} />;
+}
+
+/** Het shirtje zelf, zonder data (ook te tekenen in een canvas, zoals de Wrapped-video) */
+export function ShirtSvg({ player, size = 48, gold = false }: { player: ShirtPlayer; size?: number; gold?: boolean }) {
+  const c = colors(player, gold);
   const hasNo = player.number != null;
   const label = hasNo ? String(player.number) : initials(player.name);
   // Achternaam alleen als het shirt groot genoeg is om hem te lezen
@@ -47,7 +52,7 @@ export function Shirt({ player, size = 48 }: { player: ShirtPlayer; size?: numbe
   const id = `sh-${c.top.slice(1)}`;
 
   return (
-    <svg className="shirt" viewBox="0 0 100 100" width={size} height={size} role="img" aria-label={hasNo ? `Rugnummer ${label}` : `Shirt ${label}`}>
+    <svg xmlns="http://www.w3.org/2000/svg" className="shirt" viewBox="0 0 100 100" width={size} height={size} role="img" aria-label={hasNo ? `Rugnummer ${label}` : `Shirt ${label}`}>
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={c.top} />
@@ -79,6 +84,8 @@ export function Shirt({ player, size = 48 }: { player: ShirtPlayer; size?: numbe
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize="11"
+          fontFamily="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif"
+          fontWeight="800"
           fill={c.text}
           letterSpacing=".5"
           {...(name.length > 8 ? { textLength: 46, lengthAdjust: "spacingAndGlyphs" } : {})}
@@ -86,7 +93,7 @@ export function Shirt({ player, size = 48 }: { player: ShirtPlayer; size?: numbe
           {name}
         </text>
       )}
-      <text x="50" y={name ? 60 : 56} textAnchor="middle" dominantBaseline="middle" fontSize={fs} fill={c.text} letterSpacing="-1">
+      <text x="50" y={name ? 60 : 56} textAnchor="middle" dominantBaseline="middle" fontSize={fs} fill={c.text} letterSpacing="-1" fontFamily="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" fontWeight="800">
         {label}
       </text>
     </svg>

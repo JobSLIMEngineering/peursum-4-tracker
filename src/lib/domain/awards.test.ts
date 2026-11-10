@@ -42,7 +42,7 @@ const row = (
     opponentOwnGoals: 0,
     ...(opts.injured ? { injured: opts.injured } : {}),
   };
-  return { match: match(id, `2026-09-${10 + Number(id.slice(1))}`, us, them), entry, ptsDiff: opts.ptsDiff ?? 0, gaDiff: opts.gaDiff ?? 0 };
+  return { match: match(id, `2026-09-${10 + Number(id.slice(1))}`, us, them), entry, ptsDiff: opts.ptsDiff ?? 0, gaDiff: opts.gaDiff ?? 0, gfDiff: 0 };
 };
 const pl = (id: string, position: AwardPlayer["position"] = "Aanvaller"): AwardPlayer => ({
   id,

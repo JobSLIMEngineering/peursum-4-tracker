@@ -8,7 +8,7 @@ import { isPlayed, US, type Match, type MatchEntry, type Player, type StandingRo
  * inhaalwedstrijden, wie terug is van een blessure, koplopers van de prijzen en wie on fire is.
  */
 
-export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped";
+export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped" | "motm" | "potm";
 
 export interface NewsItem {
   key: string;
@@ -36,6 +36,10 @@ export interface NewsInput {
   streaks: Record<string, Streak[]>;
   /** Beste duo (aangever → scorer), als die er is */
   topDuo?: { assistId: string; scorerId: string; goals: number } | null;
+  /** Man van de laatste wedstrijd (hoogste spelerspunten) */
+  motm?: { playerId: string; total: number; opponent: string } | null;
+  /** Speler van de maand (meest recente maand) */
+  potm?: { playerId: string; month: string; total: number } | null;
   label: (id: string) => string;
 }
 
@@ -114,6 +118,28 @@ export function buildNews(i: NewsInput): NewsItem[] {
       href: "/prijzen/",
     });
   }
+
+  // --- Man van de wedstrijd en speler van de maand ---
+  if (i.motm)
+    out.push({
+      key: "motm",
+      kind: "motm",
+      kicker: `Man van de wedstrijd · ${i.motm.opponent}`,
+      title: i.label(i.motm.playerId),
+      text: `${i.motm.total.toFixed(1).replace(".", ",")} spelerspunten`,
+      playerId: i.motm.playerId,
+      href: "/statistieken/",
+    });
+  if (i.potm)
+    out.push({
+      key: "potm",
+      kind: "potm",
+      kicker: `Speler van de maand · ${i.potm.month}`,
+      title: i.label(i.potm.playerId),
+      text: `${i.potm.total.toFixed(1).replace(".", ",")} spelerspunten`,
+      playerId: i.potm.playerId,
+      href: "/statistieken/",
+    });
 
   // --- Duo van het seizoen (vanaf 3 samen) ---
   if (i.topDuo && i.topDuo.goals >= 3)

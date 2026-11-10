@@ -8,16 +8,29 @@ import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
 import { Box } from "@/components/ui";
 import { duos, seasonForm } from "@/lib/domain/insights";
+import { playersOfTheMonth, seasonRatings } from "@/lib/domain/rating";
+import { MON_FULL } from "@/lib/format";
+import type { StoredPlayer } from "@/lib/store/schema";
 import { playerLabel } from "@/lib/domain/types";
 
 const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
 const signed = (x: number, d = 1) => (x >= 0 ? "+" : "−") + comma(Math.abs(x), d);
+const monthName = (ym: string) => MON_FULL[Number(ym.slice(5, 7)) - 1];
+/** Voornaam + eerste letter achternaam, zodat duo's op een telefoon leesbaar blijven */
+const short = (p: StoredPlayer | undefined) => {
+  const parts = playerLabel(p).split(/\s+/);
+  return parts.length > 1 && p?.name ? `${parts[0]} ${parts.at(-1)![0]}.` : playerLabel(p);
+};
 
 /** Statistieken: vorm door het seizoen (gecorrigeerd voor de tegenstanders) en de duo's */
 export default function StatistiekenPage() {
   const { view } = useData();
   const form = useMemo(() => seasonForm(view.model, view.matches, view.pool), [view]);
-  const pairs = useMemo(() => duos(view.matches, view.entries).slice(0, 5), [view]);
+  const pairs = useMemo(() => duos(view.matches, view.entries).slice(0, 6), [view]);
+  // Spelersklassement: alleen wie er iets bij heeft (geen minnen in beeld), top 10
+  const ranking = useMemo(() => seasonRatings(view.rows, view.players).filter((r) => r.total > 0).slice(0, 10), [view]);
+  const months = useMemo(() => playersOfTheMonth(view.rows, view.players), [view]);
+  const potm = months.at(-1);
   const last = form.at(-1);
   const byId = (id: string) => view.players.find((p) => p.id === id);
   // Vorm nu (laatste 5) en hoe het begon (eerste 5), om de lijn over het seizoen te duiden
@@ -68,6 +81,74 @@ export default function StatistiekenPage() {
         <FormChart points={form} />
       </Box>
 
+      {potm && (
+        <section className="box potm" style={{ marginTop: 16 }}>
+          <div className="box-h">
+            <p className="lbl">Speler van de maand</p>
+            <InfoTip label="Hoe wordt dit bepaald?">
+              Elke wedstrijd krijgt iedereen die meedeed spelerspunten: erbij als het beter gaat dan het model verwachtte
+              tegen deze tegenstander, eraf als het slechter gaat. Verdedigers en de keeper vooral op tegengoals, aanvallers
+              op gemaakte goals, plus goals (+3), assists (+2), de nul als keeper (+1) en kaarten (−1/−3). Zo maakt iedereen
+              kans, van keeper tot spits. Wie in een maand maar één duel speelde, telt niet mee.
+            </InfoTip>
+          </div>
+          <div className="potm-main">
+            {byId(potm.playerId) && <Shirt player={byId(potm.playerId)!} size={84} />}
+            <div>
+              <span className="k">{monthName(potm.month)}</span>
+              <b>{playerLabel(byId(potm.playerId))}</b>
+              <span className="meta">
+                {comma(potm.total)} spelerspunten in {potm.games} duels
+              </span>
+            </div>
+          </div>
+          {months.length > 1 && (
+            <div className="potm-prev">
+              {months
+                .slice(0, -1)
+                .reverse()
+                .map((m) => (
+                  <span key={m.month}>
+                    <span className="k">{monthName(m.month)}</span> {playerLabel(byId(m.playerId))}
+                  </span>
+                ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {ranking.length > 0 && (
+        <Box
+          label="Spelersklassement"
+          style={{ marginTop: 16 }}
+          bodyClass={null}
+          right={<span className="meta">punten · per duel</span>}
+        >
+          <div className="ranking">
+            {ranking.map((r, i) => {
+              const p = byId(r.playerId);
+              return (
+                <div key={r.playerId} className="rank-row">
+                  <span className="rank">{i + 1}</span>
+                  {p && <Shirt player={p} size={32} />}
+                  <span className="who">
+                    <b>{playerLabel(p)}</b>
+                    <small>
+                      {r.games} duels
+                      {r.motm ? ` · ${r.motm}× man van de wedstrijd` : ""}
+                    </small>
+                  </span>
+                  <span className="num">
+                    {comma(r.total)}
+                    <small>{comma(r.perGame)}</small>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Box>
+      )}
+
       <Box
         label="Duo's"
         style={{ marginTop: 16 }}
@@ -76,26 +157,27 @@ export default function StatistiekenPage() {
       >
         {pairs.length ? (
           <div className="duos">
-            {pairs.map((d, i) => {
+            {pairs.map((d) => {
               const a = byId(d.assistId);
-              const s = byId(d.scorerId);
+              const sc = byId(d.scorerId);
               return (
                 <div key={`${d.assistId}>${d.scorerId}`} className="duo">
-                  <span className="rank">{i + 1}</span>
-                  <span className="duo-pair">
-                    {a && <Shirt player={a} size={36} />}
+                  <span className="duo-p">
+                    {a && <Shirt player={a} size={44} />}
+                    <span>{short(a)}</span>
+                    <small>assist</small>
+                  </span>
+                  <span className="duo-mid">
+                    <span className="num">{d.goals}×</span>
                     <span className="duo-arrow" aria-hidden="true">
-                      →
+                      ⟶
                     </span>
-                    {s && <Shirt player={s} size={36} />}
                   </span>
-                  <span className="duo-names">
-                    <b>
-                      {playerLabel(a)} → {playerLabel(s)}
-                    </b>
-                    <small>assist → goal</small>
+                  <span className="duo-p">
+                    {sc && <Shirt player={sc} size={44} />}
+                    <span>{short(sc)}</span>
+                    <small>goal</small>
                   </span>
-                  <span className="num">{d.goals}×</span>
                 </div>
               );
             })}

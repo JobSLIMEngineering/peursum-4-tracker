@@ -8,6 +8,7 @@ import { BASE } from "@/lib/base";
 import { DAY_FULL, MON_FULL } from "@/lib/format";
 import { canvasLogoSrc } from "@/lib/logos";
 import { standingOf, type AppView } from "@/lib/store/view";
+import { topper } from "@/lib/domain/topper";
 
 type Format = "post" | "story";
 const SIZE: Record<Format, [number, number]> = { post: [1080, 1350], story: [1080, 1920] };
@@ -108,7 +109,8 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
   const logoSize = lift ? 250 : 300;
 
   // Titel met rode penseelstreek
-  const title = played ? "UITSLAG" : "MATCHDAY";
+  const top = !played ? topper(view.standings, m) : null;
+  const title = played ? "UITSLAG" : top ? "TOPPER" : "MATCHDAY";
   g.save();
   g.translate(cx, titleY);
   g.rotate(-0.05);
@@ -250,6 +252,17 @@ async function draw(view: AppView, m: Match, format: Format): Promise<HTMLCanvas
   g.fillStyle = "#ffffff";
   g.font = `400 46px ${BRUSH}`;
   g.textAlign = "center";
+  // Topper: wat er op het spel staat
+  if (top) {
+    const diff = top.us.points - top.them.points;
+    g.fillStyle = "#e9e5e5";
+    g.font = `800 44px ${COND}`;
+    g.textAlign = "center";
+    spaced(`${top.us.position}E TEGEN ${top.them.position}E`, cx, H - 230, 6);
+    g.fillStyle = "#e1242f";
+    g.font = `700 36px ${COND}`;
+    spaced(diff === 0 ? "GELIJK IN PUNTEN" : `${Math.abs(diff)} PUNT${Math.abs(diff) === 1 ? "" : "EN"} VERSCHIL`, cx, H - 175, 6);
+  }
   g.fillText("#PEURSUM4", cx, H - 40);
   return c;
 }

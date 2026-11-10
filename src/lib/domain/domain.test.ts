@@ -302,3 +302,15 @@ describe("overzicht", () => {
     ]);
   });
 });
+
+describe("aanwezigheidslijst: kopjes overslaan", () => {
+  it("negeert 'Selectie zaterdag:' en datums, herkent de namen", () => {
+    const ps = [
+      { id: "a", name: "Bjorn van der Stok" },
+      { id: "b", name: "Niels de Groot" },
+    ];
+    const r = parseAttendance("Selectie zaterdag:\nZaterdag 14 november\nBjorn\nNiels de Groot", ps);
+    expect(r.found).toEqual(["a", "b"]);
+    expect(r.unknown).toEqual([]);
+  });
+});

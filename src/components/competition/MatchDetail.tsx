@@ -8,6 +8,7 @@ import { MatchHero, PredictionBlocks } from "@/components/Prediction";
 import { Fireworks } from "@/components/Fireworks";
 import { LineupChance } from "@/components/LineupChance";
 import { Spotlights } from "@/components/Spotlights";
+import { TopperBlock } from "@/components/TopperBlock";
 import { isPlayed, opponent, ourScore, US, type MatchKind } from "@/lib/domain/types";
 import type { MatchEdit } from "@/lib/store/schema";
 import { hasPrediction, type ViewMatch } from "@/lib/store/view";
@@ -81,6 +82,7 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
           </div>
           {hasPrediction(view, m) ? (
             <>
+              <TopperBlock match={m} />
               <LineupChance match={m} />
               <Spotlights match={m} />
               <PredictionBlocks view={view} match={m} />

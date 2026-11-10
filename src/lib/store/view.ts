@@ -1,6 +1,7 @@
 import { computeAwards, gameRows, keeperCompare, playerImpacts, prizeLeads, type Award, type AwardKey, type GameRow, type PlayerImpact } from "@/lib/domain/awards";
 import { fit, knownResults, type Fit } from "@/lib/domain/model";
 import { playerCards, type PlayerCard } from "@/lib/domain/playercard";
+import { monthlyOveralls, upgrades } from "@/lib/domain/season-stats";
 import { hotStreaks, type Streak } from "@/lib/domain/streaks";
 import { isPlayed, opponent, US, type Match, type MatchEntry, type StandingRow } from "@/lib/domain/types";
 import type { DataFiles, Snapshot, StoredMatch, StoredPlayer } from "./schema";
@@ -36,6 +37,9 @@ export interface AppView {
   goldKeepers: Set<string>;
   /** Spelerskaarten (FIFA-stijl) */
   cards: Record<string, PlayerCard>;
+  /** Kaartcijfer per maand en de upgrades van de laatste maand */
+  monthly: ReturnType<typeof monthlyOveralls>;
+  upgrades: Record<string, number>;
 }
 
 const strip = ({ code, ...m }: StoredMatch) => ({ m, code });
@@ -80,6 +84,7 @@ export function buildView(files: DataFiles): AppView {
   const players = files["players.json"].players;
   const rows = gameRows(matches, entries, model, pool);
   const awards = computeAwards(players, rows, standings);
+  const monthly = monthlyOveralls(rows, players);
 
   return {
     standings,
@@ -98,6 +103,8 @@ export function buildView(files: DataFiles): AppView {
     impacts: playerImpacts(players, rows),
     injuredLast: injuredNow(players, rows),
     cards: playerCards(rows, players, playerImpacts(players, rows)),
+    monthly,
+    upgrades: upgrades(monthly, rows),
     goldKeepers: new Set(
       players
         .filter((p) => {

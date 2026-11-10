@@ -8,7 +8,7 @@ import { isPlayed, US, type Match, type MatchEntry, type Player, type StandingRo
  * inhaalwedstrijden, wie terug is van een blessure, koplopers van de prijzen en wie on fire is.
  */
 
-export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped" | "motm" | "potm";
+export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped" | "motm" | "potm" | "upgrade" | "mijlpaal";
 
 export interface NewsItem {
   key: string;
@@ -40,6 +40,10 @@ export interface NewsInput {
   motm?: { playerId: string; total: number; opponent: string } | null;
   /** Speler van de maand (meest recente maand) */
   potm?: { playerId: string; month: string; total: number } | null;
+  /** Kaart-upgrades van deze maand (cijfer omhoog) */
+  upgrades?: { playerId: string; delta: number; overall: number }[];
+  /** Mijlpalen uit de laatste wedstrijd */
+  milestones?: { playerId: string; text: string }[];
   label: (id: string) => string;
 }
 
@@ -140,6 +144,20 @@ export function buildNews(i: NewsInput): NewsItem[] {
       playerId: i.potm.playerId,
       href: "/statistieken/",
     });
+
+  // --- Kaart-upgrades en mijlpalen ---
+  for (const u of i.upgrades ?? [])
+    out.push({
+      key: `up-${u.playerId}`,
+      kind: "upgrade",
+      kicker: "Kaart-upgrade",
+      title: i.label(u.playerId),
+      text: `Gestegen naar ${u.overall} (+${u.delta})`,
+      playerId: u.playerId,
+      href: "/team/",
+    });
+  for (const m of i.milestones ?? [])
+    out.push({ key: `mp-${m.playerId}-${m.text}`, kind: "mijlpaal", kicker: "Mijlpaal", title: i.label(m.playerId), text: m.text, playerId: m.playerId });
 
   // --- Duo van het seizoen (vanaf 3 samen) ---
   if (i.topDuo && i.topDuo.goals >= 3)

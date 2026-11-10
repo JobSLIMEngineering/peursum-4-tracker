@@ -10,6 +10,7 @@ import { useData } from "@/components/DataProvider";
 import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
 import { Walkout } from "@/components/Walkout";
+import { ROLES, type Role } from "@/lib/domain/season-stats";
 import { Box } from "@/components/ui";
 import { playerTotals, type PlayerTotals } from "@/lib/domain/stats";
 import { playerLabel, POSITIONS, type Position } from "@/lib/domain/types";
@@ -305,6 +306,7 @@ function Tile({
           <span className="fut-rating">
             <b>{card?.overall ?? "–"}</b>
             <small>{card?.pos ?? ""}</small>
+            {view.upgrades[p.id] && <span className="fut-up" title="Kaart-upgrade deze maand">▲{view.upgrades[p.id]}</span>}
           </span>
           <Shirt player={p} size={58} />
           <span className="tile-badges">
@@ -469,6 +471,7 @@ function EditForm({
   const [name, setName] = useState(p.name ?? "");
   const [no, setNo] = useState(p.number != null ? String(p.number) : "");
   const [pos, setPos] = useState<Position>(p.position);
+  const [role, setRole] = useState<Role | "">(p.role ?? "");
   const [armed, setArmed] = useState(false);
 
   useEffect(() => {
@@ -485,6 +488,7 @@ function EditForm({
     if (n && n !== p.name) patch.name = n;
     if ((Number.isNaN(num) ? null : num) !== (p.number ?? null)) patch.number = Number.isNaN(num) ? null : num;
     if (pos !== p.position) patch.position = pos;
+    if ((role || null) !== (p.role ?? null)) patch.role = role || null;
     if (Object.keys(patch).length) void update(p.id, patch, `speler: ${n || playerLabel(p)}`);
     onDone();
   }
@@ -505,11 +509,22 @@ function EditForm({
         Nummer
         <input type="number" inputMode="numeric" min={0} max={99} value={no} onChange={(e) => setNo(e.target.value)} />
       </label>
-      <label className="f wide">
+      <label className="f">
         Positie
         <select value={pos} onChange={(e) => setPos(e.target.value as Position)}>
           {POSITIONS.map((x) => (
             <option key={x}>{x}</option>
+          ))}
+        </select>
+      </label>
+      <label className="f" style={{ gridColumn: "span 1" }}>
+        Rol
+        <select value={role} onChange={(e) => setRole(e.target.value as Role | "")} aria-label="Rol in het elftal">
+          <option value="">Automatisch</option>
+          {ROLES.map((r) => (
+            <option key={r.key} value={r.key}>
+              {r.label}
+            </option>
           ))}
         </select>
       </label>

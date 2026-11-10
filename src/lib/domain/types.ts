@@ -71,6 +71,8 @@ export interface Player {
   aliases?: string[];
   /** Rugnummer (handmatig ingevuld) */
   number?: number | null;
+  /** Voorkeursplek in het elftal (voor het team van de maand), bijv. "LB" of "SP" */
+  role?: "K" | "LB" | "CV" | "RB" | "CM" | "LV" | "SP" | "RV" | null;
 }
 
 export interface PlayerMatchStats {

@@ -754,7 +754,7 @@ a.prow2 { text-decoration: none; }
 .tile-notes b { color: var(--fg); }
 .tile-notes .up { color: var(--win); } .tile-notes .down { color: var(--loss); }
 .tile-actions { margin-top: auto; padding-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; position: relative; z-index: 1; }
-.tile-edit { margin-top: 14px; display: grid; gap: 10px; grid-template-columns: 1fr 88px; position: relative; z-index: 1; }
+.tile-edit { margin-top: 10px; display: grid; gap: 8px 10px; grid-template-columns: 1fr 1fr; position: relative; z-index: 1; }
 .tile-edit .wide { grid-column: 1 / -1; }
 
 /* Shirtjes */
@@ -1184,3 +1184,45 @@ html, body { overflow-x: clip; }
 .tile.fut .onfire-btn { background: rgb(0 0 0 / .18); border-radius: 999px; padding: 2px 4px; }
 .potm-open { padding: 0 16px 16px; }
 .wr-pack { margin-top: 6px; }
+
+/* Upgrade-pijl op het kaartje */
+.fut-up { margin-top: 3px; padding: 1px 5px; border-radius: 6px; background: var(--win); color: #fff; font: 800 11px var(--f-cond); }
+
+/* Walk-out met statistieken eronder: scrollbaar */
+.walkout { overflow-y: auto; align-items: start; padding: 32px 16px calc(90px + env(safe-area-inset-bottom)); }
+.walkout:not(.s5) { align-items: center; }
+.wo-content { position: relative; z-index: 1; display: grid; justify-items: center; gap: 14px; width: min(380px, 100%); margin: auto; }
+.wo-actions { position: fixed; }
+
+/* Seizoensstatistieken onder het kaartje */
+.pss { width: 100%; padding: 12px 14px; border-radius: var(--r-lg); background: rgb(255 255 255 / .06); border: 1px solid rgb(255 255 255 / .12); }
+.pss-trend { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; }
+.pss-trend span { display: grid; justify-items: center; min-width: 42px; padding: 4px 6px; border-radius: 8px; background: rgb(255 255 255 / .06); }
+.pss-trend b { font: 900 18px var(--f-cond); }
+.pss-trend span.up b { color: #4ade80; }
+.pss-trend small { font: 700 10px var(--f-cond); text-transform: uppercase; letter-spacing: .08em; color: rgb(255 255 255 / .6); }
+.pss dl { margin: 0; display: grid; }
+.pss dl > div { display: grid; grid-template-columns: 112px 1fr; gap: 10px; padding: 6px 0; border-top: 1px solid rgb(255 255 255 / .08); font-size: 13px; }
+.pss dl > div:first-child { border-top: 0; }
+.pss dt { font: 700 11px var(--f-cond); letter-spacing: .08em; text-transform: uppercase; color: rgb(255 255 255 / .6); padding-top: 1px; }
+.pss dd { margin: 0; color: #fff; }
+.pss .up { color: #4ade80; } .pss .down { color: #fca5a5; }
+
+/* Team van de maand op een veldje */
+.totm-month { font: 800 15px var(--f-cond); text-transform: uppercase; min-width: 74px; text-align: center; }
+.cal-nav.sm { width: 30px; height: 30px; font-size: 18px; border-radius: 9px; }
+.cal-nav:disabled { opacity: .35; cursor: default; }
+.pitch {
+  margin: 4px 12px 14px; padding: 14px 6px; border-radius: var(--r-lg); display: grid; gap: 12px;
+  background:
+    linear-gradient(rgb(255 255 255 / .12), rgb(255 255 255 / .12)) center / 100% 2px no-repeat,
+    radial-gradient(circle at 50% 50%, transparent 46px, rgb(255 255 255 / .12) 47px 49px, transparent 50px),
+    repeating-linear-gradient(0deg, #1f6b3a 0 36px, #1b6034 36px 72px);
+  border: 2px solid rgb(255 255 255 / .18);
+}
+.pitch-line { display: flex; justify-content: space-around; gap: 4px; }
+.pitch-p { display: grid; justify-items: center; gap: 1px; width: 72px; background: none; border: 0; cursor: pointer; color: #fff; padding: 0; }
+.pitch-p > span { font: 800 11px/1.1 var(--f-cond); text-transform: uppercase; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+.pitch-p small { font: 900 11px var(--f-cond); padding: 0 5px; border-radius: 5px; background: linear-gradient(150deg, #fbeaa0, #e0b43a); color: #3b2a05; }
+.pitch-p.empty { opacity: .6; cursor: default; align-content: center; height: 64px; }
+.news-k.upgrade, .news-k.mijlpaal { color: var(--win); }

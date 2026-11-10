@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { duos } from "@/lib/domain/insights";
 import { manOfTheMatch, playersOfTheMonth } from "@/lib/domain/rating";
+import { newMilestones } from "@/lib/domain/season-stats";
 import { buildNews, type NewsKind } from "@/lib/domain/news";
 import { opponent, playerLabel } from "@/lib/domain/types";
 import { MON_FULL, todayNL } from "@/lib/format";
@@ -23,6 +24,8 @@ const ICON: Record<NewsKind, string> = {
   wrapped: "🎬",
   motm: "⭐",
   potm: "🌟",
+  upgrade: "⬆️",
+  mijlpaal: "🎯",
 };
 
 const EVERY = 5500;
@@ -43,6 +46,8 @@ export function NewsTicker() {
         awards: view.awards,
         streaks: view.streaks,
         topDuo: duos(view.matches, view.entries)[0] ?? null,
+        upgrades: Object.entries(view.upgrades).map(([playerId, delta]) => ({ playerId, delta, overall: view.cards[playerId]?.overall ?? 0 })),
+        milestones: newMilestones(view.rows, view.players),
         motm: (() => {
           const last = view.rows.at(-1);
           const m = last && manOfTheMatch(last, view.players);

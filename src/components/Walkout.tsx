@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useData } from "./DataProvider";
 import { PlayerCardSvg, TIERS } from "./PlayerCardSvg";
+import { PlayerSeasonStats } from "./PlayerSeasonStats";
 import { TeamLogo } from "./TeamLogo";
 import { US } from "@/lib/domain/types";
 
@@ -91,8 +92,11 @@ export function Walkout({
       )}
 
       {stage === 5 && (
-        <div className="wo-card">
-          <PlayerCardSvg card={card} player={player} gold={view.goldKeepers.has(player.id)} special={special} banner={banner} width={280} />
+        <div className="wo-content">
+          <div className="wo-card">
+            <PlayerCardSvg card={card} player={player} gold={view.goldKeepers.has(player.id)} special={special} banner={banner} width={instant ? 240 : 280} />
+          </div>
+          {instant && <PlayerSeasonStats playerId={player.id} />}
         </div>
       )}
 

@@ -6,6 +6,7 @@ import { useData } from "@/components/DataProvider";
 import { FormChart } from "@/components/FormChart";
 import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
+import { TeamOfMonth } from "@/components/TeamOfMonth";
 import { Walkout } from "@/components/Walkout";
 import { Box } from "@/components/ui";
 import { duos, seasonForm } from "@/lib/domain/insights";
@@ -126,6 +127,8 @@ export default function StatistiekenPage() {
           )}
         </section>
       )}
+
+      <TeamOfMonth />
 
       {ranking.length > 0 && (
         <Box

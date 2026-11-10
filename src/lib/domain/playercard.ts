@@ -1,7 +1,7 @@
 import type { GameRow, PlayerImpact } from "./awards";
 import { attendanceRates } from "./insights";
 import { rateMatch } from "./rating";
-import { ourScore, type Player, type Position } from "./types";
+import { ourScore, POSITION_ROLE, ROLE_CODE, type Player, type Position } from "./types";
 
 /**
  * Spelerskaart in FIFA-stijl: zes cijfers (45–99) en een totaal, uit de eigen statistieken.
@@ -22,14 +22,14 @@ export interface PlayerCard {
   playerId: string;
   overall: number;
   /** Korte positie op de kaart */
-  pos: "K" | "VER" | "MID" | "AAN" | "SPL";
+  /** Engelse afkorting van de plek: GK, LB, CB, RB, CM, LW, ST, RW */
+  pos: string;
   stats: { key: StatKey; value: number }[];
   /** Iedereen goud; de paar besten zwart-goud */
   tier: "goud" | "zwartgoud";
   games: number;
 }
 
-const POS: Record<Position, PlayerCard["pos"]> = { Keeper: "K", Verdediger: "VER", Middenvelder: "MID", Aanvaller: "AAN", Onbekend: "SPL" };
 
 /** Gewicht van elk cijfer in het totaal, per positie */
 const WEIGHTS: Record<Position, Partial<Record<StatKey, number>>> = {
@@ -48,7 +48,7 @@ const TOP_N = 3;
 
 export function playerCards(
   rows: GameRow[],
-  players: Pick<Player, "id" | "position" | "active">[],
+  players: Pick<Player, "id" | "position" | "active" | "role">[],
   impacts: Record<string, PlayerImpact>,
 ): Record<string, PlayerCard> {
   const ids = players.filter((p) => p.active).map((p) => p.id);
@@ -98,7 +98,7 @@ export function playerCards(
     out[p.id] = {
       playerId: p.id,
       overall,
-      pos: POS[p.position],
+      pos: ROLE_CODE[p.role ?? POSITION_ROLE[p.position]],
       stats,
       tier: "goud",
       games: raw[p.id].games,

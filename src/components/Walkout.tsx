@@ -8,7 +8,6 @@ import { PlayerSeasonStats } from "./PlayerSeasonStats";
 import { TeamLogo } from "./TeamLogo";
 import { US } from "@/lib/domain/types";
 
-const POS_NAME = { K: "Keeper", VER: "Verdediger", MID: "Middenvelder", AAN: "Aanvaller", SPL: "Speler" } as const;
 
 /**
  * Walk-out zoals bij het openen van een pakje in FIFA, maar met de spelerskaart:
@@ -80,7 +79,7 @@ export function Walkout({
 
       {stage >= 2 && stage < 5 && (
         <div className="wo-reveal" key={stage}>
-          {stage === 2 && <span className="wo-big">{POS_NAME[card.pos]}</span>}
+          {stage === 2 && <span className="wo-big">{card.pos}</span>}
           {stage === 3 && (
             <span className="wo-club">
               <TeamLogo team={US} size={120} />

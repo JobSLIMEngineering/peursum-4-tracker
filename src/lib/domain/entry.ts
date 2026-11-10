@@ -1,4 +1,4 @@
-import type { GoalEvent, GoalKind, MatchEntry, PlayerMatchStats } from "./types";
+import type { GoalEvent, GoalKind, MatchEntry, PlayerMatchStats, Role } from "./types";
 
 /**
  * Invoer per doelpunt ↔ opgeslagen statistieken.
@@ -26,6 +26,8 @@ export interface EntryDraft {
   ownGoals: string[];
   /** Geblesseerd bij deze wedstrijd (nooit tegelijk aanwezig) */
   injured: string[];
+  /** Tijdelijke plek deze wedstrijd (alleen als die afwijkt van de vaste plek) */
+  positions: Record<string, Role>;
 }
 
 export const emptySlot = (): GoalSlot => ({ scorerId: undefined, assistId: null, kind: "spel" });
@@ -82,6 +84,7 @@ export function toDraft(entry: MatchEntry | undefined, ourGoals: number): EntryD
     cards,
     ownGoals,
     injured: [...(entry?.injured ?? [])],
+    positions: { ...(entry?.positions ?? {}) },
   };
 }
 
@@ -121,6 +124,9 @@ export function toEntry(draft: EntryDraft, matchId: string): MatchEntry {
     opponentOwnGoals: filled.filter((g) => g.scorerId === null).length,
     goals: filled.map((g) => ({ scorerId: g.scorerId, assistId: g.scorerId ? g.assistId : null, kind: g.kind })),
     ...(draft.injured.length ? { injured: draft.injured.filter((id) => !draft.attendance.includes(id)) } : {}),
+    ...(Object.keys(draft.positions ?? {}).length
+      ? { positions: Object.fromEntries(Object.entries(draft.positions).filter(([id]) => draft.attendance.includes(id))) }
+      : {}),
   };
 }
 
@@ -135,6 +141,7 @@ export function removePlayer(d: EntryDraft, id: string): EntryDraft {
     cards: d.cards.filter((c) => c.playerId !== id),
     ownGoals: d.ownGoals.filter((x) => x !== id),
     injured: d.injured,
+    positions: Object.fromEntries(Object.entries(d.positions ?? {}).filter(([x]) => x !== id)),
   };
 }
 

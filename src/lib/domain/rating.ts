@@ -1,5 +1,5 @@
 import type { GameRow } from "./awards";
-import { ourScore, type Player, type Position } from "./types";
+import { ourScore, ROLE_POSITION, type Player, type Position } from "./types";
 
 /**
  * Spelerspunten per wedstrijd: eerlijk voor elke positie, van keeper tot spits.
@@ -10,7 +10,8 @@ import { ourScore, type Player, type Position } from "./types";
  * - verdedigen: 2 × (verwachte tegengoals − tegengoals) × gewicht van de positie (keeper het meest);
  * - aanvallen:  2 × (goals − verwachte goals) × gewicht van de positie (spits het meest);
  * - eigen bijdrage: goal +3, assist +2, clean sheet als keeper +1, geel −1, rood −3, eigen goal −2.
- * Wie keepte, telt die wedstrijd als keeper (ook als zijn positie anders is).
+ * Wie keepte, telt die wedstrijd als keeper (ook als zijn positie anders is). Stond iemand die wedstrijd
+ * tijdelijk ergens anders (bijv. middenvelder in de verdediging), dan tellen de gewichten van die plek.
  */
 
 const DEF: Record<Position, number> = { Keeper: 1, Verdediger: 0.7, Middenvelder: 0.35, Aanvaller: 0.1, Onbekend: 0.35 };
@@ -33,7 +34,8 @@ export function rateMatch(row: GameRow, players: Pick<Player, "id" | "position">
   const conceded = ourScore(row.match)![1];
   return row.entry.attendance
     .map((id) => {
-      const position: Position = row.entry.keeperId === id ? "Keeper" : (pos.get(id) ?? "Onbekend");
+      const temp = row.entry.positions?.[id];
+      const position: Position = row.entry.keeperId === id ? "Keeper" : temp ? ROLE_POSITION[temp] : (pos.get(id) ?? "Onbekend");
       const st = row.entry.stats[id];
       const team = 1.5 * row.ptsDiff;
       const defence = 2 * DEF[position] * row.gaDiff;

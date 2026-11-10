@@ -20,6 +20,7 @@ export function PlayerSeasonStats({ playerId }: { playerId: string }) {
     ["Goals · assists", `${s.goals} · ${s.assists}${s.games ? ` (${comma((s.goals + s.assists) / s.games)} per duel)` : ""}`],
     ["Met hem erbij", `${s.record.w}W ${s.record.d}G ${s.record.l}V`],
   ];
+  if (s.hattricks) rows.push(["Hattricks", `⚽⚽⚽ ${s.hattricks}×`]);
   if (s.points > 0) rows.push(["Spelerspunten", `${comma(s.points)} · ${comma(s.perGame)} per duel`]);
   if (s.motm || s.potm)
     rows.push(["Uitgeroepen", [s.motm && `${s.motm}× man van de wedstrijd`, s.potm && `${s.potm}× speler van de maand`].filter(Boolean).join(" · ")]);

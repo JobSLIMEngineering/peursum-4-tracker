@@ -65,7 +65,8 @@ describe("spelerskaart", () => {
   });
 
   it("positie en kleur van de kaart", () => {
-    expect(cards.s.pos).toBe("AAN");
+    expect(cards.s.pos).toBe("ST");
+    expect(cards.k.pos).toBe("GK");
     expect(["goud", "zwartgoud"]).toContain(cards.s.tier);
   });
 

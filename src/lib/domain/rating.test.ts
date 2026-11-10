@@ -75,3 +75,13 @@ describe("spelerspunten", () => {
     expect(months[1].playerId).toBe("m");
   });
 });
+
+describe("tijdelijke plek", () => {
+  it("een middenvelder die in de verdediging stond, krijgt die wedstrijd de verdedigingsgewichten", () => {
+    const base = row("m9", "2026-11-07", 1, 0, {}, { pts: 0.5, ga: 1, gf: 0 });
+    const moved = { ...base, entry: { ...base.entry, positions: { m: "CV" as const } } };
+    const d = (r: GameRow) => rateMatch(r, players).find((x) => x.playerId === "m")!.defence;
+    expect(d(moved)).toBeGreaterThan(d(base));
+    expect(d(moved)).toBe(rateMatch(moved, players).find((x) => x.playerId === "v")!.defence);
+  });
+});

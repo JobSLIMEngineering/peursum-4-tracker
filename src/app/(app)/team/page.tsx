@@ -1,77 +1,52 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
-import { todayNL } from "@/lib/format";
-import { bestPartner, duos } from "@/lib/domain/insights";
-import { Badges, AWARD_TITLE } from "@/components/Badges";
-import { sortPlayers } from "@/components/competition/EntryForm";
+import { useState } from "react";
+import { Badges } from "@/components/Badges";
+import { CardView } from "@/components/CardView";
 import { useData } from "@/components/DataProvider";
 import { InfoTip } from "@/components/InfoTip";
-import { Shirt } from "@/components/Shirt";
-import { Walkout } from "@/components/Walkout";
-import { ROLES, type Role } from "@/lib/domain/season-stats";
+import { PlayerCardSvg } from "@/components/PlayerCardSvg";
 import { Box } from "@/components/ui";
-import { playerTotals, type PlayerTotals } from "@/lib/domain/stats";
-import { playerLabel, POSITIONS, type Position } from "@/lib/domain/types";
+import { ROLES } from "@/lib/domain/season-stats";
+import { playerTotals } from "@/lib/domain/stats";
+import { playerLabel, POSITION_ROLE, ROLE_POSITION, type Position, type Role } from "@/lib/domain/types";
 import type { StoredPlayer } from "@/lib/store/schema";
 
 const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
 
-const EASE = "cubic-bezier(.2,.8,.2,1)";
+/** Linies van achter naar voren; "Overig" voor wie nog geen positie heeft */
+const LINES: { key: Position; label: string }[] = [
+  { key: "Keeper", label: "Keepers" },
+  { key: "Verdediger", label: "Verdediging" },
+  { key: "Middenvelder", label: "Middenveld" },
+  { key: "Aanvaller", label: "Aanval" },
+  { key: "Onbekend", label: "Overig" },
+];
+const ROLE_ORDER: Role[] = ["K", "LB", "CV", "RB", "CM", "LV", "SP", "RV"];
+const lineOf = (p: StoredPlayer): Position => (p.role ? ROLE_POSITION[p.role] : p.position);
+const roleOf = (p: StoredPlayer): Role => p.role ?? POSITION_ROLE[p.position];
 
-/**
- * Tegels soepel laten groeien, krimpen en verschuiven (FLIP): posities voor de wijziging onthouden,
- * de wijziging doorvoeren en elke tegel vanaf zijn oude plek en maat terug laten bewegen.
- * Alleen transform en opacity, zodat het ook op een telefoon vloeiend loopt.
- */
-function flip(fn: () => void) {
-  const tiles = () => [...document.querySelectorAll<HTMLElement>("[data-tile]")];
-  const before = new Map(tiles().map((el) => [el.dataset.tile!, el.getBoundingClientRect()]));
-  flushSync(fn);
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  for (const el of tiles()) {
-    const a = before.get(el.dataset.tile!);
-    if (!a) continue;
-    const b = el.getBoundingClientRect();
-    const dx = a.left - b.left;
-    const dy = a.top - b.top;
-    const sx = a.width / b.width;
-    const sy = a.height / b.height;
-    const resized = Math.abs(sx - 1) > 0.01 || Math.abs(sy - 1) > 0.01;
-    if (!resized && Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-    el.animate(
-      [
-        { transformOrigin: "0 0", transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` },
-        { transformOrigin: "0 0", transform: "none" },
-      ],
-      { duration: 380, easing: EASE },
-    );
-    // De inhoud van een tegel die van maat verandert even laten invagen (anders zie je hem uitrekken)
-    if (resized)
-      for (const child of el.children)
-        (child as HTMLElement).animate([{ opacity: 0 }, { opacity: 0, offset: 0.35 }, { opacity: 1 }], { duration: 380, easing: "ease-out" });
-  }
-}
-
-/** Spelers: tegels (2 per rij op de telefoon) die uitvouwen naar 2×2 met alle stats */
+/** Spelers: per linie FIFA-kaartjes (tik = schermvullend met stats); leenspelers als lijstje */
 export default function TeamPage() {
   const { view, mutate, readOnly } = useData();
   const totals = playerTotals(view.players, view.matches, Object.values(view.entries));
-  const players = sortPlayers(view.players.filter((p) => p.active));
-  const vast = players.filter((p) => p.type === "vast");
-  const leen = players.filter((p) => p.type === "leen");
-  const scorers = players
-    .filter((p) => totals[p.id]?.goals || totals[p.id]?.ownGoals)
-    .sort((a, b) => totals[b.id].goals - totals[a.id].goals || totals[b.id].penalties - totals[a.id].penalties);
-  const keepers = players
-    .filter((p) => totals[p.id]?.keeperGames)
-    .sort((a, b) => totals[b.id].keeperGames - totals[a.id].keeperGames);
+  const active = view.players.filter((p) => p.active);
+  const vast = active.filter((p) => p.type === "vast");
+  const leen = active.filter((p) => p.type === "leen").sort((a, b) => playerLabel(a).localeCompare(playerLabel(b), "nl"));
   const [open, setOpen] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [pos, setPos] = useState<Position>("Onbekend");
+  const [role, setRole] = useState<Role | "">("");
 
-  const toggle = (id: string | null) => flip(() => setOpen((o) => (o === id ? null : id)));
+  const scorers = active
+    .filter((p) => totals[p.id]?.goals || totals[p.id]?.ownGoals)
+    .sort((a, b) => totals[b.id].goals - totals[a.id].goals || totals[b.id].penalties - totals[a.id].penalties);
+  const keepers = active.filter((p) => totals[p.id]?.keeperGames).sort((a, b) => totals[b.id].keeperGames - totals[a.id].keeperGames);
+  // Met hem erbij: alleen vaste spelers met genoeg duels en een plus (nooit minnen laten zien)
+  const impact = vast
+    .filter((p) => view.impacts[p.id]?.eligible && view.impacts[p.id].pointsImpact > 0)
+    .sort((a, b) => view.impacts[b.id].pointsImpact - view.impacts[a.id].pointsImpact)
+    .slice(0, 5);
+  const maxImp = Math.max(0.3, ...impact.map((p) => view.impacts[p.id].pointsImpact));
 
   const update = (id: string, patch: Partial<StoredPlayer>, msg: string) =>
     mutate("players.json", (f) => ({ players: f.players.map((p) => (p.id === id ? { ...p, ...patch } : p)) }), msg);
@@ -85,48 +60,95 @@ export default function TeamPage() {
       (f) => ({
         players: [
           ...f.players,
-          { id: `p-${crypto.randomUUID().slice(0, 8)}`, name: n, position: pos, type: "vast", hiddenNo: null, active: true, clubName: null },
+          {
+            id: `p-${crypto.randomUUID().slice(0, 8)}`,
+            name: n,
+            position: role ? ROLE_POSITION[role] : "Onbekend",
+            role: role || null,
+            type: "vast",
+            hiddenNo: null,
+            active: true,
+            clubName: null,
+          },
         ],
       }),
       `speler toegevoegd: ${n}`,
     );
     if (ok) {
       setName("");
-      setPos("Onbekend");
+      setRole("");
     }
   }
 
-  const tiles = (list: StoredPlayer[]) => (
-    <div className="tiles">
-      {list.map((p) => (
-        <Tile key={p.id} p={p} t={totals[p.id]} open={open === p.id} onToggle={() => toggle(p.id)} update={update} />
-      ))}
-    </div>
-  );
-
-  // Met hem erbij: alleen vaste spelers met genoeg duels en een plus (nooit minnen laten zien)
-  const impact = vast
-    .filter((p) => view.impacts[p.id]?.eligible && view.impacts[p.id].pointsImpact > 0)
-    .sort((a, b) => view.impacts[b.id].pointsImpact - view.impacts[a.id].pointsImpact)
-    .slice(0, 5);
-  const maxImp = Math.max(0.3, ...impact.map((p) => view.impacts[p.id].pointsImpact));
-
   return (
     <>
-      <div className="sec-h">
-        <p className="lbl">Selectie</p>
-        <span className="meta">{vast.length}</span>
-      </div>
-      {tiles(vast)}
+      {LINES.map((line) => {
+        const list = vast
+          .filter((p) => lineOf(p) === line.key)
+          .sort((a, b) => ROLE_ORDER.indexOf(roleOf(a)) - ROLE_ORDER.indexOf(roleOf(b)) || (view.cards[b.id]?.overall ?? 0) - (view.cards[a.id]?.overall ?? 0));
+        if (!list.length) return null;
+        return (
+          <section key={line.key} className="squad-line">
+            <div className="sec-h">
+              <p className="lbl">{line.label}</p>
+              <span className="meta">{list.length}</span>
+            </div>
+            <div className="card-grid">
+              {list.map((p) => {
+                const c = view.cards[p.id];
+                if (!c) return null;
+                return (
+                  // Geen <button>: de icoontjes op de kaart zijn zelf knoppen
+                  <div
+                    key={p.id}
+                    role="button"
+                    tabIndex={0}
+                    className="card-tile"
+                    onClick={() => setOpen(p.id)}
+                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setOpen(p.id))}
+                    aria-label={`${playerLabel(p)}, ${c.overall} ${c.pos}`}
+                  >
+                    <PlayerCardSvg card={c} player={p} gold={view.goldKeepers.has(p.id)} />
+                    {view.upgrades[p.id] && <span className="fut-up card-up">▲{view.upgrades[p.id]}</span>}
+                    {(view.injuredLast.has(p.id) || view.streaks[p.id] || view.leads[p.id]) && (
+                      <span className="card-badges" onClick={(e) => e.stopPropagation()}>
+                        <Badges playerId={p.id} />
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
 
       {leen.length > 0 && (
-        <>
-          <div className="sec-h">
-            <p className="lbl">Leenspelers</p>
-            <span className="meta">{leen.length}</span>
+        <Box label="Leenspelers" style={{ marginTop: 16 }} bodyClass={null} right={<span className="meta">{leen.length}</span>}>
+          <div className="loan-list">
+            {leen.map((p) => {
+              const t = totals[p.id];
+              return (
+                <div key={p.id} className="loan-row">
+                  <span className="who">
+                    <b>{playerLabel(p)}</b>
+                    <small>
+                      {t?.appearances ?? 0} duels{t?.goals ? ` · ${t.goals} goals` : ""}
+                      {t?.assists ? ` · ${t.assists} assists` : ""}
+                    </small>
+                  </span>
+                  {!readOnly && (
+                    <span className="actions" style={{ marginTop: 0 }}>
+                      <button className="btn sm" type="button" onClick={() => void update(p.id, { type: "vast" }, `naar selectie: ${playerLabel(p)}`)}>
+                        → Selectie
+                      </button>
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          {tiles(leen)}
-        </>
+        </Box>
       )}
 
       {!readOnly && (
@@ -136,11 +158,14 @@ export default function TeamPage() {
               Naam
               <input type="text" required placeholder="Voornaam Achternaam" value={name} onChange={(e) => setName(e.target.value)} />
             </label>
-            <label className="f" style={{ width: 150 }}>
+            <label className="f" style={{ width: 190 }}>
               Positie
-              <select value={pos} onChange={(e) => setPos(e.target.value as Position)}>
-                {POSITIONS.map((x) => (
-                  <option key={x}>{x}</option>
+              <select value={role} onChange={(e) => setRole(e.target.value as Role | "")}>
+                <option value="">Onbekend</option>
+                {ROLES.map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {r.label}
+                  </option>
                 ))}
               </select>
             </label>
@@ -251,299 +276,8 @@ export default function TeamPage() {
           </div>
         </Box>
       )}
+
+      {open && <CardView playerId={open} onClose={() => setOpen(null)} />}
     </>
-  );
-}
-
-function Tile({
-  p,
-  t,
-  open,
-  onToggle,
-  update,
-}: {
-  p: StoredPlayer;
-  t: PlayerTotals | undefined;
-  open: boolean;
-  onToggle: () => void;
-  update: (id: string, patch: Partial<StoredPlayer>, msg: string) => Promise<boolean>;
-}) {
-  const { view, readOnly } = useData();
-  const [editing, setEditing] = useState(false);
-  const [showCard, setShowCard] = useState(false);
-  const ref = useRef<HTMLElement>(null);
-  const keeper = p.position === "Keeper" || (t?.keeperGames ?? 0) > (t?.appearances ?? 0) / 2;
-  const cls = `tile ${p.type === "leen" ? "leen" : ""} ${p.position === "Keeper" ? "keeper" : ""}`;
-
-  useEffect(() => {
-    if (!open) return;
-    const timer = setTimeout(() => ref.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 400);
-    return () => clearTimeout(timer);
-  }, [open]);
-
-  const stat = (v: number | undefined, label: string) => (
-    <span>
-      <b className={v ? "" : "zero"}>{v ?? 0}</b>
-      <small>{label}</small>
-    </span>
-  );
-
-  const card = view.cards[p.id];
-  if (!open) {
-    return (
-      // Geen <button>: de iconen erin zijn zelf knoppen
-      <div
-        role="button"
-        tabIndex={0}
-        className={`${cls} fut ${card?.tier ?? "goud"}`}
-        data-tile={p.id}
-        onClick={onToggle}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle())}
-        aria-expanded="false"
-      >
-        {/* Als een FIFA-kaartje: cijfer en positie linksboven, shirt in het midden */}
-        <span className="tile-top">
-          <span className="fut-rating">
-            <b>{card?.overall ?? "–"}</b>
-            <small>{card?.pos ?? ""}</small>
-            {view.upgrades[p.id] && <span className="fut-up" title="Kaart-upgrade deze maand">▲{view.upgrades[p.id]}</span>}
-          </span>
-          <Shirt player={p} size={58} />
-          <span className="tile-badges">
-            <Badges playerId={p.id} />
-          </span>
-        </span>
-        <span className={`tile-name ${p.name ? "" : "anon"}`}>{playerLabel(p)}</span>
-        <span className="tile-line">
-          {keeper ? (
-            <>
-              {stat(t?.keeperGames, "duels")}
-              {stat(t?.cleanSheets, "nul")}
-            </>
-          ) : (
-            <>
-              {stat(t?.goals, "G")}
-              {stat(t?.assists, "A")}
-              {stat(t?.appearances, "duels")}
-            </>
-          )}
-        </span>
-      </div>
-    );
-  }
-
-  const leads = view.leads[p.id] ?? [];
-  const partner = bestPartner(duos(view.matches, view.entries), p.id);
-  const streaks = view.streaks[p.id] ?? [];
-  const cards = (t?.yellow ?? 0) + (t?.red ?? 0);
-  const box = (v: number | string, label: string, zero = !v) => (
-    <div>
-      <span className={`num ${zero ? "zero" : ""}`}>{v}</span>
-      <span className="k">{label}</span>
-    </div>
-  );
-
-  return (
-    <article
-      ref={ref}
-      className={`${cls} open ${editing ? "editing" : ""}`}
-      data-tile={p.id}
-      aria-label={playerLabel(p)}
-      // Nog een keer tikken = weer klein (behalve op knoppen en velden)
-      onClick={(e) => !editing && !(e.target as Element).closest("button, input, select, label, a, form") && onToggle()}
-    >
-      <button type="button" className="tile-close" aria-label="Inklappen" onClick={onToggle}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6 6 18" />
-        </svg>
-      </button>
-      <div className="tile-head">
-        <Shirt player={p} size={76} />
-        <div>
-          <div className={`tile-name ${p.name ? "" : "anon"}`}>{playerLabel(p)}</div>
-          <div className="k tile-pos">
-            {p.position === "Onbekend" ? "Positie onbekend" : p.position}
-            {p.type === "leen" && " · leenspeler"}
-            {p.number != null && ` · #${p.number}`}
-          </div>
-          <div style={{ marginTop: 4 }}>
-            <Badges playerId={p.id} />
-          </div>
-        </div>
-      </div>
-
-      {editing ? (
-        <EditForm p={p} update={update} onDone={() => setEditing(false)} />
-      ) : (
-        <>
-          <div className="tile-stats">
-            {box(t?.appearances ?? 0, "duels")}
-            {keeper ? (
-              <>
-                {box(t?.cleanSheets ?? 0, "de nul")}
-                {box(t?.goalsAgainst ?? 0, "tegen")}
-                {box(t?.keeperGames ? comma(t.goalsAgainst / t.keeperGames) : "–", "gem.", !t?.keeperGames)}
-              </>
-            ) : (
-              <>
-                {box(t?.goals ?? 0, "goals")}
-                {box(t?.assists ?? 0, "assists")}
-                {box(cards, "kaarten")}
-              </>
-            )}
-          </div>
-          <div className="tile-notes">
-            {!keeper && (t?.penalties || t?.freeKicks || t?.ownGoals) ? (
-              <div>
-                {[t.penalties && `${t.penalties} pen.`, t.freeKicks && `${t.freeKicks} vrije trap`, t.ownGoals && `${t.ownGoals} eigen goal`]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </div>
-            ) : null}
-            {streaks.map((s) => (
-              <div key={s.kind}>
-                <span aria-hidden="true">{s.kind === "keeper" ? "🧤" : "🔥"}</span> {s.reason}
-              </div>
-            ))}
-            {leads.map((k) => (
-              <div key={k}>
-                <span aria-hidden="true">🏆</span> Koploper <b>{AWARD_TITLE[k]}</b>
-              </div>
-            ))}
-            {partner && (
-              <div>
-                <span aria-hidden="true">🤝</span> Beste maatje <b>{playerLabel(view.players.find((x) => x.id === partner.partnerId))}</b> ({partner.goals}×)
-              </div>
-            )}
-            {p.injured && (
-              <div>
-                <span aria-hidden="true">🩹</span> Geblesseerd
-              </div>
-            )}
-          </div>
-          {readOnly && (
-            <div className="tile-actions">
-              <button className="btn sm primary" type="button" onClick={() => setShowCard(true)}>
-                Spelerskaart
-              </button>
-            </div>
-          )}
-          {!readOnly && (
-            <div className="tile-actions">
-              <button className="btn sm primary" type="button" onClick={() => setShowCard(true)}>
-                Spelerskaart
-              </button>
-              <button className="btn sm" type="button" onClick={() => setEditing(true)}>
-                Bewerken
-              </button>
-              <button
-                className={`btn sm ${p.injured ? "primary" : ""}`}
-                type="button"
-                aria-pressed={!!p.injured}
-                onClick={() =>
-                  void update(
-                    p.id,
-                    p.injured ? { injured: false, recoveredAt: todayNL() } : { injured: true },
-                    `${p.injured ? "weer fit" : "geblesseerd"}: ${playerLabel(p)}`,
-                  )
-                }
-              >
-                {p.injured ? "Weer fit" : "Geblesseerd"}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-      {showCard && <Walkout playerId={p.id} instant onClose={() => setShowCard(false)} />}
-    </article>
-  );
-}
-
-function EditForm({
-  p,
-  update,
-  onDone,
-}: {
-  p: StoredPlayer;
-  update: (id: string, patch: Partial<StoredPlayer>, msg: string) => Promise<boolean>;
-  onDone: () => void;
-}) {
-  const [name, setName] = useState(p.name ?? "");
-  const [no, setNo] = useState(p.number != null ? String(p.number) : "");
-  const [pos, setPos] = useState<Position>(p.position);
-  const [role, setRole] = useState<Role | "">(p.role ?? "");
-  const [armed, setArmed] = useState(false);
-
-  useEffect(() => {
-    if (!armed) return;
-    const timer = setTimeout(() => setArmed(false), 3000);
-    return () => clearTimeout(timer);
-  }, [armed]);
-
-  function save(e: React.FormEvent) {
-    e.preventDefault();
-    const n = name.trim();
-    const num = no.trim() === "" ? null : Math.max(0, Math.min(99, Number.parseInt(no, 10)));
-    const patch: Partial<StoredPlayer> = {};
-    if (n && n !== p.name) patch.name = n;
-    if ((Number.isNaN(num) ? null : num) !== (p.number ?? null)) patch.number = Number.isNaN(num) ? null : num;
-    if (pos !== p.position) patch.position = pos;
-    if ((role || null) !== (p.role ?? null)) patch.role = role || null;
-    if (Object.keys(patch).length) void update(p.id, patch, `speler: ${n || playerLabel(p)}`);
-    onDone();
-  }
-
-  const remove = () => {
-    if (!armed) return setArmed(true);
-    // Niet echt verwijderen: inactief, zodat de ophaalfunctie hem niet opnieuw toevoegt
-    void update(p.id, { active: false }, `speler verwijderd: ${playerLabel(p)}`);
-  };
-
-  return (
-    <form className="tile-edit" onSubmit={save}>
-      <label className="f">
-        Naam
-        <input type="text" value={name} placeholder={p.hiddenNo ? `Afgeschermd ${p.hiddenNo}` : ""} onChange={(e) => setName(e.target.value)} />
-      </label>
-      <label className="f">
-        Nummer
-        <input type="number" inputMode="numeric" min={0} max={99} value={no} onChange={(e) => setNo(e.target.value)} />
-      </label>
-      <label className="f">
-        Positie
-        <select value={pos} onChange={(e) => setPos(e.target.value as Position)}>
-          {POSITIONS.map((x) => (
-            <option key={x}>{x}</option>
-          ))}
-        </select>
-      </label>
-      <label className="f" style={{ gridColumn: "span 1" }}>
-        Rol
-        <select value={role} onChange={(e) => setRole(e.target.value as Role | "")} aria-label="Rol in het elftal">
-          <option value="">Automatisch</option>
-          {ROLES.map((r) => (
-            <option key={r.key} value={r.key}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="actions wide" style={{ marginTop: 0 }}>
-        <button className="btn sm primary" type="submit">
-          Opslaan
-        </button>
-        <button className="btn sm" type="button" onClick={onDone}>
-          Annuleren
-        </button>
-        {p.type === "leen" && (
-          <button className="btn sm" type="button" onClick={() => void update(p.id, { type: "vast" }, `naar selectie: ${playerLabel(p)}`)}>
-            → Selectie
-          </button>
-        )}
-        <button className="btn sm" type="button" onClick={remove} style={{ marginLeft: "auto" }}>
-          {armed ? "Zeker?" : "Verwijderen"}
-        </button>
-      </div>
-    </form>
   );
 }

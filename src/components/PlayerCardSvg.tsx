@@ -8,24 +8,31 @@ const FONT = "'Barlow Condensed', 'Arial Narrow', Arial, sans-serif";
 
 /** Kleuren per soort kaart; "special" = speler van de maand (zwart-rood met goud) */
 export const TIERS = {
-  goud: { a: "#fbeaa0", b: "#e0b43a", c: "#9c7410", ink: "#3b2a05", line: "#7a5a0c" },
+  goud: { a: "#fff1b8", b: "#e7bd45", c: "#a87d14", d: "#7a5a0c", ink: "#3b2a05", line: "#8a6510", glow: "#fff7d6" },
   /** Zwart met goud, zoals de speciale kaarten bij FIFA: voor de paar besten */
-  zwartgoud: { a: "#3a3020", b: "#14110b", c: "#000000", ink: "#f4c542", line: "#d4a017" },
-  special: { a: "#5a0b12", b: "#22060a", c: "#0a0203", ink: "#f4c542", line: "#e1242f" },
+  zwartgoud: { a: "#3d3423", b: "#17130c", c: "#050403", d: "#000000", ink: "#f4c542", line: "#d4a017", glow: "#f4c542" },
+  special: { a: "#6a0d15", b: "#2a070b", c: "#0b0203", d: "#000000", ink: "#f4c542", line: "#e1242f", glow: "#ff5a63" },
 } as const;
 export type Tier = keyof typeof TIERS;
 
 /** Kortere naam voor op de kaart (achternaam, of voornaam als die er niet is) */
 function cardName(p: CardPlayer) {
   const label = playerLabel(p);
-  if (!p.name) return label;
+  if (!p.name) return label.replace("Afgeschermde speler", "Speler");
   const parts = p.name.split(/\s+/);
   return (parts.length > 1 ? parts.at(-1)! : parts[0]).toUpperCase();
 }
 
+/** FIFA-vorm: afgeronde schouders, een inkeping bovenin het midden en een punt onderaan */
+const SHAPE =
+  "M34 6H118Q130 6 137 14L150 26L163 14Q170 6 182 6H266Q294 6 294 34V318Q294 340 276 351L150 414L24 351Q6 340 6 318V34Q6 6 34 6Z";
+const INNER =
+  "M38 16H116Q126 16 132 23L150 39L168 23Q174 16 184 16H262Q284 16 284 38V314Q284 333 268 342L150 402L32 342Q16 333 16 314V38Q16 16 38 16Z";
+
 /**
- * FIFA-achtige spelerskaart met het shirtje in plaats van een foto.
+ * Spelerskaart zoals in FIFA, met het shirtje in plaats van een foto.
  * Puur SVG (geen data uit de app), zodat hij ook in een canvas/video te tekenen is.
+ * `width` weglaten = de kaart vult de breedte van zijn vak.
  */
 export function PlayerCardSvg({
   card,
@@ -33,7 +40,8 @@ export function PlayerCardSvg({
   gold = false,
   special = false,
   banner,
-  width = 300,
+  width,
+  hattricks = 0,
 }: {
   card: PlayerCard;
   player: CardPlayer;
@@ -44,88 +52,134 @@ export function PlayerCardSvg({
   /** Tekst bovenaan, bijv. "Speler van november" */
   banner?: string;
   width?: number;
+  /** Aantal hattricks dit seizoen (klein teken op de kaart) */
+  hattricks?: number;
 }) {
-  const t = TIERS[special ? "special" : card.tier];
-  const id = `card-${special ? "sp" : card.tier}`;
-  const shape = "M24 0H276Q300 0 300 24V356Q300 378 282 388L150 420L18 388Q0 378 0 356V24Q0 0 24 0Z";
-  const rows = [card.stats.slice(0, 3), card.stats.slice(3)];
+  const kind: Tier = special ? "special" : card.tier;
+  const t = TIERS[kind];
+  const id = `card-${kind}`;
+  const dark = kind !== "goud";
+  const name = cardName(player);
+  const left = card.stats.slice(0, 3);
+  const right = card.stats.slice(3);
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" width={width} height={(width * 420) / 300} role="img" aria-label={`Spelerskaart ${playerLabel(player)}: ${card.overall}`}>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 300 420"
+      {...(width ? { width, height: (width * 420) / 300 } : { width: "100%" })}
+      className="pcard-svg"
+      role="img"
+      aria-label={`Spelerskaart ${playerLabel(player)}: ${card.overall} ${card.pos}`}
+    >
       <defs>
-        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2=".9" y2="1">
           <stop offset="0" stopColor={t.a} />
-          <stop offset=".55" stopColor={t.b} />
-          <stop offset="1" stopColor={t.c} />
+          <stop offset=".45" stopColor={t.b} />
+          <stop offset=".8" stopColor={t.c} />
+          <stop offset="1" stopColor={t.d} />
         </linearGradient>
+        <radialGradient id={`${id}-halo`} cx=".62" cy=".3" r=".45">
+          <stop offset="0" stopColor={t.glow} stopOpacity={dark ? 0.35 : 0.75} />
+          <stop offset="1" stopColor={t.glow} stopOpacity="0" />
+        </radialGradient>
         <linearGradient id={`${id}-shine`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#fff" stopOpacity="0" />
-          <stop offset=".5" stopColor="#fff" stopOpacity=".35" />
+          <stop offset=".5" stopColor="#fff" stopOpacity={dark ? 0.18 : 0.45} />
           <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
+        <pattern id={`${id}-lines`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <rect width="1.2" height="8" fill={dark ? "#fff" : "#000"} opacity={dark ? 0.05 : 0.06} />
+        </pattern>
         <clipPath id={`${id}-clip`}>
-          <path d={shape} />
+          <path d={SHAPE} />
         </clipPath>
       </defs>
-      <path d={shape} fill={`url(#${id}-bg)`} />
+
+      {/* Kaart met rand, fijn lijnenpatroon, gloed achter het shirt en een glansstreep */}
+      <path d={SHAPE} fill={t.line} transform="translate(0 2)" opacity=".45" />
+      <path d={SHAPE} fill={`url(#${id}-bg)`} />
       <g clipPath={`url(#${id}-clip)`}>
-        {/* Schuine banen en een glansstreep */}
-        <path d="M190 -10L300 -10L300 120Z" fill="#000" opacity=".08" />
-        <path d="M-10 240L120 420L-10 420Z" fill="#000" opacity=".1" />
-        <rect x="-160" y="0" width="120" height="420" fill={`url(#${id}-shine)`} transform="rotate(20 150 210)" />
-        {special && <path d="M0 0H300V6H0Z" fill={t.line} />}
-        {/* Zwart-goud: gouden schuine banen door het zwart */}
-        {!special && card.tier === "zwartgoud" && (
+        <rect width="300" height="420" fill={`url(#${id}-lines)`} />
+        <rect width="300" height="260" fill={`url(#${id}-halo)`} />
+        {kind === "zwartgoud" && (
           <>
-            <path d="M-20 300L320 40L320 70L-20 330Z" fill="#d4a017" opacity=".35" />
-            <path d="M-20 360L320 100L320 112L-20 372Z" fill="#f4c542" opacity=".25" />
-            <path d="M200 -10L320 -10L320 60Z" fill="#f4c542" opacity=".18" />
+            <path d="M-20 300L320 40L320 72L-20 332Z" fill="#d4a017" opacity=".32" />
+            <path d="M-20 362L320 102L320 113L-20 373Z" fill="#f4c542" opacity=".22" />
           </>
         )}
+        {kind === "special" && (
+          <>
+            <path d="M-20 290L320 30L320 52L-20 312Z" fill="#e1242f" opacity=".45" />
+            <path d="M-20 340L320 80L320 88L-20 348Z" fill="#f4c542" opacity=".3" />
+          </>
+        )}
+        <rect x="-170" y="-20" width="110" height="460" fill={`url(#${id}-shine)`} transform="rotate(24 150 210)" />
+        {/* Sierlijnen langs de zijkanten */}
+        <path d="M26 120V300M274 120V300" stroke={t.ink} strokeOpacity=".18" strokeWidth="1.5" />
       </g>
-      <path d="M24 10H276Q290 10 290 24V352Q290 370 276 378L150 408L24 378Q10 370 10 352V24Q10 10 24 10Z" fill="none" stroke={t.line} strokeOpacity=".55" strokeWidth="2" />
+      <path d={INNER} fill="none" stroke={t.line} strokeOpacity={dark ? 0.9 : 0.6} strokeWidth="2" />
 
       {banner && (
-        <text x="150" y="34" textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="15" letterSpacing="2" fill={t.ink}>
+        <text x="150" y="58" textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="13" letterSpacing="2.5" fill={t.ink}>
           {banner.toUpperCase()}
         </text>
       )}
 
-      {/* Cijfer en positie linksboven, met het clubje eronder */}
-      <text x="58" y="98" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize="62" fill={t.ink}>
+      {/* Cijfer, positie, club en "vlag" links */}
+      <text x="66" y={banner ? 116 : 106} textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize="64" fill={t.ink}>
         {card.overall}
       </text>
-      <text x="58" y="126" textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="22" letterSpacing="1" fill={t.ink}>
+      <text x="66" y={banner ? 142 : 132} textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="22" letterSpacing="1" fill={t.ink}>
         {card.pos}
       </text>
-      <line x1="34" x2="82" y1="140" y2="140" stroke={t.ink} strokeOpacity=".4" strokeWidth="2" />
-      <circle cx="58" cy="166" r="17" fill="#e1242f" stroke="#fff" strokeWidth="2" />
-      <text x="58" y="172" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize="16" fill="#fff">
-        P4
-      </text>
+      <g transform={`translate(66 ${banner ? 172 : 162})`}>
+        <line x1="-22" x2="22" y1="-12" y2="-12" stroke={t.ink} strokeOpacity=".35" strokeWidth="1.5" />
+        <path d="M-15 -4H15V10Q15 22 0 28Q-15 22 -15 10Z" fill="#e1242f" stroke="#fff" strokeWidth="1.5" />
+        <text x="0" y="14" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize="12" fill="#fff">
+          P4
+        </text>
+      </g>
+      <g transform={`translate(51 ${banner ? 210 : 200})`}>
+        <rect width="30" height="7" fill="#e1242f" />
+        <rect y="7" width="30" height="7" fill="#fff" />
+        <rect y="14" width="30" height="7" fill="#e1242f" />
+        <rect width="30" height="21" fill="none" stroke={t.ink} strokeOpacity=".3" />
+      </g>
+      {hattricks > 0 && (
+        <text x="66" y={banner ? 250 : 240} textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="13" fill={t.ink}>
+          ⚽×3{hattricks > 1 ? ` ${hattricks}` : ""}
+        </text>
+      )}
 
       {/* Shirt in plaats van een foto */}
-      <g transform="translate(104 36)">
-        <ShirtSvg player={player} size={180} gold={gold} />
+      <g transform={`translate(104 ${banner ? 62 : 48})`}>
+        <ShirtSvg player={player} size={178} gold={gold} />
       </g>
 
-      <text x="150" y="262" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize={cardName(player).length > 12 ? 26 : 32} letterSpacing="1" fill={t.ink}>
-        {cardName(player)}
+      {/* Naam met sierlijn */}
+      <text x="150" y="268" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize={name.length > 12 ? 24 : name.length > 9 ? 28 : 32} letterSpacing="1" fill={t.ink}>
+        {name}
       </text>
-      <line x1="40" x2="260" y1="278" y2="278" stroke={t.ink} strokeOpacity=".35" strokeWidth="2" />
-      <line x1="150" x2="150" y1="290" y2="368" stroke={t.ink} strokeOpacity=".25" strokeWidth="2" />
-      {rows.map((col, c) =>
+      <path d="M40 282H128L150 288L172 282H260" fill="none" stroke={t.ink} strokeOpacity=".4" strokeWidth="1.5" />
+
+      {/* Zes cijfers in twee kolommen */}
+      <line x1="150" x2="150" y1="296" y2="372" stroke={t.ink} strokeOpacity=".3" strokeWidth="1.5" />
+      {[left, right].map((col, c) =>
         col.map((s, r) => (
-          <g key={s.key} transform={`translate(${c ? 170 : 52} ${310 + r * 30})`}>
-            <text x="0" y="0" fontFamily={FONT} fontWeight="900" fontSize="24" fill={t.ink}>
+          <g key={s.key} transform={`translate(${c ? 166 : 58} ${316 + r * 26})`}>
+            <text x="0" y="0" fontFamily={FONT} fontWeight="900" fontSize="22" fill={t.ink}>
               {s.value}
             </text>
-            <text x="34" y="0" fontFamily={FONT} fontWeight="700" fontSize="20" fill={t.ink} opacity=".85">
+            <text x="32" y="0" fontFamily={FONT} fontWeight="700" fontSize="18" fill={t.ink} opacity=".85">
               {s.key}
             </text>
           </g>
         )),
       )}
+      <text x="150" y="396" textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="10" letterSpacing="3" fill={t.ink} opacity=".7">
+        PEURSUM 4
+      </text>
     </svg>
   );
 }

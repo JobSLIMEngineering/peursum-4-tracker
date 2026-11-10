@@ -5,7 +5,8 @@ import { Plaster } from "@/components/Badges";
 import { useData } from "@/components/DataProvider";
 import { parseAttendance } from "@/lib/domain/attendance";
 import { removePlayer, toDraft, toEntry, toggleInjured, type CardKind, type EntryDraft, type GoalSlot } from "@/lib/domain/entry";
-import { ourScore, playerLabel, POSITIONS, type GoalKind } from "@/lib/domain/types";
+import { ourScore, playerLabel, POSITION_ROLE, POSITIONS, ROLE_CODE, type GoalKind, type Role } from "@/lib/domain/types";
+import { ROLES } from "@/lib/domain/season-stats";
 import type { StoredPlayer } from "@/lib/store/schema";
 import type { ViewMatch } from "@/lib/store/view";
 
@@ -140,6 +141,11 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
                   </button>
                 ))}
             </div>
+            <TempPositions
+              players={present.filter((p) => p.id !== draft.keeperId)}
+              positions={draft.positions}
+              onChange={(positions) => setDraft((d) => ({ ...d, positions }))}
+            />
           </section>
 
           {/* 3 · Doelpunten */}
@@ -390,6 +396,68 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
         </button>
       </div>
     </>
+  );
+}
+
+/**
+ * Tijdelijke plekken in deze wedstrijd (bijv. een middenvelder die in de verdediging stond omdat een
+ * verdediger op vakantie is). Alleen afwijkingen van de vaste plek worden opgeslagen; ze tellen mee
+ * voor de spelerspunten en het team van de maand. Werkt ook bij oude wedstrijden (Bewerken).
+ */
+function TempPositions({
+  players,
+  positions,
+  onChange,
+}: {
+  players: StoredPlayer[];
+  positions: Record<string, Role>;
+  onChange: (p: Record<string, Role>) => void;
+}) {
+  const changed = Object.keys(positions).filter((id) => players.some((p) => p.id === id)).length;
+  const [open, setOpen] = useState(changed > 0);
+  const normal = (p: StoredPlayer): Role => p.role ?? POSITION_ROLE[p.position];
+
+  if (!open)
+    return (
+      <div className="box-b" style={{ paddingTop: 0 }}>
+        <button className="link" type="button" onClick={() => setOpen(true)}>
+          Stond iemand op een andere plek?
+        </button>
+      </div>
+    );
+
+  return (
+    <div className="box-b temp-pos" style={{ paddingTop: 0 }}>
+      <p className="pick-q" style={{ marginTop: 0 }}>
+        Plek deze wedstrijd {changed > 0 && `· ${changed} anders dan normaal`}
+      </p>
+      {players.map((p) => {
+        const cur = positions[p.id] ?? normal(p);
+        return (
+          <label key={p.id} className={`tp-row ${positions[p.id] ? "moved" : ""}`}>
+            <span>{playerLabel(p)}</span>
+            <select
+              value={cur}
+              aria-label={`Plek van ${playerLabel(p)} deze wedstrijd`}
+              onChange={(e) => {
+                const r = e.target.value as Role;
+                const next = { ...positions };
+                if (r === normal(p)) delete next[p.id];
+                else next[p.id] = r;
+                onChange(next);
+              }}
+            >
+              {ROLES.map((x) => (
+                <option key={x.key} value={x.key}>
+                  {ROLE_CODE[x.key]}
+                  {x.key === normal(p) ? " (normaal)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        );
+      })}
+    </div>
   );
 }
 

@@ -84,7 +84,7 @@ describe("mijlpalen", () => {
     const upTo3 = rows.slice(0, 3);
     expect(newMilestones(upTo3, players).find((m) => m.playerId === "bank")?.text).toBe("Hattrick tegen X");
     expect(reachedMilestones(rows, "sp")).toEqual([]);
-    expect(reachedMilestones(rows, "bank")).toContain("Hattrick");
+    expect(playerSeason("bank", rows, players, [], {}).hattricks).toBe(1);
   });
 });
 
@@ -94,5 +94,19 @@ describe("seizoen van één speler", () => {
     expect(s.keeper).toMatchObject({ games: 4, cleanSheets: 3, against: 2 });
     expect(s.keeper!.expected).toBeCloseTo(2 + 0.5 * 3 - 1, 10);
     expect(s.record).toEqual({ w: 3, d: 0, l: 1 });
+  });
+});
+
+describe("tijdelijke plek in het team van de maand", () => {
+  it("telt de plek die hij die maand speelde", () => {
+    // De linksback is in oktober op vakantie; m1 (middenvelder) neemt zijn plek in
+    const moved = rows.map((r) =>
+      r.match.date!.startsWith("2026-10")
+        ? { ...r, entry: { ...r.entry, attendance: r.entry.attendance.filter((x) => x !== "lb"), positions: { m1: "LB" as const } } }
+        : r,
+    );
+    const team = teamOfTheMonth(moved, players, "2026-10");
+    // m1 speelde in oktober als linksback: hij mag in de verdediging staan
+    expect(team[1][0].playerId).toBe("m1");
   });
 });

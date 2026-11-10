@@ -22,6 +22,37 @@ export const POSITIONS: Position[] = [
   "Onbekend",
 ];
 
+/** Plek in het elftal (gedetailleerder dan Position) */
+export type Role = "K" | "LB" | "CV" | "RB" | "CM" | "LV" | "SP" | "RV";
+
+/** Engelse afkorting zoals op een FIFA-kaart */
+export const ROLE_CODE: Record<Role, string> = { K: "GK", LB: "LB", CV: "CB", RB: "RB", CM: "CM", LV: "LW", SP: "ST", RV: "RW" };
+/** Uitgeschreven (Engels) */
+export const ROLE_NAME: Record<Role, string> = {
+  K: "Goalkeeper",
+  LB: "Left back",
+  CV: "Centre back",
+  RB: "Right back",
+  CM: "Central midfielder",
+  LV: "Left winger",
+  SP: "Striker",
+  RV: "Right winger",
+};
+/** Vaste plek als er geen rol is ingesteld */
+export const POSITION_ROLE: Record<Position, Role> = { Keeper: "K", Verdediger: "CV", Middenvelder: "CM", Aanvaller: "SP", Onbekend: "CM" };
+
+/** Linie bij een plek */
+export const ROLE_POSITION: Record<Role, Position> = {
+  K: "Keeper",
+  LB: "Verdediger",
+  CV: "Verdediger",
+  RB: "Verdediger",
+  CM: "Middenvelder",
+  LV: "Aanvaller",
+  SP: "Aanvaller",
+  RV: "Aanvaller",
+};
+
 export interface StandingRow {
   team: string;
   /** Positie zoals op de clubsite (KNVB-volgorde); nooit zelf sorteren */
@@ -71,8 +102,8 @@ export interface Player {
   aliases?: string[];
   /** Rugnummer (handmatig ingevuld) */
   number?: number | null;
-  /** Voorkeursplek in het elftal (voor het team van de maand), bijv. "LB" of "SP" */
-  role?: "K" | "LB" | "CV" | "RB" | "CM" | "LV" | "SP" | "RV" | null;
+  /** Vaste plek in het elftal, bijv. "LB" (linksback) of "SP" (spits); bepaalt ook `position` */
+  role?: Role | null;
 }
 
 export interface PlayerMatchStats {
@@ -108,6 +139,8 @@ export interface MatchEntry {
   goals?: GoalEvent[];
   /** Spelers die bij deze wedstrijd geblesseerd waren (tellen voor prijzen niet als afwezig) */
   injured?: string[];
+  /** Tijdelijke plek in deze wedstrijd, als die anders was dan normaal (bijv. middenvelder in de verdediging) */
+  positions?: Record<string, Role>;
 }
 
 export const isPlayed = <T extends Pick<Match, "homeGoals" | "awayGoals">>(

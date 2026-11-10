@@ -7,7 +7,7 @@ import { MON_FULL } from "@/lib/format";
 import { useData } from "./DataProvider";
 import { InfoTip } from "./InfoTip";
 import { Shirt } from "./Shirt";
-import { Walkout } from "./Walkout";
+import { CardView } from "./CardView";
 
 const ROLE = Object.fromEntries(ROLES.map((r) => [r.key, r.label]));
 const monthName = (ym: string) => MON_FULL[Number(ym.slice(5, 7)) - 1];
@@ -63,7 +63,7 @@ export function TeamOfMonth() {
           </div>
         ))}
       </div>
-      {open && <Walkout playerId={open} instant onClose={() => setOpen(null)} />}
+      {open && <CardView playerId={open} onClose={() => setOpen(null)} />}
     </section>
   );
 }

@@ -2,23 +2,18 @@ import { playerImpacts, type GameRow } from "./awards";
 import { bestPartner, duos } from "./insights";
 import { playerCards } from "./playercard";
 import { playersOfTheMonth, rateMatch, seasonRatings } from "./rating";
-import { ourScore, type Match, type MatchEntry, type Player, type Position } from "./types";
+import { ourScore, ROLE_CODE, ROLE_NAME, type Match, type MatchEntry, type Player, type Position, type Role } from "./types";
 
 /* ==========================================================================
    Rol in het elftal (voor het team van de maand)
    ========================================================================== */
 
-export type Role = "K" | "LB" | "CV" | "RB" | "CM" | "LV" | "SP" | "RV";
-export const ROLES: { key: Role; label: string }[] = [
-  { key: "K", label: "Keeper" },
-  { key: "LB", label: "Linksback" },
-  { key: "CV", label: "Centrale verdediger" },
-  { key: "RB", label: "Rechtsback" },
-  { key: "CM", label: "Middenvelder" },
-  { key: "LV", label: "Linksbuiten" },
-  { key: "SP", label: "Spits" },
-  { key: "RV", label: "Rechtsbuiten" },
-];
+export type { Role };
+/** Plekken met Engelse afkorting (zoals op de kaarten) */
+export const ROLES: { key: Role; label: string }[] = (["K", "LB", "CV", "RB", "CM", "LV", "SP", "RV"] as Role[]).map((key) => ({
+  key,
+  label: `${ROLE_CODE[key]} · ${ROLE_NAME[key]}`,
+}));
 const GROUP: Record<Role, "K" | "D" | "M" | "A"> = { K: "K", LB: "D", CV: "D", RB: "D", CM: "M", LV: "A", SP: "A", RV: "A" };
 const FROM_POSITION: Record<Position, Role> = { Keeper: "K", Verdediger: "CV", Middenvelder: "CM", Aanvaller: "SP", Onbekend: "CM" };
 
@@ -48,10 +43,17 @@ export function teamOfTheMonth(rows: GameRow[], players: RolePlayer[], ym: strin
   const min = rs.length >= 3 ? 2 : 1;
   const ratings = seasonRatings(rs, players).filter((s) => s.games >= min);
   const byId = new Map(players.map((p) => [p.id, p]));
-  const keptBy = new Map<string, number>();
-  for (const r of rs) if (r.entry.keeperId) keptBy.set(r.entry.keeperId, (keptBy.get(r.entry.keeperId) ?? 0) + 1);
   const used = new Set<string>();
-  const role = (id: string): Role => ((keptBy.get(id) ?? 0) * 2 >= rs.filter((r) => r.entry.attendance.includes(id)).length && keptBy.has(id) ? "K" : roleOf(byId.get(id) ?? { id, position: "Onbekend", active: true }));
+  // Plek die maand: wat hij het vaakst speelde (keeper, tijdelijke plek per wedstrijd, anders zijn vaste plek)
+  const role = (id: string): Role => {
+    const count = new Map<Role, number>();
+    for (const r of rs) {
+      if (!r.entry.attendance.includes(id)) continue;
+      const x: Role = r.entry.keeperId === id ? "K" : (r.entry.positions?.[id] ?? roleOf(byId.get(id) ?? { id, position: "Onbekend", active: true }));
+      count.set(x, (count.get(x) ?? 0) + 1);
+    }
+    return [...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? roleOf(byId.get(id) ?? { id, position: "Onbekend", active: true });
+  };
 
   const pick = (slot: Role) => {
     const free = ratings.filter((s) => !used.has(s.playerId));
@@ -171,8 +173,6 @@ export function reachedMilestones(rows: GameRow[], id: string): string[] {
     const s = [...STEPS[k]].reverse().find((x) => t[k] >= x);
     if (s) out.push(`${s} ${LABEL[k]}`);
   }
-  const hat = rows.filter((r) => (r.entry.stats[id]?.goals ?? 0) >= 3).length;
-  if (hat) out.push(hat === 1 ? "Hattrick" : `${hat}× hattrick`);
   return out;
 }
 
@@ -194,6 +194,8 @@ export interface PlayerSeason {
   partner: { partnerId: string; goals: number } | null;
   keeper: { games: number; cleanSheets: number; against: number; expected: number } | null;
   milestones: string[];
+  /** Wedstrijden met 3 of meer goals */
+  hattricks: number;
 }
 
 export function playerSeason(id: string, rows: GameRow[], players: RolePlayer[], matches: Match[], entries: Record<string, MatchEntry>): PlayerSeason {
@@ -229,5 +231,6 @@ export function playerSeason(id: string, rows: GameRow[], players: RolePlayer[],
         }
       : null,
     milestones: reachedMilestones(rows, id),
+    hattricks: mine.filter((r) => (r.entry.stats[id]?.goals ?? 0) >= 3).length,
   };
 }

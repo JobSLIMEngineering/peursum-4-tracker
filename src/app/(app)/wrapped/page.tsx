@@ -18,6 +18,7 @@ import { MON_FULL, todayNL } from "@/lib/format";
 import { canvasLogoSrc } from "@/lib/logos";
 import type { StoredPlayer } from "@/lib/store/schema";
 import { renderWrappedVideo, videoType } from "@/lib/wrappedVideo";
+import { BASE } from "@/lib/base";
 
 const EVERY = 6000;
 const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
@@ -147,6 +148,15 @@ export default function WrappedPage() {
   async function makeVideo() {
     setVideo({ state: "busy", p: 0 });
     try {
+      // Clublogo als data-URL: een afbeelding in een svg mag in een canvas geen ander bestand laden
+      const logo = await fetch(`${BASE}/club-logo.png`)
+        .then((r) => r.blob())
+        .then((b) => new Promise<string>((res) => {
+          const fr = new FileReader();
+          fr.onload = () => res(String(fr.result));
+          fr.readAsDataURL(b);
+        }))
+        .catch(() => undefined);
       const data = slides.map((s) => ({
         kicker: s.kicker,
         title: s.title,
@@ -162,7 +172,7 @@ export default function WrappedPage() {
           const c = w && view.cards[w.playerId];
           const p = w && view.players.find((x) => x.id === w.playerId);
           return c && p
-            ? renderToStaticMarkup(<PlayerCardSvg card={c} player={p} gold={view.goldKeepers.has(p.id)} special banner={w.banner} width={600} />)
+            ? renderToStaticMarkup(<PlayerCardSvg card={c} player={p} gold={view.goldKeepers.has(p.id)} special banner={w.banner} width={600} logo={logo} />)
             : undefined;
         })(),
       }));

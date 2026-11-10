@@ -1,5 +1,6 @@
 import type { PlayerCard } from "@/lib/domain/playercard";
 import { playerLabel, type Player } from "@/lib/domain/types";
+import { BASE } from "@/lib/base";
 import { ShirtSvg } from "./Shirt";
 
 type CardPlayer = Pick<Player, "id" | "name" | "position" | "type" | "number" | "hiddenNo">;
@@ -15,12 +16,9 @@ export const TIERS = {
 } as const;
 export type Tier = keyof typeof TIERS;
 
-/** Kortere naam voor op de kaart (achternaam, of voornaam als die er niet is) */
+/** Volledige naam op de kaart (afgeschermde spelers: "Speler 3") */
 function cardName(p: CardPlayer) {
-  const label = playerLabel(p);
-  if (!p.name) return label.replace("Afgeschermde speler", "Speler");
-  const parts = p.name.split(/\s+/);
-  return (parts.length > 1 ? parts.at(-1)! : parts[0]).toUpperCase();
+  return (p.name ?? playerLabel(p).replace("Afgeschermde speler", "Speler")).toUpperCase();
 }
 
 /** FIFA-vorm: afgeronde schouders, een inkeping bovenin het midden en een punt onderaan */
@@ -42,6 +40,7 @@ export function PlayerCardSvg({
   banner,
   width,
   hattricks = 0,
+  logo = `${BASE}/club-logo.png`,
 }: {
   card: PlayerCard;
   player: CardPlayer;
@@ -54,6 +53,8 @@ export function PlayerCardSvg({
   width?: number;
   /** Aantal hattricks dit seizoen (klein teken op de kaart) */
   hattricks?: number;
+  /** Clublogo (adres of data-URL; voor de video moet het een data-URL zijn) */
+  logo?: string;
 }) {
   const kind: Tier = special ? "special" : card.tier;
   const t = TIERS[kind];
@@ -135,15 +136,14 @@ export function PlayerCardSvg({
       </text>
       <g transform={`translate(66 ${banner ? 172 : 162})`}>
         <line x1="-22" x2="22" y1="-12" y2="-12" stroke={t.ink} strokeOpacity=".35" strokeWidth="1.5" />
-        <path d="M-15 -4H15V10Q15 22 0 28Q-15 22 -15 10Z" fill="#e1242f" stroke="#fff" strokeWidth="1.5" />
-        <text x="0" y="14" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize="12" fill="#fff">
-          P4
-        </text>
+        {/* Het echte clubwapen van VV Peursum */}
+        <image href={logo} x="-15" y="-6" width="30" height="40" preserveAspectRatio="xMidYMid meet" />
       </g>
+      {/* Nederlandse vlag */}
       <g transform={`translate(51 ${banner ? 210 : 200})`}>
-        <rect width="30" height="7" fill="#e1242f" />
+        <rect width="30" height="7" fill="#ae1c28" />
         <rect y="7" width="30" height="7" fill="#fff" />
-        <rect y="14" width="30" height="7" fill="#e1242f" />
+        <rect y="14" width="30" height="7" fill="#21468b" />
         <rect width="30" height="21" fill="none" stroke={t.ink} strokeOpacity=".3" />
       </g>
       {hattricks > 0 && (
@@ -158,7 +158,18 @@ export function PlayerCardSvg({
       </g>
 
       {/* Naam met sierlijn */}
-      <text x="150" y="268" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize={name.length > 12 ? 24 : name.length > 9 ? 28 : 32} letterSpacing="1" fill={t.ink}>
+      <text
+        x="150"
+        y="268"
+        textAnchor="middle"
+        fontFamily={FONT}
+        fontWeight="900"
+        fontSize={name.length > 16 ? 22 : name.length > 12 ? 25 : 30}
+        letterSpacing=".5"
+        fill={t.ink}
+        // Lange namen passend maken binnen de kaart
+        {...(name.length > 18 ? { textLength: 236, lengthAdjust: "spacingAndGlyphs" } : {})}
+      >
         {name}
       </text>
       <path d="M40 282H128L150 288L172 282H260" fill="none" stroke={t.ink} strokeOpacity=".4" strokeWidth="1.5" />
@@ -167,11 +178,12 @@ export function PlayerCardSvg({
       <line x1="150" x2="150" y1="296" y2="372" stroke={t.ink} strokeOpacity=".3" strokeWidth="1.5" />
       {[left, right].map((col, c) =>
         col.map((s, r) => (
-          <g key={s.key} transform={`translate(${c ? 166 : 58} ${316 + r * 26})`}>
-            <text x="0" y="0" fontFamily={FONT} fontWeight="900" fontSize="22" fill={t.ink}>
+          // Cijfer rechts uitgelijnd tegen een vaste lijn, de afkorting er links uitgelijnd achter
+          <g key={s.key} transform={`translate(${c ? 206 : 98} ${318 + r * 26})`}>
+            <text x="0" y="0" textAnchor="end" fontFamily={FONT} fontWeight="900" fontSize="22" fill={t.ink}>
               {s.value}
             </text>
-            <text x="32" y="0" fontFamily={FONT} fontWeight="700" fontSize="18" fill={t.ink} opacity=".85">
+            <text x="8" y="0" fontFamily={FONT} fontWeight="700" fontSize="18" fill={t.ink} opacity=".85">
               {s.key}
             </text>
           </g>

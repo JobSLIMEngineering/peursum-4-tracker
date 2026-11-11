@@ -145,7 +145,7 @@ export function PlayerCardSvg({
       <text x="66" y={banner ? 116 : 106} textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize="64" fill={t.ink}>
         {card.overall}
       </text>
-      <text x="66" y={banner ? 142 : 132} textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="22" letterSpacing="1" fill={t.ink}>
+      <text x="66" y={banner ? 146 : 136} textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="22" letterSpacing="1" fill={t.ink}>
         {card.pos}
       </text>
       <g transform={`translate(66 ${banner ? 172 : 162})`}>
@@ -167,19 +167,20 @@ export function PlayerCardSvg({
       )}
 
       {/* Shirt in plaats van een foto */}
-      <g transform={`translate(104 ${banner ? 62 : 48})`}>
-        <ShirtSvg player={player} size={178} gold={gold} />
+      {/* Met een tekst bovenin iets kleiner, zodat het shirt niet tegen de naam aan komt */}
+      <g transform={`translate(${banner ? 112 : 104} ${banner ? 66 : 48})`}>
+        <ShirtSvg player={player} size={banner ? 162 : 178} gold={gold} />
       </g>
 
       {/* Naam: voornaam klein erboven, achternaam groot eronder */}
       {name.first && (
-        <text x="150" y="250" textAnchor="middle" fontFamily={FONT} fontWeight="700" fontSize="16" letterSpacing="1.5" fill={t.ink} opacity=".85">
+        <text x="150" y="241" textAnchor="middle" fontFamily={FONT} fontWeight="700" fontSize="16" letterSpacing="1.5" fill={t.ink} opacity=".85">
           {name.first}
         </text>
       )}
       <text
         x="150"
-        y={name.first ? 274 : 268}
+        y={name.first ? 268 : 262}
         textAnchor="middle"
         fontFamily={FONT}
         fontWeight="900"
@@ -191,14 +192,14 @@ export function PlayerCardSvg({
       >
         {name.last}
       </text>
-      <path d="M40 284H128L150 290L172 284H260" fill="none" stroke={t.ink} strokeOpacity=".4" strokeWidth="1.5" />
+      <path d="M40 280H128L150 286L172 280H260" fill="none" stroke={t.ink} strokeOpacity=".4" strokeWidth="1.5" />
 
       {/* Zes cijfers in twee kolommen */}
-      <line x1="150" x2="150" y1="296" y2="372" stroke={t.ink} strokeOpacity=".3" strokeWidth="1.5" />
+      <line x1="150" x2="150" y1="292" y2="362" stroke={t.ink} strokeOpacity=".3" strokeWidth="1.5" />
       {[left, right].map((col, c) =>
         col.map((s, r) => (
           // Cijfer rechts uitgelijnd tegen een vaste lijn, de afkorting er links uitgelijnd achter
-          <g key={s.key} transform={`translate(${c ? 206 : 98} ${318 + r * 26})`}>
+          <g key={s.key} transform={`translate(${c ? 196 : 104} ${312 + r * 22})`}>
             <text x="0" y="0" textAnchor="end" fontFamily={FONT} fontWeight="900" fontSize="22" fill={t.ink}>
               {s.value}
             </text>
@@ -208,9 +209,6 @@ export function PlayerCardSvg({
           </g>
         )),
       )}
-      <text x="150" y="396" textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="10" letterSpacing="3" fill={t.ink} opacity=".7">
-        PEURSUM 4
-      </text>
     </svg>
   );
 }

@@ -25,7 +25,13 @@ export interface PlayerCard {
   /** Korte positie op de kaart */
   /** Engelse afkorting van de plek: GK, LB, CB, RB, CM, LW, ST, RW */
   pos: string;
+  /** Onderdelen (70–99) waaruit het totaal wordt berekend */
   stats: { key: StatKey; value: number }[];
+  /**
+   * Wat er op de kaart staat: de echte seizoenscijfers van de speler.
+   * Veldspelers: WED, GOL, AST, PNT, MVW, OPK. Keepers: WED, NUL, TEG, VRW, MVW, OPK.
+   */
+  facts: { key: string; text: string }[];
   /** Basis is altijd goud */
   tier: "goud";
   /** Wedstrijden op rij afwezig (zonder blessure), tot de laatste wedstrijd */
@@ -58,6 +64,7 @@ export function playerCards(
   const ids = players.filter((p) => p.active).map((p) => p.id);
   const rates = attendanceRates(rows, ids);
   const raw: Record<string, Record<StatKey, number> & { games: number }> = {};
+  const facts: Record<string, PlayerCard["facts"]> = {};
 
   for (const id of ids) {
     const mine = rows.filter((r) => r.entry.attendance.includes(id));
@@ -66,6 +73,35 @@ export function playerCards(
     const per = (f: (i: number) => number) => (g ? mine.reduce((s, _, i) => s + f(i), 0) / g : 0);
     const st = (i: number) => mine[i].entry.stats[id];
     const kept = mine.filter((r) => r.entry.keeperId === id);
+    // Echte seizoenscijfers voor op de kaart
+    const sum = (f: (i: number) => number) => mine.reduce((s, _, i) => s + f(i), 0);
+    const motm = mine.filter((r) => {
+      const top = rateMatch(r, players)[0];
+      return top && top.playerId === id && top.total > 0;
+    }).length;
+    const fit = rows.filter((r) => !r.entry.injured?.includes(id)).length;
+    const pts = Math.round(sum((i) => rated[i].total));
+    const ga = kept.reduce((s, r) => s + ourScore(r.match)![1], 0);
+    const xga = kept.reduce((s, r) => s + ourScore(r.match)![1] + r.gaDiff, 0);
+    const vrw = xga - ga;
+    const isKeeper = players.find((p) => p.id === id)?.position === "Keeper";
+    facts[id] = isKeeper
+      ? [
+          { key: "WED", text: String(g) },
+          { key: "NUL", text: String(kept.filter((r) => ourScore(r.match)![1] === 0).length) },
+          { key: "TEG", text: String(ga) },
+          { key: "VRW", text: `${vrw >= 0 ? "+" : "−"}${Math.abs(vrw).toFixed(1).replace(".", ",")}` },
+          { key: "MVW", text: String(motm) },
+          { key: "OPK", text: `${fit ? Math.round((g / fit) * 100) : 0}%` },
+        ]
+      : [
+          { key: "WED", text: String(g) },
+          { key: "GOL", text: String(sum((i) => st(i)?.goals ?? 0)) },
+          { key: "AST", text: String(sum((i) => st(i)?.assists ?? 0)) },
+          { key: "PNT", text: String(pts) },
+          { key: "MVW", text: String(motm) },
+          { key: "OPK", text: `${fit ? Math.round((g / fit) * 100) : 0}%` },
+        ];
     raw[id] = {
       games: g,
       AAN: per((i) => rated[i].attack + 3 * (st(i)?.goals ?? 0)),
@@ -114,6 +150,7 @@ export function playerCards(
       penalty,
       pos: ROLE_CODE[p.role ?? POSITION_ROLE[p.position]],
       stats,
+      facts: facts[p.id] ?? [],
       tier: "goud",
       games: raw[p.id].games,
     };

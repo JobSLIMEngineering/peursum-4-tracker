@@ -88,3 +88,22 @@ describe("afwezig: kaart zakt", () => {
     expect(c2.m.penalty).toBe(0);
   });
 });
+
+describe("echte seizoenscijfers op de kaart", () => {
+  it("veldspeler: wedstrijden, goals, assists, punten, man van de wedstrijd, opkomst", () => {
+    const f = Object.fromEntries(cards.s.facts.map((x) => [x.key, x.text]));
+    expect(Object.keys(f)).toEqual(["WED", "GOL", "AST", "PNT", "MVW", "OPK"]);
+    expect(f.WED).toBe("3");
+    expect(f.GOL).toBe("3");
+    expect(f.OPK).toBe("100%");
+  });
+
+  it("keeper: clean sheets, tegengoals en tegen t.o.v. verwacht", () => {
+    const f = Object.fromEntries(cards.k.facts.map((x) => [x.key, x.text]));
+    expect(Object.keys(f)).toEqual(["WED", "NUL", "TEG", "VRW", "MVW", "OPK"]);
+    expect(f.NUL).toBe("2");
+    expect(f.TEG).toBe("1");
+    // 3 duels × 0,5 minder tegen dan verwacht
+    expect(f.VRW).toBe("+1,5");
+  });
+});

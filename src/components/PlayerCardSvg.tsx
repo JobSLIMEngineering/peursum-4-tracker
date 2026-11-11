@@ -69,8 +69,9 @@ export function PlayerCardSvg({
   const id = `card-${kind}`;
   const dark = kind !== "goud";
   const name = cardName(player);
-  const left = card.stats.slice(0, 3);
-  const right = card.stats.slice(3);
+  // De echte seizoenscijfers van de speler (wedstrijden, goals, assists, …)
+  const left = card.facts.slice(0, 3);
+  const right = card.facts.slice(3);
 
   return (
     <svg
@@ -201,7 +202,7 @@ export function PlayerCardSvg({
           // Cijfer rechts uitgelijnd tegen een vaste lijn, de afkorting er links uitgelijnd achter
           <g key={s.key} transform={`translate(${c ? 196 : 104} ${312 + r * 22})`}>
             <text x="0" y="0" textAnchor="end" fontFamily={FONT} fontWeight="900" fontSize="22" fill={t.ink}>
-              {s.value}
+              {s.text}
             </text>
             <text x="8" y="0" fontFamily={FONT} fontWeight="700" fontSize="18" fill={t.ink} opacity=".85">
               {s.key}

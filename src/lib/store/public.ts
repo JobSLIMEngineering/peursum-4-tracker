@@ -25,6 +25,7 @@ export function toPublic(files: DataFiles): DataFiles {
         clubName: null,
         ...(p.number != null && !p.hiddenNo ? { number: p.number } : {}),
         ...(p.role ? { role: p.role } : {}),
+        ...(p.side ? { side: p.side } : {}),
       })),
     },
     "entries.json": {

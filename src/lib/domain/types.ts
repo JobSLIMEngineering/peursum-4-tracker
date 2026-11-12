@@ -119,6 +119,8 @@ export interface Player {
   number?: number | null;
   /** Vaste plek in het elftal, bijv. "LB" (linksback) of "SP" (spits); bepaalt ook `position` */
   role?: Role | null;
+  /** Centrale verdediger: vaste kant (links of rechts centraal achterin) voor het team van de maand */
+  side?: "L" | "R" | null;
 }
 
 export interface PlayerMatchStats {

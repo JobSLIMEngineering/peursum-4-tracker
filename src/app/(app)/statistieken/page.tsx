@@ -91,7 +91,7 @@ export default function StatistiekenPage() {
             <InfoTip label="Hoe wordt dit bepaald?">
               Elke wedstrijd krijgt iedereen die meedeed spelerspunten: erbij als het beter gaat dan het model verwachtte
               tegen deze tegenstander, eraf als het slechter gaat. Verdedigers en de keeper vooral op tegengoals, aanvallers
-              op gemaakte goals, plus goals (+3), assists (+2), de nul als keeper (+1) en kaarten (−1/−3). Zo maakt iedereen
+              op gemaakte goals, plus goals (+3), assists (+2), de nul of maar één tegengoal (keeper en verdedigers) en kaarten (−1/−3). Zo maakt iedereen
               kans, van keeper tot spits. Wie in een maand maar één duel speelde, telt niet mee.
             </InfoTip>
           </div>
@@ -125,14 +125,14 @@ export default function StatistiekenPage() {
               <span className="meta">punten · per duel</span>
               <InfoTip label="Hoe komen de punten tot stand?">
                 Per wedstrijd weet het model hoeveel goals we tegen deze tegenstander zouden maken en krijgen. Wie meedoet krijgt:
-                <br />• <b>verdedigen</b>: elke goal minder tegen dan verwacht levert de keeper 2,5, een verdediger 1,5, een
-                middenvelder 0,4 punt op (meer tegen kost evenveel);
+                <br />• <b>verdedigen</b>: elke goal minder tegen dan verwacht levert de keeper 3, een verdediger 2,5, een
+                middenvelder 0,6 punt op (meer tegen kost evenveel);
+                <br />• <b>de nul</b>: keeper +3, verdediger +2,5, middenvelder +0,8 (bij één tegengoal: +1,5 / +1 / +0,3);
                 <br />• <b>aanvallen</b>: elke goal meer dan verwacht levert een aanvaller 0,8, een middenvelder 0,4 punt op;
                 <br />• <b>team</b>: 0,5 × (punten − verwachte punten);
-                <br />• <b>zelf</b>: goal +3, assist +2, de nul als keeper +1, geel −1, rood −3, eigen goal −2.
-                <br />Wie een deel speelde of tijdelijk ergens anders stond, krijgt dat deel. Zo telt een sterke verdediging
-                net zo zwaar als een productieve aanval: samen is één goal tegengehouden ongeveer evenveel waard als één
-                goal gemaakt.
+                <br />• <b>zelf</b>: goal +3, assist +2, geel −1, rood −3, eigen goal −2.
+                <br />Wie een deel speelde of tijdelijk ergens anders stond, krijgt dat deel. Zo telt de nul houden voor een
+                keeper of verdediger ongeveer even zwaar als een goal maken voor een spits.
               </InfoTip>
             </>
           }

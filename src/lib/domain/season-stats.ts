@@ -16,7 +16,7 @@ export const ROLES: { key: Role; label: string }[] = (["K", "LB", "CV", "RB", "D
 }));
 const FROM_POSITION: Record<Position, Role> = { Keeper: "K", Verdediger: "CV", Middenvelder: "CM", Aanvaller: "SP", Onbekend: "CM" };
 
-type RolePlayer = Pick<Player, "id" | "position" | "active"> & { role?: Role | null; type?: Player["type"] };
+type RolePlayer = Pick<Player, "id" | "position" | "active"> & { role?: Role | null; type?: Player["type"]; side?: Player["side"] };
 export const roleOf = (p: RolePlayer): Role => p.role ?? FROM_POSITION[p.position];
 
 /** Opstelling 1-4-3-3, van links naar rechts per linie (achteraan eerst) */
@@ -85,6 +85,17 @@ function bestEleven(rs: GameRow[], players: RolePlayer[], minGames: (matches: nu
     return rank(ra) - rank(rb);
   });
   for (const [i, j] of exactFirst) result[i][j] = pick(FORMATION[i][j]);
+  // Twee centrale verdedigers: wie vast links centraal speelt links, wie rechts speelt rechts
+  const def = result[1];
+  const cbs = def.map((s, j) => [s, j] as const).filter(([s]) => s.role === "CV");
+  if (cbs.length === 2) {
+    const rank = (s: TeamSlot) => {
+      const side = s.playerId ? byId.get(s.playerId)?.side : null;
+      return side === "L" ? 0 : side === "R" ? 2 : 1;
+    };
+    const [x, y] = cbs;
+    if (rank(x[0]) > rank(y[0])) [def[x[1]], def[y[1]]] = [y[0], x[0]];
+  }
   return result;
 }
 

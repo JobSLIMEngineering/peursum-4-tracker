@@ -20,13 +20,17 @@ const short = (name: string | null, label: string) => (name ? splitName(name, 9)
 const X: Record<number, number[]> = { 1: [50], 2: [30, 70], 3: [17, 50, 83], 4: [12, 37, 63, 88] };
 const DEF_ROLES = new Set<string>(["K", "LB", "CV", "RB"]);
 const Y5 = [88, 68, 49, 31, 10];
+/** In de aanval staat de spits het hoogst; de buitenspelers iets lager, naast de tien */
+const Y_SP = 8;
+const Y_WING = 19;
 /** Tijd tussen twee linies bij het onthullen */
 const STEP_MS = 650;
 
 /**
  * Vaste lijnen zoals bij FIFA, per plek in de 4-2-1-3 ([linie, plek in de linie]):
  * keeper ↔ centrale verdedigers, verdedigers onderling, backs en centrale verdedigers ↔ de middenvelder aan
- * hun kant, de twee middenvelders ↔ elkaar en de tien, de tien ↔ de drie aanvallers, aanvallers onderling.
+ * hun kant, de twee middenvelders ↔ elkaar en de tien, de tien ↔ de drie aanvallers, de buitenspelers ↔ de
+ * middenvelder aan hun kant, aanvallers onderling.
  */
 type Slot = [number, number];
 const LINKS: [Slot, Slot][] = [
@@ -45,6 +49,8 @@ const LINKS: [Slot, Slot][] = [
   [[3, 0], [4, 0]],
   [[3, 0], [4, 1]],
   [[3, 0], [4, 2]],
+  [[2, 0], [4, 0]],
+  [[2, 1], [4, 2]],
   [[4, 0], [4, 1]],
   [[4, 1], [4, 2]],
 ];
@@ -86,7 +92,7 @@ export function TeamOfMonth() {
     return () => clearTimeout(t);
   }, [step, team.length, latest]);
 
-  // Plek op het veld (in %): van achter (keeper, onderaan) naar voren; de spits iets dieper dan de buitenspelers
+  // Plek op het veld (in %): van achter (keeper, onderaan) naar voren; de spits het hoogst, de buitenspelers iets lager
   const placed = useMemo(() => {
     const out: { s: TeamSlot; p: StoredPlayer | undefined; x: number; y: number; li: number }[] = [];
     const L = team.length;
@@ -94,7 +100,7 @@ export function TeamOfMonth() {
       const xs = X[line.length] ?? line.map((_, j) => ((j + 0.5) / line.length) * 100);
       line.forEach((s, j) => {
         // Hoogte per linie (keeper onderaan); bij 4-2-1-3 een vaste verdeling met ruimte voor de tien
-        const y = (L === 5 ? Y5[li] : 88 - li * (78 / Math.max(1, L - 1))) + (s.role === "SP" ? 3 : 0);
+        const y = L === 5 && li === 4 ? (s.role === "SP" ? Y_SP : Y_WING) : L === 5 ? Y5[li] : 88 - li * (78 / Math.max(1, L - 1));
         out.push({ s, p: s.playerId ? view.players.find((x) => x.id === s.playerId) : undefined, x: xs[j], y, li });
       });
     });

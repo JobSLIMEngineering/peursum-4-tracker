@@ -7,13 +7,15 @@ import { ourScore, ROLE_POSITION, type Player, type Position } from "./types";
  * Het model weet per wedstrijd wat er verwacht werd (tegen deze tegenstander, thuis of uit). Wie meedoet
  * krijgt punten erbij als het beter gaat dan verwacht, en eraf als het slechter gaat:
  * - team:     0,5 × (punten − verwachte punten), voor iedereen die meedeed;
- * - verdedigen: (verwachte tegengoals − tegengoals) × gewicht van de positie (keeper 2,5, verdediger 1,5);
+ * - verdedigen: (verwachte tegengoals − tegengoals) × gewicht van de positie (keeper 3, verdediger 2,5),
+ *               plus een vaste beloning voor weinig tegen: de nul (keeper +3, verdediger +2,5, middenveld +0,8)
+ *               of één tegengoal (keeper +1,5, verdediger +1, middenveld +0,3);
  * - aanvallen:  (goals − verwachte goals) × gewicht van de positie (spits 0,8);
  * - speeltijd: wie een deel van de wedstrijd speelde (in stappen van 25%), krijgt dat deel van deze punten;
  * - tijdelijke plek: voor het deel van de wedstrijd dat hij daar stond, tellen de gewichten van die plek;
- * - eigen bijdrage: goal +3, assist +2, clean sheet als keeper +1, geel −1, rood −3, eigen goal −2.
- * Zuinig met teampunten: wat je zelf doet (goals, assists, de nul) weegt het zwaarst, alleen "erbij zijn
- * als we winnen" levert weinig op. Werkt met terugwerkende kracht: alles wordt opnieuw berekend.
+ * - eigen bijdrage: goal +3, assist +2, geel −1, rood −3, eigen goal −2.
+ * Zuinig met teampunten: wat je zelf doet (goals, assists, de nul houden) weegt het zwaarst, alleen "erbij
+ * zijn als we winnen" levert weinig op. Achterin goals tegenhouden is evenveel waard als voorin scoren. Werkt met terugwerkende kracht: alles wordt opnieuw berekend.
  * Wie keepte, telt die wedstrijd als keeper (ook als zijn positie anders is). Stond iemand die wedstrijd
  * tijdelijk ergens anders (bijv. middenvelder in de verdediging), dan tellen de gewichten van die plek.
  */
@@ -24,9 +26,18 @@ const TEAM = 0.5;
  * zwaar als aanvallen: een verdediger of keeper die een goal tegenhoudt, levert evenveel op als een spits die
  * er een meer maakt dan verwacht. (Goals en assists zelf tellen daar nog bovenop.)
  */
-// Eén goal minder tegen dan verwacht levert het hele team samen ongeveer evenveel op als één goal extra
-// gemaakt (keeper 2,5 + 4 × 1,5 + middenveld ≈ 9,7 tegenover goal 3 + assist 2 + aanvalsgewichten ≈ 9,2).
-const DEF: Record<Position, number> = { Keeper: 2.5, Verdediger: 1.5, Middenvelder: 0.4, Aanvaller: 0.1, Onbekend: 0.4 };
+// Goals en assists zijn voor aanvallers een vaste beloning; daar staat voor keeper en verdedigers de nul (of maar
+// één tegengoal) tegenover, anders komen achterin spelers nooit bovenin het klassement.
+const DEF: Record<Position, number> = { Keeper: 3, Verdediger: 2.5, Middenvelder: 0.6, Aanvaller: 0.1, Onbekend: 0.5 };
+/** Vaste beloning voor weinig tegen: [de nul, één tegengoal] */
+const SOLID: Record<Position, [number, number]> = {
+  Keeper: [3, 1.5],
+  Verdediger: [2.5, 1],
+  Middenvelder: [0.8, 0.3],
+  Aanvaller: [0, 0],
+  Onbekend: [0.5, 0.2],
+};
+const solid = (conceded: number) => (pos: Position) => (conceded <= 1 ? SOLID[pos][conceded] : 0);
 const ATT: Record<Position, number> = { Keeper: 0, Verdediger: 0.15, Middenvelder: 0.4, Aanvaller: 0.8, Onbekend: 0.4 };
 
 export interface MatchRating {
@@ -57,12 +68,12 @@ export function rateMatch(row: GameRow, players: Pick<Player, "id" | "position">
       const played = row.entry.minutes?.[id] ?? 1;
       const st = row.entry.stats[id];
       const team = played * TEAM * row.ptsDiff;
-      const defence = played * w(DEF) * row.gaDiff;
+      const sol = solid(conceded);
+      const defence = played * (w(DEF) * row.gaDiff + share * sol(at) + (1 - share) * sol(keeper ? "Keeper" : normal));
       const attack = played * w(ATT) * row.gfDiff;
       const own =
         3 * (st?.goals ?? 0) +
-        2 * (st?.assists ?? 0) +
-        (row.entry.keeperId === id && conceded === 0 ? 1 : 0) -
+        2 * (st?.assists ?? 0) -
         (st?.red ? 3 : st?.yellow ? 1 : 0) -
         2 * (st?.ownGoals ?? 0);
       return { playerId: id, team: round1(team), defence: round1(defence), attack: round1(attack), own, total: round1(team + defence + attack + own) };

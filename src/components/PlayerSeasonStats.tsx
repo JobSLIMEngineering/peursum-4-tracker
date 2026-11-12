@@ -3,16 +3,31 @@
 import { playerSeason } from "@/lib/domain/season-stats";
 import { playerLabel } from "@/lib/domain/types";
 import { MON_FULL } from "@/lib/format";
+import type { PlayerCard } from "@/lib/domain/playercard";
 import { useData } from "./DataProvider";
 
 const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
 
-/** Compacte lijst met de seizoensstatistieken van één speler, onder zijn kaart */
-export function PlayerSeasonStats({ playerId }: { playerId: string }) {
+/** Maand na yyyy-mm */
+const nextMonth = (ym: string) => {
+  const [y, m] = ym.split("-").map(Number);
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+};
+
+/**
+ * Compacte lijst met de seizoensstatistieken van één speler, onder zijn kaart.
+ * Met `upTo` (yyyy-mm): de stand aan het eind van die maand (bij het terugvegen door de kaarten).
+ */
+export function PlayerSeasonStats({ playerId, upTo, card: cardAt }: { playerId: string; upTo?: string; card?: PlayerCard }) {
   const { view } = useData();
-  const s = playerSeason(playerId, view.rows, view.players, view.matches, view.entries, view.thisMonth);
-  const months = view.monthly.months;
-  const trend = view.monthly.overall[playerId] ?? [];
+  const inRange = (date: string | null | undefined) => !upTo || (date ?? "").slice(0, 7) <= upTo;
+  const games = upTo ? view.rows.filter((r) => inRange(r.match.date)) : view.rows;
+  const matches = upTo ? view.matches.filter((m) => inRange(m.date)) : view.matches;
+  const s = playerSeason(playerId, games, view.players, matches, view.entries, upTo ? nextMonth(upTo) : view.thisMonth);
+  const all = view.monthly.months;
+  const shown = upTo ? all.filter((m) => m <= upTo).length : all.length;
+  const months = all.slice(0, shown);
+  const trend = (view.monthly.overall[playerId] ?? []).slice(0, shown);
   const partner = s.partner && view.players.find((p) => p.id === s.partner!.partnerId);
 
   const rows: [string, React.ReactNode][] = [
@@ -20,7 +35,7 @@ export function PlayerSeasonStats({ playerId }: { playerId: string }) {
     ["Goals · assists", `${s.goals} · ${s.assists}${s.games ? ` (${comma((s.goals + s.assists) / s.games)} per duel)` : ""}`],
     ["Met hem erbij", `${s.record.w}W ${s.record.d}G ${s.record.l}V`],
   ];
-  const card = view.cards[playerId];
+  const card = cardAt ?? view.cards[playerId];
   if (card?.penalty)
     rows.push(["Afwezig", <span key="a" className="down">{card.absentRun} wedstrijden op rij (kaart −{card.penalty})</span>]);
   if (s.hattricks) rows.push(["Hattricks", `⚽⚽⚽ ${s.hattricks}×`]);

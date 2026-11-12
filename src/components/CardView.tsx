@@ -107,7 +107,7 @@ export function CardView({
   return createPortal(
     <div className="cardview" role="dialog" aria-label={`Spelerskaart ${playerLabel(p)}`} onClick={onClose}>
       {/* Duidelijk terug: knop bovenin (blijft staan bij scrollen) en de terugknop of -veeg van de telefoon */}
-      <div className="cv-top" onClick={(e) => e.stopPropagation()}>
+      <div className="cv-top" onClick={(e) => (e.target === e.currentTarget ? onClose() : e.stopPropagation())}>
         <button type="button" className="cv-back" onClick={onClose}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" />
@@ -115,7 +115,15 @@ export function CardView({
           Terug
         </button>
       </div>
-      <div className="cv-body" onClick={(e) => e.stopPropagation()}>
+      {/* Naast de kaart tikken sluit hem ook; op de kaart, knoppen en statistieken zelf niet */}
+      <div
+        className="cv-body"
+        onClick={(e) => {
+          e.stopPropagation();
+          const t = e.target as Element;
+          if (t === e.currentTarget || t.matches(".cv-card, .cv-track, .cv-slide, .cv-badges, .cv-when")) onClose();
+        }}
+      >
         <div className="cv-card">
           {/* Veeg naar links/rechts: de kaart aan het eind van elke maand, rechts de kaart van nu */}
           <div className="cv-track" ref={track} onScroll={onScroll}>
@@ -157,9 +165,10 @@ export function CardView({
           <Badges playerId={p.id} />
         </div>
         <span className="cv-hint" aria-hidden="true">
-          ↓ statistieken
+          ↓ statistieken{past[slide] ? ` t/m ${monthLabel(past[slide].month)}` : ""}
         </span>
-        <PlayerSeasonStats playerId={p.id} />
+        {/* Teruggeveegd naar een eerdere maand: de statistieken van toen */}
+        <PlayerSeasonStats playerId={p.id} upTo={past[slide]?.month} card={past[slide]?.card} />
 
         {!readOnly && (
           <div className="cv-owner" key="owner">
@@ -206,6 +215,7 @@ function EditPlayer({
   const [name, setName] = useState(p.name ?? "");
   const [no, setNo] = useState(p.number != null ? String(p.number) : "");
   const [role, setRole] = useState<Role | "">(p.role ?? (p.position === "Onbekend" ? "" : POSITION_ROLE[p.position]));
+  const [side, setSide] = useState<"L" | "R" | "">(p.side ?? "");
   const [armed, setArmed] = useState(false);
 
   useEffect(() => {
@@ -225,6 +235,8 @@ function EditPlayer({
       patch.role = role || null;
       patch.position = role ? ROLE_POSITION[role] : "Onbekend";
     }
+    const newSide = role === "CV" && side ? side : null;
+    if (newSide !== (p.side ?? null)) patch.side = newSide;
     if (Object.keys(patch).length) void update(patch, `speler: ${n || playerLabel(p)}`);
     onDone();
   }
@@ -250,6 +262,16 @@ function EditPlayer({
           ))}
         </select>
       </label>
+      {role === "CV" && (
+        <label className="f wide">
+          Kant centraal achterin
+          <select value={side} onChange={(e) => setSide(e.target.value as "L" | "R" | "")}>
+            <option value="">Geen vaste kant</option>
+            <option value="L">Links centraal</option>
+            <option value="R">Rechts centraal</option>
+          </select>
+        </label>
+      )}
       <div className="actions wide" style={{ marginTop: 0 }}>
         <button className="btn sm primary" type="submit">
           Opslaan

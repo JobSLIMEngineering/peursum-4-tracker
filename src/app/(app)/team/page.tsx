@@ -7,6 +7,8 @@ import { cardMarks } from "@/components/cardMarks";
 import { useData } from "@/components/DataProvider";
 import { InfoTip } from "@/components/InfoTip";
 import { PlayerCardSvg } from "@/components/PlayerCardSvg";
+import { ScoutButton } from "@/components/Scouting";
+import { useSpecial } from "@/components/reveal";
 import { Box } from "@/components/ui";
 import { ROLES } from "@/lib/domain/season-stats";
 import { playerTotals } from "@/lib/domain/stats";
@@ -35,6 +37,7 @@ export default function TeamPage() {
   const vast = active.filter((p) => p.type === "vast");
   const leen = active.filter((p) => p.type === "leen").sort((a, b) => playerLabel(a).localeCompare(playerLabel(b), "nl"));
   const [open, setOpen] = useState<string | null>(null);
+  const special = useSpecial();
   const [name, setName] = useState("");
   const [role, setRole] = useState<Role | "">("");
 
@@ -78,6 +81,7 @@ export default function TeamPage() {
 
   return (
     <>
+      {!readOnly && <ScoutButton />}
       {LINES.map((line) => {
         const list = vast
           .filter((p) => lineOf(p) === line.key)
@@ -129,8 +133,8 @@ export default function TeamPage() {
                       card={c}
                       player={p}
                       gold={view.goldKeepers.has(p.id)}
-                      variant={view.special[p.id]?.variant}
-                      banner={view.special[p.id]?.banner}
+                      variant={special(p.id)?.variant}
+                      banner={special(p.id)?.banner}
                       marks={cardMarks(view, p.id)}
                     />
                   </div>

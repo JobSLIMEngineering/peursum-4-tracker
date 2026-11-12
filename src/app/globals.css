@@ -1221,23 +1221,29 @@ html, body { overflow-x: clip; }
   border: 2px solid rgb(255 255 255 / .18);
 }
 .pitch-chem { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.chem { stroke-width: 3; stroke-linecap: round; opacity: .9; }
-.chem.goed { stroke: #3ddc84; }
-.chem.normaal { stroke: #f3a93c; stroke-width: 2; opacity: .5; }
-.chem.slecht { stroke: #ff4d55; }
-.chem.def { stroke-dasharray: 2 6; stroke-width: 3.5; }
-.chem.duo { stroke: #ffe36e; stroke-width: 5; filter: drop-shadow(0 0 3px #ffd84a); opacity: 1; }
-.pitch-p { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 1px; width: 64px; background: none; border: 0; cursor: pointer; color: #fff; padding: 0; z-index: 1; }
+.chem line { stroke-width: 2.5; stroke-linecap: round; }
+.chem line.under { stroke: rgb(0 0 0 / .45); stroke-width: 5; }
+.chem.goed line:not(.under) { stroke: #43e08c; }
+.chem.normaal line:not(.under) { stroke: #f3a93c; }
+.chem.slecht line:not(.under) { stroke: #ff4d55; }
+.chem.duo line:not(.under) { stroke: #ffe36e; stroke-width: 3.5; }
+.chem.duo line.under { stroke: rgb(255 210 60 / .35); stroke-width: 8; }
+.pitch-p { position: absolute; transform: translate(-50%, -18px); display: grid; justify-items: center; gap: 1px; width: 64px; background: none; border: 0; cursor: pointer; color: #fff; padding: 0; z-index: 1; }
 .pitch-p > span { font: 800 10.5px/1.1 var(--f-cond); text-transform: uppercase; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
 .pitch-p small { font: 900 11px var(--f-cond); padding: 0 5px; border-radius: 5px; background: linear-gradient(150deg, #fbeaa0, #e0b43a); color: #3b2a05; }
-.pitch-p.empty { opacity: .6; cursor: default; align-content: center; height: 56px; }
+.pitch-p.empty { opacity: .7; cursor: default; }
+.pitch-slot { display: block; width: 34px; height: 34px; margin: 1px 0; border-radius: 50%; border: 2px dashed rgb(255 255 255 / .35); background: rgb(0 0 0 / .12); }
+.pitch-p.pop { animation: pitch-pop .5s var(--ease) both; }
+@keyframes pitch-pop { from { opacity: 0; transform: translate(-50%, -18px) scale(.3); } 60% { opacity: 1; transform: translate(-50%, -18px) scale(1.15); } to { transform: translate(-50%, -18px) scale(1); } }
+.pitch.closed .pitch-p.empty { opacity: .5; }
+.pitch-reveal { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; z-index: 2; background: radial-gradient(circle, rgb(0 0 0 / .45), transparent 70%); }
+.pitch-reveal .k { font: 800 13px var(--f-cond); letter-spacing: .16em; text-transform: uppercase; color: #fff; text-shadow: 0 1px 3px #000; }
 .chem-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: -6px 14px 10px; font: 700 11px var(--f-cond); text-transform: uppercase; letter-spacing: .04em; color: var(--fg-2); }
 .chem-legend i, .chem-row .dot { display: inline-block; width: 16px; height: 4px; border-radius: 2px; vertical-align: middle; }
 .chem-legend .ch-goed, .chem-row .dot.ch-goed { background: #3ddc84; }
 .chem-legend .ch-normaal, .chem-row .dot.ch-normaal { background: #f3a93c; opacity: .6; }
 .chem-legend .ch-slecht, .chem-row .dot.ch-slecht { background: #ff4d55; }
 .chem-legend .ch-duo, .chem-row .dot.ch-duo { background: #ffd84a; box-shadow: 0 0 4px #ffd84a; }
-.chem-legend .ch-def { background: repeating-linear-gradient(90deg, #3ddc84 0 3px, transparent 3px 7px); }
 .chem-list { margin: 0 14px 14px; display: grid; gap: 6px; }
 .chem-list .lbl { margin: 4px 0 2px; }
 .chem-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
@@ -1247,6 +1253,8 @@ html, body { overflow-x: clip; }
 .chem-row .num { font: 900 16px var(--f-cond); }
 .chem-row .num.up { color: var(--win); }
 .news-k.upgrade, .news-k.mijlpaal { color: var(--win); }
+.news-k.totm { color: var(--gold-deep); }
+:root:not([data-theme="light"]) .news-k.totm { color: var(--gold); }
 
 /* ==========================================================================
    Spelers: FIFA-kaarten per linie en de kaart schermvullend
@@ -1353,3 +1361,28 @@ html, body { overflow-x: clip; }
 .cv-when-l { font: 800 12px var(--f-cond); letter-spacing: .14em; text-transform: uppercase; color: rgb(255 255 255 / .75); }
 
 .motm-why { display: block; font-size: 13px; line-height: 1.35; margin: 2px 0; }
+
+/* Inschatten (alleen beheerder) */
+.cardview.scout { background: rgb(10 6 7 / .94); }
+.scout-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; }
+.scout .cv-top { justify-content: space-between; align-items: center; gap: 10px; }
+.scout-tabs { margin: 0; }
+.scout-body { width: min(460px, 100%); margin: 0 auto; padding: 8px 16px calc(40px + env(safe-area-inset-bottom)); display: grid; justify-items: center; gap: 10px; color: #fff; text-align: center; }
+.scout-k { font: 800 12px var(--f-cond); letter-spacing: .16em; text-transform: uppercase; color: #f4c542; margin: 6px 0 0; }
+.scout-q { font: 900 26px/1.1 var(--f-cond); text-transform: uppercase; margin: 0 0 6px; }
+.scout-duel { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; }
+.scout-card { display: grid; justify-items: center; gap: 4px; padding: 16px 8px 14px; border-radius: var(--r-lg); border: 1px solid rgb(244 197 66 / .45); background: linear-gradient(160deg, rgb(244 197 66 / .18), rgb(0 0 0 / .35)); color: #fff; cursor: pointer; min-height: 190px; align-content: center; transition: transform .15s var(--ease), border-color .15s; }
+.scout-card:active { transform: scale(.96); border-color: #f4c542; }
+.scout-card b { font: 800 15px/1.15 var(--f-cond); text-transform: uppercase; max-width: 100%; overflow-wrap: anywhere; }
+.scout-card small { font: 800 11px var(--f-cond); letter-spacing: .1em; color: rgb(255 255 255 / .65); }
+.scout-vs { font: 900 16px var(--f-cond); color: rgb(255 255 255 / .6); }
+.scout-more { justify-content: center; margin-top: 4px; }
+.scout-prog { width: 100%; display: grid; gap: 6px; margin-top: 8px; }
+.scout-bar-all { height: 6px; border-radius: 3px; background: rgb(255 255 255 / .15); overflow: hidden; }
+.scout-bar-all i { display: block; height: 100%; background: #f4c542; transition: width .3s var(--ease); }
+.scout-attrs { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; font: 700 11px var(--f-cond); text-transform: uppercase; color: rgb(255 255 255 / .6); }
+.scout-attrs .full { color: #3ddc84; }
+.scout .meta { color: rgb(255 255 255 / .7); }
+.scout-help { font-size: 12.5px; line-height: 1.45; text-align: left; margin-top: 6px; }
+.scout-table { width: 100%; text-align: left; background: var(--surface); border-radius: var(--r-lg); color: var(--fg); }
+.scout-table .meta { color: var(--fg-2); }

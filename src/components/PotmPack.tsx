@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { playerLabel, US } from "@/lib/domain/types";
 import { MON_FULL } from "@/lib/format";
 import { useData } from "./DataProvider";
 import { TeamLogo } from "./TeamLogo";
+import { markRevealed, POTM_KEY, useStored } from "./reveal";
 import { Walkout } from "./Walkout";
-
-const KEY = "p4-potm-opened";
 
 /**
  * Speler van de maand als dicht pakje: pas na openen (walk-out) zie je wie het is.
@@ -17,16 +16,8 @@ export function PotmPack({ compact = false }: { compact?: boolean }) {
   const { view } = useData();
   const potm = view.potms.at(-1);
   const [open, setOpen] = useState(false);
-  const [seen, setSeen] = useState(false);
   const key = potm ? `${potm.month}:${potm.playerId}` : "";
-
-  useEffect(() => {
-    try {
-      if (key && localStorage.getItem(KEY) === key) queueMicrotask(() => setSeen(true));
-    } catch {
-      // geen opslag: gewoon dicht laten
-    }
-  }, [key]);
+  const seen = useStored(POTM_KEY) === key && !!key;
 
   if (!potm || !view.cards[potm.playerId]) return null;
   const month = MON_FULL[Number(potm.month.slice(5, 7)) - 1];
@@ -34,12 +25,7 @@ export function PotmPack({ compact = false }: { compact?: boolean }) {
 
   const close = () => {
     setOpen(false);
-    setSeen(true);
-    try {
-      localStorage.setItem(KEY, key);
-    } catch {
-      // niet onthouden is geen probleem
-    }
+    markRevealed(POTM_KEY, key);
   };
 
   return (

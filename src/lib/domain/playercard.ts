@@ -71,6 +71,8 @@ export function playerCards(
   rows: GameRow[],
   players: Pick<Player, "id" | "position" | "active" | "role">[],
   impacts: Record<string, PlayerImpact>,
+  /** Basiscijfer uit de inschatting vooraf (scouting.ts); de prestaties werken daar vanaf omhoog of omlaag */
+  base: Record<string, number> = {},
 ): Record<string, PlayerCard> {
   const ids = players.filter((p) => p.active).map((p) => p.id);
   const rates = attendanceRates(rows, ids);
@@ -150,6 +152,16 @@ export function playerCards(
     return Math.round(Math.min(99, Math.max(LOW, v)));
   };
 
+  // Gewogen prestatiecijfer per speler, en het gemiddelde daarvan onder wie minstens 2 duels speelde
+  const weighted = (p: (typeof players)[number]) => {
+    const keys: StatKey[] = [p.position === "Keeper" ? "NUL" : "AAN", "PAS", "VER", "VRM", "INZ", "IMP"];
+    const w = WEIGHTS[p.position];
+    const sumW = keys.reduce((s, k) => s + (w[k] ?? 0), 0) || 1;
+    return keys.reduce((s, k) => s + scale(k, p.id) * (w[k] ?? 0), 0) / sumW;
+  };
+  const field = players.filter((p) => p.active && p.position !== "Keeper" && raw[p.id].games >= 2);
+  const mean = field.length ? field.reduce((s, p) => s + weighted(p), 0) / field.length : MID;
+
   const out: Record<string, PlayerCard> = {};
   for (const p of players.filter((x) => x.active)) {
     const keeper = p.position === "Keeper";
@@ -165,7 +177,12 @@ export function playerCards(
       absentRun++;
     }
     const penalty = absentRun >= 2 ? absentRun - 1 : 0;
-    const overall = Math.max(60, Math.round(compress(stats.reduce((s, x) => s + x.value * (w[x.key] ?? 0), 0) / sumW)) - penalty);
+    const perf = stats.reduce((s, x) => s + x.value * (w[x.key] ?? 0), 0) / sumW;
+    // Met een inschatting vooraf: dat is de graadmeter, en wie beter (of slechter) presteert dan het gemiddelde
+    // gaat daar tot 8 punten boven (of onder) zitten; hoe meer duels, hoe zwaarder de prestaties tellen.
+    const g = raw[p.id].games;
+    const rawOverall = base[p.id] != null ? base[p.id] + Math.max(-8, Math.min(8, (perf - mean) * 0.6)) * (g / (g + 3)) : perf;
+    const overall = Math.max(60, Math.round(compress(rawOverall)) - penalty);
     out[p.id] = {
       playerId: p.id,
       overall,

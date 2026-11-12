@@ -8,7 +8,7 @@ import { isPlayed, US, type Match, type MatchEntry, type Player, type StandingRo
  * inhaalwedstrijden, wie terug is van een blessure, koplopers van de prijzen en wie on fire is.
  */
 
-export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped" | "motm" | "potm" | "upgrade" | "mijlpaal";
+export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped" | "motm" | "potm" | "upgrade" | "mijlpaal" | "totm";
 
 export interface NewsItem {
   key: string;
@@ -40,6 +40,8 @@ export interface NewsInput {
   motm?: { playerId: string; total: number; opponent: string; reason?: string } | null;
   /** Speler van de maand (meest recente maand) */
   potm?: { playerId: string; month: string; total: number } | null;
+  /** Team van de laatst afgesloten maand; namen pas als het op dit apparaat onthuld is */
+  totm?: { month: string; label: string; names: string[] | null } | null;
   /** Kaart-upgrades van deze maand (cijfer omhoog) */
   upgrades?: { playerId: string; delta: number; overall: number }[];
   /** Mijlpalen uit de laatste wedstrijd */
@@ -133,6 +135,17 @@ export function buildNews(i: NewsInput): NewsItem[] {
       text: i.motm.reason ?? `${i.motm.total.toFixed(1).replace(".", ",")} spelerspunten`,
       playerId: i.motm.playerId,
       href: "/statistieken/",
+    });
+  if (i.totm)
+    out.push({
+      key: `totm-${i.totm.month}`,
+      kind: "totm",
+      kicker: `Team van de maand · ${i.totm.label}`,
+      title: i.totm.names ? `Het team van ${i.totm.label}` : `Het team van ${i.totm.label} is bekend`,
+      text: i.totm.names
+        ? `${i.totm.names.slice(0, 3).join(", ")}${i.totm.names.length > 3 ? ` en nog ${i.totm.names.length - 3}` : ""}`
+        : "Tik om het team te onthullen",
+      href: "/statistieken/#totm",
     });
   if (i.potm)
     out.push({

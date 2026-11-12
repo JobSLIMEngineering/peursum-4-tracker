@@ -93,12 +93,12 @@ function bestEleven(rs: GameRow[], players: RolePlayer[], minGames: (matches: nu
    ========================================================================== */
 
 /** Kaartcijfer van elke speler aan het eind van elke maand (null als hij toen nog niet had gespeeld) */
-export function monthlyOveralls(rows: GameRow[], players: RolePlayer[]): { months: string[]; overall: Record<string, (number | null)[]> } {
+export function monthlyOveralls(rows: GameRow[], players: RolePlayer[], base: Record<string, number> = {}): { months: string[]; overall: Record<string, (number | null)[]> } {
   const months = monthsOf(rows);
   const overall: Record<string, (number | null)[]> = Object.fromEntries(players.map((p) => [p.id, []]));
   for (const m of months) {
     const upTo = rows.filter((r) => month(r) <= m);
-    const cards = playerCards(upTo, players, playerImpacts(players, upTo));
+    const cards = playerCards(upTo, players, playerImpacts(players, upTo), base);
     for (const p of players) overall[p.id].push(cards[p.id] && cards[p.id].games > 0 ? cards[p.id].overall : null);
   }
   return { months, overall };

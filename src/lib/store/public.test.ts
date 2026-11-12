@@ -23,6 +23,9 @@ describe("kijkversie voor gasten", () => {
     text: "privé opmerking",
     status: "open",
   });
+  files["scouting.json"] = {
+    votes: Array.from({ length: 8 }, (_, i) => ({ a: "p2", b: "p3", attr: "SNE" as const, winner: (i % 2 ? "a" : "b") as "a" | "b", at: `t${i}` })),
+  };
   const pub = toPublic(files);
   const json = JSON.stringify(pub);
 
@@ -43,5 +46,10 @@ describe("kijkversie voor gasten", () => {
     expect(pub["matches.json"]).toEqual(files["matches.json"]);
     expect(pub["standings.json"]).toEqual(files["standings.json"]);
     expect(pub["players.json"].players[0].name).toBe("Luuk Bobbe");
+  });
+
+  it("van de inschatting alleen de basiscijfers, niet de keuzes", () => {
+    expect(pub["scouting.json"].votes).toEqual([]);
+    expect(json).not.toContain('"winner"');
   });
 });

@@ -1,9 +1,11 @@
+import { scoutBase } from "@/lib/domain/scouting";
 import type { DataFiles } from "./schema";
 
 /**
  * Kijkversie voor gasten. Staat openbaar (branch "kijk" van de app-repository), dus:
  * - afgeschermde spelers zonder naam (ze staan om privacyredenen niet op de clubsite)
  * - geen bijnamen, clubsite-namen of feedback
+ * - van de inschatting vooraf alleen de basiscijfers, niet de keuzes of cijfers per onderdeel
  * - geen blessures, en geen rugnummer bij afgeschermde spelers (daarmee zijn ze te herkennen)
  */
 export const PUBLIC_REF = { owner: "JobSLIMEngineering", repo: "peursum-4-tracker", branch: "kijk", path: "kijk.json" };
@@ -35,5 +37,7 @@ export function toPublic(files: DataFiles): DataFiles {
       ),
     },
     "feedback.json": { items: [] },
+    // Inschatting: alleen het basiscijfer per speler, niet wie tegen wie gekozen is
+    "scouting.json": { votes: [], base: scoutBase(files["scouting.json"]?.votes ?? [], files["players.json"].players) },
   };
 }

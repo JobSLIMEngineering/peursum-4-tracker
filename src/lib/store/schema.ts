@@ -1,3 +1,4 @@
+import type { ScoutVote } from "@/lib/domain/scouting";
 import type { Match, MatchEntry, MatchKind, Player, StandingRow } from "@/lib/domain/types";
 
 /**
@@ -5,7 +6,7 @@ import type { Match, MatchEntry, MatchKind, Player, StandingRow } from "@/lib/do
  *
  * Schrijvers per bestand:
  * - standings.json, matches.json, sync.json, logos.json: scraper (GitHub Action)
- * - overrides.json, entries.json, feedback.json: app
+ * - overrides.json, entries.json, feedback.json, scouting.json: app
  * - players.json: app, en de scraper voegt nieuwe spelers van de clubsite toe
  *
  * Handmatige wijzigingen aan wedstrijden staan los in overrides.json, zodat de scraper
@@ -64,6 +65,11 @@ export interface DataFiles {
   "sync.json": SyncStatus;
   /** Clublogo per team (voetbal.nl logo-adres), bijgehouden door de scraper */
   "logos.json": { logos: Record<string, string> };
+  /**
+   * Inschatting vooraf (alleen de beheerder): de vergelijkingen zelf. In de kijkversie staan alleen de
+   * basiscijfers (`base`), niet de keuzes en niet de cijfers per onderdeel.
+   */
+  "scouting.json": { votes: ScoutVote[]; base?: Record<string, number> };
 }
 
 export type DataFile = keyof DataFiles;
@@ -77,6 +83,7 @@ export const DATA_FILES: DataFile[] = [
   "feedback.json",
   "sync.json",
   "logos.json",
+  "scouting.json",
 ];
 
 export const EMPTY: { [K in DataFile]: DataFiles[K] } = {
@@ -88,6 +95,7 @@ export const EMPTY: { [K in DataFile]: DataFiles[K] } = {
   "feedback.json": { items: [] },
   "sync.json": { lastRun: null, lastChange: null, message: "Nog niet opgehaald", unsure: [] },
   "logos.json": { logos: {} },
+  "scouting.json": { votes: [] },
 };
 
 const slug = (s: string) =>

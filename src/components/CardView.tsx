@@ -5,6 +5,7 @@ import { playerImpacts } from "@/lib/domain/awards";
 import { playerCards } from "@/lib/domain/playercard";
 import { MON_FULL } from "@/lib/format";
 import { cardMarks } from "./cardMarks";
+import { useSpecial } from "./reveal";
 import { createPortal } from "react-dom";
 import { ROLES } from "@/lib/domain/season-stats";
 import { playerLabel, POSITION_ROLE, ROLE_POSITION, type Role } from "@/lib/domain/types";
@@ -36,6 +37,7 @@ export function CardView({
 }) {
   const { view, mutate, readOnly } = useData();
   const [editing, setEditing] = useState(false);
+  const special = useSpecial();
   const p = view.players.find((x) => x.id === playerId);
   // Kaart aan het eind van elke afgelopen maand (progressie door het seizoen)
   const past = useMemo(() => {
@@ -43,7 +45,7 @@ export function CardView({
     return months
       .map((m) => {
         const upTo = view.rows.filter((r) => (r.match.date ?? "").slice(0, 7) <= m);
-        return { month: m, card: playerCards(upTo, view.players, playerImpacts(view.players, upTo))[playerId] };
+        return { month: m, card: playerCards(upTo, view.players, playerImpacts(view.players, upTo), view.base)[playerId] };
       })
       .filter((h) => h.card && h.card.games > 0);
   }, [view, playerId]);
@@ -128,8 +130,8 @@ export function CardView({
                 player={p}
                 gold={view.goldKeepers.has(p.id)}
                 hattricks={hattricks}
-                variant={variant ?? view.special[p.id]?.variant}
-                banner={banner ?? view.special[p.id]?.banner}
+                variant={variant ?? special(p.id)?.variant}
+                banner={banner ?? special(p.id)?.banner}
                 marks={cardMarks(view, p.id)}
               />
             </div>

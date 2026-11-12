@@ -1,3 +1,4 @@
+import { scoutBase, type ScoutVote } from "@/lib/domain/scouting";
 import { computeAwards, gameRows, keeperCompare, playerImpacts, prizeLeads, type Award, type AwardKey, type GameRow, type PlayerImpact } from "@/lib/domain/awards";
 import { fit, knownResults, type Fit } from "@/lib/domain/model";
 import { playerCards, type PlayerCard } from "@/lib/domain/playercard";
@@ -44,6 +45,8 @@ export interface AppView {
    * (TOTW/in-form, zwart-goud); anders de gewone gouden kaart. Banner = tekst bovenop de kaart.
    */
   special: Record<string, { variant: "potm" | "inform"; banner: string }>;
+  /** Team van de laatst afgesloten maand (pas bekend als de maand voorbij is) */
+  lastTotm: { month: string; ids: string[]; banner: string } | null;
   /** Spelers van de maand, alleen afgelopen maanden (de lopende maand is nog niet klaar) */
   potms: MonthWinner[];
   /** Huidige maand (yyyy-mm) */
@@ -51,6 +54,10 @@ export interface AppView {
   /** Kaartcijfer per maand en de upgrades van de laatste maand */
   monthly: ReturnType<typeof monthlyOveralls>;
   upgrades: Record<string, number>;
+  /** Basiscijfer per speler uit de inschatting vooraf */
+  base: Record<string, number>;
+  /** De vergelijkingen zelf (alleen voor de beheerder; leeg in de kijkversie) */
+  scoutVotes: ScoutVote[];
 }
 
 const strip = ({ code, ...m }: StoredMatch) => ({ m, code });
@@ -95,7 +102,10 @@ export function buildView(files: DataFiles): AppView {
   const players = files["players.json"].players;
   const rows = gameRows(matches, entries, model, pool);
   const awards = computeAwards(players, rows, standings);
-  const monthly = monthlyOveralls(rows, players);
+  // Inschatting vooraf: de beheerder rekent uit de keuzes, de kijkversie krijgt alleen de basiscijfers mee
+  const scouting = files["scouting.json"] ?? { votes: [] };
+  const base = scouting.votes.length ? scoutBase(scouting.votes, players) : (scouting.base ?? {});
+  const monthly = monthlyOveralls(rows, players, base);
   const thisMonth = todayNL().slice(0, 7);
 
   return {
@@ -114,10 +124,13 @@ export function buildView(files: DataFiles): AppView {
     leads: prizeLeads(awards),
     impacts: playerImpacts(players, rows),
     injuredLast: injuredNow(players, rows),
-    cards: playerCards(rows, players, playerImpacts(players, rows)),
+    cards: playerCards(rows, players, playerImpacts(players, rows), base),
+    base,
+    scoutVotes: scouting.votes,
     monthly,
     upgrades: upgrades(monthly, rows),
     special: specialCards(rows, players, thisMonth),
+    lastTotm: lastTeamOfMonth(rows, players, thisMonth),
     potms: playersOfTheMonth(rows, players, thisMonth),
     thisMonth,
     goldKeepers: new Set(
@@ -150,6 +163,16 @@ function injuredNow(players: StoredPlayer[], rows: GameRow[]): Set<string> {
 }
 
 /** Speciale kaarten van de laatste maand: speler van de maand en het team van de maand */
+function lastTeamOfMonth(rows: GameRow[], players: StoredPlayer[], thisMonth: string): AppView["lastTotm"] {
+  const last = monthsOf(rows).filter((m) => m < thisMonth).at(-1);
+  if (!last) return null;
+  const ids = teamOfTheMonth(rows, players, last)
+    .flat()
+    .map((s) => s.playerId)
+    .filter((x): x is string => !!x);
+  return { month: last, ids, banner: `Team van ${MON_FULL[Number(last.slice(5, 7)) - 1]}` };
+}
+
 function specialCards(rows: GameRow[], players: StoredPlayer[], thisMonth: string): AppView["special"] {
   const out: AppView["special"] = {};
   // Laatste afgesloten maand (de lopende maand is nog niet klaar)

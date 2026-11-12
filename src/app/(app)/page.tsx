@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChampionChance } from "@/components/ChampionChance";
-import { Fireworks } from "@/components/Fireworks";
 import { NewsTicker } from "@/components/NewsTicker";
 import { PotmPack } from "@/components/PotmPack";
 import { ScoreBoard } from "@/components/ScoreBoard";
@@ -11,7 +10,7 @@ import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
 import { Box } from "@/components/ui";
 import { lastMatches, perMatchStats } from "@/lib/domain/stats";
-import { opponent, outcome, US } from "@/lib/domain/types";
+import { opponent, US } from "@/lib/domain/types";
 import { fmtDate, kickoff, shortDate } from "@/lib/format";
 import { WeatherTag } from "@/lib/weather";
 import { nextMatch, type AppView } from "@/lib/store/view";
@@ -111,7 +110,6 @@ function MatchPair({ view, startOnNext }: { view: AppView; startOnNext: boolean 
   if (last)
     slides.push(
       <Link key="last" className="last-match" href={`/competitie/?w=${encodeURIComponent(last.match.id)}`}>
-        {outcome(last.goalsFor, last.goalsAgainst) === "W" && <Fireworks id={`home-${last.match.id}`} />}
         <ScoreBoard match={last.match} size="compact">
           <div className="board-meta">
             {fmtDate(last.match.date).full} <WeatherTag date={last.match.date} time={last.match.time} />

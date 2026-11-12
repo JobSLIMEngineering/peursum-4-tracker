@@ -7,8 +7,10 @@ import { ourScore, ROLE_POSITION, type Player, type Position } from "./types";
  * Het model weet per wedstrijd wat er verwacht werd (tegen deze tegenstander, thuis of uit). Wie meedoet
  * krijgt punten erbij als het beter gaat dan verwacht, en eraf als het slechter gaat:
  * - team:     0,5 × (punten − verwachte punten), voor iedereen die meedeed;
- * - verdedigen: (verwachte tegengoals − tegengoals) × gewicht van de positie (keeper het meest);
- * - aanvallen:  (goals − verwachte goals) × gewicht van de positie (spits het meest);
+ * - verdedigen: (verwachte tegengoals − tegengoals) × gewicht van de positie (keeper 2,5, verdediger 1,5);
+ * - aanvallen:  (goals − verwachte goals) × gewicht van de positie (spits 0,8);
+ * - speeltijd: wie een deel van de wedstrijd speelde (in stappen van 25%), krijgt dat deel van deze punten;
+ * - tijdelijke plek: voor het deel van de wedstrijd dat hij daar stond, tellen de gewichten van die plek;
  * - eigen bijdrage: goal +3, assist +2, clean sheet als keeper +1, geel −1, rood −3, eigen goal −2.
  * Zuinig met teampunten: wat je zelf doet (goals, assists, de nul) weegt het zwaarst, alleen "erbij zijn
  * als we winnen" levert weinig op. Werkt met terugwerkende kracht: alles wordt opnieuw berekend.
@@ -17,8 +19,15 @@ import { ourScore, ROLE_POSITION, type Player, type Position } from "./types";
  */
 
 const TEAM = 0.5;
-const DEF: Record<Position, number> = { Keeper: 1.5, Verdediger: 0.6, Middenvelder: 0.25, Aanvaller: 0.05, Onbekend: 0.25 };
-const ATT: Record<Position, number> = { Keeper: 0, Verdediger: 0.1, Middenvelder: 0.3, Aanvaller: 0.6, Onbekend: 0.3 };
+/**
+ * Gewichten per linie voor "minder tegen dan verwacht" en "meer goals dan verwacht". Verdedigen weegt net zo
+ * zwaar als aanvallen: een verdediger of keeper die een goal tegenhoudt, levert evenveel op als een spits die
+ * er een meer maakt dan verwacht. (Goals en assists zelf tellen daar nog bovenop.)
+ */
+// Eén goal minder tegen dan verwacht levert het hele team samen ongeveer evenveel op als één goal extra
+// gemaakt (keeper 2,5 + 4 × 1,5 + middenveld ≈ 9,7 tegenover goal 3 + assist 2 + aanvalsgewichten ≈ 9,2).
+const DEF: Record<Position, number> = { Keeper: 2.5, Verdediger: 1.5, Middenvelder: 0.4, Aanvaller: 0.1, Onbekend: 0.4 };
+const ATT: Record<Position, number> = { Keeper: 0, Verdediger: 0.15, Middenvelder: 0.4, Aanvaller: 0.8, Onbekend: 0.4 };
 
 export interface MatchRating {
   playerId: string;
@@ -38,11 +47,18 @@ export function rateMatch(row: GameRow, players: Pick<Player, "id" | "position">
   return row.entry.attendance
     .map((id) => {
       const temp = row.entry.positions?.[id];
-      const position: Position = row.entry.keeperId === id ? "Keeper" : temp ? ROLE_POSITION[temp] : (pos.get(id) ?? "Onbekend");
+      const normal: Position = pos.get(id) ?? "Onbekend";
+      // Keeper telt als keeper; tijdelijke plek telt voor het deel van de wedstrijd dat hij daar stond
+      const keeper = row.entry.keeperId === id;
+      const share = keeper || !temp ? (keeper ? 1 : 0) : (row.entry.positionShare?.[id] ?? 1);
+      const at = keeper ? "Keeper" : temp ? ROLE_POSITION[temp] : normal;
+      const w = (t: Record<Position, number>) => share * t[at] + (1 - share) * t[keeper ? "Keeper" : normal];
+      // Speeltijd: wie een kwart speelde, krijgt een kwart van de team-, verdedigings- en aanvalspunten
+      const played = row.entry.minutes?.[id] ?? 1;
       const st = row.entry.stats[id];
-      const team = TEAM * row.ptsDiff;
-      const defence = DEF[position] * row.gaDiff;
-      const attack = ATT[position] * row.gfDiff;
+      const team = played * TEAM * row.ptsDiff;
+      const defence = played * w(DEF) * row.gaDiff;
+      const attack = played * w(ATT) * row.gfDiff;
       const own =
         3 * (st?.goals ?? 0) +
         2 * (st?.assists ?? 0) +
@@ -83,6 +99,27 @@ export function seasonRatings(rows: GameRow[], players: Pick<Player, "id" | "pos
 export function manOfTheMatch(row: GameRow, players: Pick<Player, "id" | "position">[]): MatchRating | null {
   const top = rateMatch(row, players)[0];
   return top && top.total > 0 ? top : null;
+}
+
+/** Korte, leuke uitleg waarom iemand man van de wedstrijd werd (uit zijn puntenopbouw) */
+export function motmReason(row: GameRow, r: MatchRating): string {
+  const st = row.entry.stats[r.playerId];
+  const goals = st?.goals ?? 0;
+  const assists = st?.assists ?? 0;
+  const conceded = ourScore(row.match)![1];
+  const keeper = row.entry.keeperId === r.playerId;
+  const saved = Math.round(row.gaDiff * 10) / 10;
+  if (goals >= 3) return `Hattrick! ${goals} goals${assists ? ` en ${assists === 1 ? "een assist" : `${assists} assists`}` : ""}: niet te houden.`;
+  if (keeper && conceded === 0)
+    return saved >= 1 ? `De nul gehouden, terwijl er ${saved.toFixed(1).replace(".", ",")} tegengoals verwacht werden. Een muur op de lijn.` : "De nul gehouden: niets kwam erlangs.";
+  if (r.defence >= Math.max(r.own, r.attack, 0.5))
+    return `Achterin stond het als een huis: ${saved > 0 ? `${saved.toFixed(1).replace(".", ",")} goal minder tegen dan verwacht` : "de defensie hield stand"}.`;
+  if (goals && assists) return `${goals === 1 ? "Een goal" : `${goals} goals`} en ${assists === 1 ? "een assist" : `${assists} assists`}: overal bij betrokken.`;
+  if (goals === 2) return "Twee keer raak: de beslissende man voorin.";
+  if (goals === 1) return "Maakte het verschil met zijn goal.";
+  if (assists >= 2) return `${assists} assists: de spelverdeler van de middag.`;
+  if (assists === 1) return "Gaf de beslissende pass.";
+  return "Sterkste puntenscore van de wedstrijd.";
 }
 
 export interface MonthWinner {

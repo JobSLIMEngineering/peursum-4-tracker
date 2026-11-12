@@ -37,7 +37,7 @@ export interface NewsInput {
   /** Beste duo (aangever → scorer), als die er is */
   topDuo?: { assistId: string; scorerId: string; goals: number } | null;
   /** Man van de laatste wedstrijd (hoogste spelerspunten) */
-  motm?: { playerId: string; total: number; opponent: string } | null;
+  motm?: { playerId: string; total: number; opponent: string; reason?: string } | null;
   /** Speler van de maand (meest recente maand) */
   potm?: { playerId: string; month: string; total: number } | null;
   /** Kaart-upgrades van deze maand (cijfer omhoog) */
@@ -130,7 +130,7 @@ export function buildNews(i: NewsInput): NewsItem[] {
       kind: "motm",
       kicker: `Man van de wedstrijd · ${i.motm.opponent}`,
       title: i.label(i.motm.playerId),
-      text: `${i.motm.total.toFixed(1).replace(".", ",")} spelerspunten`,
+      text: i.motm.reason ?? `${i.motm.total.toFixed(1).replace(".", ",")} spelerspunten`,
       playerId: i.motm.playerId,
       href: "/statistieken/",
     });

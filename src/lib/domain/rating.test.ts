@@ -40,7 +40,7 @@ describe("spelerspunten", () => {
   const rated = Object.fromEntries(rateMatch(r, players).map((x) => [x.playerId, x]));
 
   it("wie keepte telt als keeper: veel punten voor de nul, niets voor de aanval", () => {
-    expect(rated.k.defence).toBe(1.5);
+    expect(rated.k.defence).toBe(2.5);
     expect(rated.k.attack).toBe(0);
     expect(rated.k.own).toBe(1); // clean sheet
   });

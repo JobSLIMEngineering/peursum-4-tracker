@@ -33,7 +33,8 @@ export interface PlayerCard {
    */
   facts: { key: string; text: string }[];
   /** Basis is altijd goud */
-  tier: "goud";
+  /** Goud; vanaf 85 glimmend goud (zeldzaam, zoals bij FIFA) */
+  tier: "goud" | "glans";
   /** Wedstrijden op rij afwezig (zonder blessure), tot de laatste wedstrijd */
   absentRun: number;
   /** Aftrek op het totaal: 2 op rij afwezig = −1, daarna −1 per extra wedstrijd */
@@ -56,6 +57,16 @@ const LOW = 70;
 const MID = 76;
 const HIGH = 95;
 
+/**
+ * Bovenin wordt elk punt lastiger, zoals bij FIFA: tot 78 telt alles gewoon, van 78 tot 88 levert elk punt
+ * nog 0,6 op (max. 84), en daarboven nog maar 0,3. Een 85+ is dus echt bijzonder.
+ */
+export function compress(x: number): number {
+  if (x <= 78) return x;
+  if (x <= 88) return 78 + (x - 78) * 0.6;
+  return 84 + (x - 88) * 0.3;
+}
+
 export function playerCards(
   rows: GameRow[],
   players: Pick<Player, "id" | "position" | "active" | "role">[],
@@ -63,7 +74,7 @@ export function playerCards(
 ): Record<string, PlayerCard> {
   const ids = players.filter((p) => p.active).map((p) => p.id);
   const rates = attendanceRates(rows, ids);
-  const raw: Record<string, Record<StatKey, number> & { games: number }> = {};
+  const raw: Record<string, Record<StatKey | "VERK", number> & { games: number }> = {};
   const facts: Record<string, PlayerCard["facts"]> = {};
 
   for (const id of ids) {
@@ -108,6 +119,8 @@ export function playerCards(
       NUL: kept.length ? kept.filter((r) => ourScore(r.match)![1] === 0).length / kept.length : 0,
       PAS: per((i) => st(i)?.assists ?? 0),
       VER: per((i) => rated[i].defence),
+      // Tegengoals t.o.v. verwacht zonder het positiegewicht: zo vergelijken we de keeper eerlijk met de rest
+      VERK: per((i) => mine[i].gaDiff * (mine[i].entry.minutes?.[id] ?? 1)),
       VRM: rated.slice(-3).reduce((s, x) => s + x.total, 0) / Math.max(1, Math.min(3, g)),
       INZ: rates[id] ?? 0,
       IMP: impacts[id]?.eligible ? impacts[id].pointsImpact : 0,
@@ -116,11 +129,21 @@ export function playerCards(
 
   // Rangorde per onderdeel onder wie minstens 2 duels speelde
   const pool = ids.filter((id) => raw[id].games >= 2);
+  const keeperIds = new Set(players.filter((p) => p.position === "Keeper").map((p) => p.id));
   const scale = (key: StatKey, id: string) => {
     const r = raw[id];
     if (r.games === 0) return LOW;
-    const others = pool.filter((x) => x !== id).map((x) => raw[x][key]);
-    const p = others.length ? others.filter((v) => v < r[key]).length / others.length : 0.5;
+    const keeper = keeperIds.has(id);
+    // Eerlijk voor de keeper: veldspelers houden nooit "de nul" en verdedigen met een lager gewicht, dus een
+    // rangorde tegen hen zou hem altijd bovenaan zetten. NUL is daarom een vaste schaal (aandeel clean sheets),
+    // VER vergelijkt bij hem de tegengoals t.o.v. verwacht zonder positiegewicht met die van de rest.
+    if (keeper && key === "NUL") {
+      const full = 70 + 25 * r.NUL;
+      return Math.round(Math.min(99, Math.max(LOW, MID + (full - MID) * (r.games / (r.games + 2)))));
+    }
+    const k: StatKey | "VERK" = keeper && key === "VER" ? "VERK" : key;
+    const others = pool.filter((x) => x !== id).map((x) => raw[x][k]);
+    const p = others.length ? others.filter((v) => v < r[k]).length / others.length : 0.5;
     const full = MID + (HIGH - MID) * p - (p < 0.5 ? (0.5 - p) * 12 : 0);
     // Afvlakken naar het midden bij weinig duels
     const v = MID + (full - MID) * (r.games / (r.games + 2));
@@ -142,7 +165,7 @@ export function playerCards(
       absentRun++;
     }
     const penalty = absentRun >= 2 ? absentRun - 1 : 0;
-    const overall = Math.max(60, Math.round(stats.reduce((s, x) => s + x.value * (w[x.key] ?? 0), 0) / sumW) - penalty);
+    const overall = Math.max(60, Math.round(compress(stats.reduce((s, x) => s + x.value * (w[x.key] ?? 0), 0) / sumW)) - penalty);
     out[p.id] = {
       playerId: p.id,
       overall,
@@ -151,7 +174,7 @@ export function playerCards(
       pos: ROLE_CODE[p.role ?? POSITION_ROLE[p.position]],
       stats,
       facts: facts[p.id] ?? [],
-      tier: "goud",
+      tier: overall >= 85 ? "glans" : "goud",
       games: raw[p.id].games,
     };
   }

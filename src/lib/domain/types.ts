@@ -23,17 +23,30 @@ export const POSITIONS: Position[] = [
 ];
 
 /** Plek in het elftal (gedetailleerder dan Position) */
-export type Role = "K" | "LB" | "CV" | "RB" | "CM" | "LV" | "SP" | "RV";
+export type Role = "K" | "LB" | "CV" | "RB" | "DM" | "CM" | "AM" | "LV" | "SP" | "RV";
 
 /** Engelse afkorting zoals op een FIFA-kaart */
-export const ROLE_CODE: Record<Role, string> = { K: "GK", LB: "LB", CV: "CB", RB: "RB", CM: "CM", LV: "LW", SP: "ST", RV: "RW" };
+export const ROLE_CODE: Record<Role, string> = {
+  K: "GK",
+  LB: "LB",
+  CV: "CB",
+  RB: "RB",
+  DM: "CDM",
+  CM: "CM",
+  AM: "CAM",
+  LV: "LW",
+  SP: "ST",
+  RV: "RW",
+};
 /** Uitgeschreven (Engels) */
 export const ROLE_NAME: Record<Role, string> = {
   K: "Goalkeeper",
   LB: "Left back",
   CV: "Centre back",
   RB: "Right back",
-  CM: "Central midfielder",
+  DM: "Defensive midfielder (6)",
+  CM: "Central midfielder (8)",
+  AM: "Attacking midfielder (10)",
   LV: "Left winger",
   SP: "Striker",
   RV: "Right winger",
@@ -47,7 +60,9 @@ export const ROLE_POSITION: Record<Role, Position> = {
   LB: "Verdediger",
   CV: "Verdediger",
   RB: "Verdediger",
+  DM: "Middenvelder",
   CM: "Middenvelder",
+  AM: "Middenvelder",
   LV: "Aanvaller",
   SP: "Aanvaller",
   RV: "Aanvaller",
@@ -141,6 +156,10 @@ export interface MatchEntry {
   injured?: string[];
   /** Tijdelijke plek in deze wedstrijd, als die anders was dan normaal (bijv. middenvelder in de verdediging) */
   positions?: Record<string, Role>;
+  /** Welk deel van de wedstrijd hij op die tijdelijke plek stond (0,25 / 0,5 / 0,75 / 1; standaard 1) */
+  positionShare?: Record<string, number>;
+  /** Welk deel van de wedstrijd hij speelde (0,25 / 0,5 / 0,75 / 1; standaard 1) */
+  minutes?: Record<string, number>;
 }
 
 export const isPlayed = <T extends Pick<Match, "homeGoals" | "awayGoals">>(

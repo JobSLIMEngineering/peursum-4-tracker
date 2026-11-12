@@ -144,7 +144,9 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
             <TempPositions
               players={present.filter((p) => p.id !== draft.keeperId)}
               positions={draft.positions}
-              onChange={(positions) => setDraft((d) => ({ ...d, positions }))}
+              share={draft.positionShare ?? {}}
+              minutes={draft.minutes ?? {}}
+              onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
             />
           </section>
 
@@ -404,16 +406,29 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
  * verdediger op vakantie is). Alleen afwijkingen van de vaste plek worden opgeslagen; ze tellen mee
  * voor de spelerspunten en het team van de maand. Werkt ook bij oude wedstrijden (Bewerken).
  */
+const PARTS = [1, 0.75, 0.5, 0.25];
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+
 function TempPositions({
   players,
   positions,
+  share,
+  minutes,
   onChange,
 }: {
   players: StoredPlayer[];
   positions: Record<string, Role>;
-  onChange: (p: Record<string, Role>) => void;
+  share: Record<string, number>;
+  minutes: Record<string, number>;
+  onChange: (p: { positions?: Record<string, Role>; positionShare?: Record<string, number>; minutes?: Record<string, number> }) => void;
 }) {
-  const changed = Object.keys(positions).filter((id) => players.some((p) => p.id === id)).length;
+  const changed = players.filter((p) => positions[p.id] || (minutes[p.id] ?? 1) < 1).length;
+  const setPart = (rec: Record<string, number>, id: string, v: number) => {
+    const next = { ...rec };
+    if (v >= 1) delete next[id];
+    else next[id] = v;
+    return next;
+  };
   const [open, setOpen] = useState(changed > 0);
   const normal = (p: StoredPlayer): Role => p.role ?? POSITION_ROLE[p.position];
 
@@ -421,7 +436,7 @@ function TempPositions({
     return (
       <div className="box-b" style={{ paddingTop: 0 }}>
         <button className="link" type="button" onClick={() => setOpen(true)}>
-          Stond iemand op een andere plek?
+          Andere plek of niet de hele wedstrijd gespeeld?
         </button>
       </div>
     );
@@ -429,13 +444,17 @@ function TempPositions({
   return (
     <div className="box-b temp-pos" style={{ paddingTop: 0 }}>
       <p className="pick-q" style={{ marginTop: 0 }}>
-        Plek deze wedstrijd {changed > 0 && `· ${changed} anders dan normaal`}
+        Plek en speeltijd deze wedstrijd {changed > 0 && `· ${changed} anders dan normaal`}
+      </p>
+      <p className="meta" style={{ margin: "-4px 0 6px" }}>
+        Speeltijd en het deel op een andere plek in stappen van 25%. Telt mee voor de spelerspunten.
       </p>
       {players.map((p) => {
         const cur = positions[p.id] ?? normal(p);
         return (
-          <label key={p.id} className={`tp-row ${positions[p.id] ? "moved" : ""}`}>
+          <div key={p.id} className={`tp-row ${positions[p.id] || (minutes[p.id] ?? 1) < 1 ? "moved" : ""}`}>
             <span>{playerLabel(p)}</span>
+            <span className="tp-sel">
             <select
               value={cur}
               aria-label={`Plek van ${playerLabel(p)} deze wedstrijd`}
@@ -444,7 +463,7 @@ function TempPositions({
                 const next = { ...positions };
                 if (r === normal(p)) delete next[p.id];
                 else next[p.id] = r;
-                onChange(next);
+                onChange({ positions: next, ...(r === normal(p) ? { positionShare: setPart(share, p.id, 1) } : {}) });
               }}
             >
               {ROLES.map((x) => (
@@ -454,7 +473,32 @@ function TempPositions({
                 </option>
               ))}
             </select>
-          </label>
+            {positions[p.id] && (
+              <select
+                value={share[p.id] ?? 1}
+                aria-label={`Hoeveel van de wedstrijd stond ${playerLabel(p)} op die plek`}
+                onChange={(e) => onChange({ positionShare: setPart(share, p.id, Number(e.target.value)) })}
+              >
+                {PARTS.map((x) => (
+                  <option key={x} value={x}>
+                    {pct(x)} daar
+                  </option>
+                ))}
+              </select>
+            )}
+            <select
+              value={minutes[p.id] ?? 1}
+              aria-label={`Speeltijd van ${playerLabel(p)}`}
+              onChange={(e) => onChange({ minutes: setPart(minutes, p.id, Number(e.target.value)) })}
+            >
+              {PARTS.map((x) => (
+                <option key={x} value={x}>
+                  {pct(x)} gespeeld
+                </option>
+              ))}
+            </select>
+            </span>
+          </div>
         );
       })}
     </div>

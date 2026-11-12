@@ -18,6 +18,8 @@ const draft = (over: Partial<EntryDraft> = {}): EntryDraft => ({
   ownGoals: ["c"],
   injured: [],
   positions: {},
+  positionShare: {},
+  minutes: {},
   ...over,
 });
 
@@ -91,5 +93,23 @@ describe("invoer per doelpunt", () => {
     expect(d.goals[2].assistId).toBeNull();
     expect(removePlayer(draft(), "k").keeperId).toBeNull();
     expect(removePlayer(draft(), "c").cards).toEqual([{ playerId: "b", kind: "geel" }]);
+  });
+});
+
+describe("speeltijd en deel op een andere plek (stappen van 25%)", () => {
+  it("slaat alleen delen kleiner dan 100% op, alleen voor aanwezigen, en leest ze terug", () => {
+    const e = toEntry(draft({ positions: { a: "CV" }, positionShare: { a: 0.5, b: 0.5 }, minutes: { a: 0.75, c: 1, x: 0.5 } }), "m1");
+    expect(e.minutes).toEqual({ a: 0.75 });
+    // b stond niet op een andere plek: geen deel opslaan
+    expect(e.positionShare).toEqual({ a: 0.5 });
+    const d = toDraft(e, 3);
+    expect(d.minutes).toEqual({ a: 0.75 });
+    expect(d.positionShare).toEqual({ a: 0.5 });
+    expect(removePlayer(d, "a").minutes).toEqual({});
+  });
+  it("niets ingevuld = geen extra velden", () => {
+    const e = toEntry(draft(), "m1");
+    expect(e.minutes).toBeUndefined();
+    expect(e.positionShare).toBeUndefined();
   });
 });

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Badges } from "@/components/Badges";
 import { CardView } from "@/components/CardView";
+import { cardMarks } from "@/components/cardMarks";
 import { useData } from "@/components/DataProvider";
 import { InfoTip } from "@/components/InfoTip";
 import { PlayerCardSvg } from "@/components/PlayerCardSvg";
@@ -41,13 +42,6 @@ export default function TeamPage() {
     .filter((p) => totals[p.id]?.goals || totals[p.id]?.ownGoals)
     .sort((a, b) => totals[b.id].goals - totals[a.id].goals || totals[b.id].penalties - totals[a.id].penalties);
   const keepers = active.filter((p) => totals[p.id]?.keeperGames).sort((a, b) => totals[b.id].keeperGames - totals[a.id].keeperGames);
-  // Met hem erbij: alleen vaste spelers met genoeg duels en een plus (nooit minnen laten zien)
-  const impact = vast
-    .filter((p) => view.impacts[p.id]?.eligible && view.impacts[p.id].pointsImpact > 0)
-    .sort((a, b) => view.impacts[b.id].pointsImpact - view.impacts[a.id].pointsImpact)
-    .slice(0, 5);
-  const maxImp = Math.max(0.3, ...impact.map((p) => view.impacts[p.id].pointsImpact));
-
   const update = (id: string, patch: Partial<StoredPlayer>, msg: string) =>
     mutate("players.json", (f) => ({ players: f.players.map((p) => (p.id === id ? { ...p, ...patch } : p)) }), msg);
 
@@ -80,6 +74,8 @@ export default function TeamPage() {
     }
   }
 
+  const firstLine = LINES.find((l) => vast.some((p) => lineOf(p) === l.key))?.key;
+
   return (
     <>
       {LINES.map((line) => {
@@ -91,7 +87,28 @@ export default function TeamPage() {
           <section key={line.key} className="squad-line glass">
             <div className="sec-h">
               <p className="lbl">{line.label}</p>
-              <span className="meta">{list.length}</span>
+              <span className="meta">
+                {list.length}
+                {line.key === firstLine && (
+                  <InfoTip label="Hoe werkt de kaart?">
+                    <b>Het getal</b> komt uit zes onderdelen (70–99): aanval, aangeven, verdedigen, vorm (laatste 3 duels),
+                    inzet (opkomst) en impact. Elk onderdeel is een rangorde binnen de selectie, afgevlakt als je nog weinig
+                    speelde. Per positie tellen ze anders mee: een spits vooral op aanval, een verdediger op verdedigen. De
+                    keeper heeft in plaats van aanval <b>de nul</b> (aandeel clean sheets, vaste schaal) en verdedigen
+                    vergelijkt bij hem de tegengoals t.o.v. verwacht met die van de rest, zonder extra gewicht.
+                    <br />
+                    Bovenin wordt elk punt lastiger: boven 78 telt een punt nog 0,6, boven 88 nog 0,3. Vanaf <b>85</b> wordt je
+                    kaart glimmend goud. Twee of meer duels op rij afwezig (niet door blessure): −1, daarna −1 per duel.
+                    <br />
+                    <b>Onderaan</b> staan je echte cijfers van het seizoen: WED wedstrijden, GOL goals, AST assists, PNT
+                    spelerspunten, MVW man van de wedstrijd, OPK opkomst (blessures tellen niet mee). Bij de keeper NUL clean
+                    sheets, TEG tegengoals en VRW goals minder tegen dan verwacht.
+                    <br />
+                    <b>Rechts op de kaart</b>: ▲ omhoog sinds vorige maand, ▼ aftrek voor afwezigheid, vlammetje = on fire (of handschoen bij een keeper die de nul houdt), pleister = geblesseerd.
+                    Veeg de kaart opzij om te zien hoe hij door het seizoen ging.
+                  </InfoTip>
+                )}
+              </span>
             </div>
             <div className="card-grid">
               {list.map((p) => {
@@ -114,19 +131,8 @@ export default function TeamPage() {
                       gold={view.goldKeepers.has(p.id)}
                       variant={view.special[p.id]?.variant}
                       banner={view.special[p.id]?.banner}
+                      marks={cardMarks(view, p.id)}
                     />
-                    {/* Onder de kaart: upgrade en icoontjes, zodat er niets over de kaart heen valt */}
-                    {(view.upgrades[p.id] || c.penalty > 0 || view.injuredLast.has(p.id) || view.streaks[p.id] || view.leads[p.id]) && (
-                      <span className="card-under" onClick={(e) => e.stopPropagation()}>
-                        {view.upgrades[p.id] && <span className="fut-up">▲{view.upgrades[p.id]}</span>}
-                        {c.penalty > 0 && (
-                          <span className="fut-down" title={`${c.absentRun} wedstrijden op rij afwezig`}>
-                            ▼{c.penalty}
-                          </span>
-                        )}
-                        <Badges playerId={p.id} />
-                      </span>
-                    )}
                   </div>
                 );
               })}
@@ -259,35 +265,6 @@ export default function TeamPage() {
           )}
         </Box>
       </div>
-
-      {impact.length > 0 && (
-        <Box
-          label="Met hem erbij"
-          style={{ marginTop: 16 }}
-          bodyClass={null}
-          right={
-            <InfoTip label="Wat betekent dit?">
-              Hoeveel punten per duel we meer halen dan verwacht als hij er is, vergeleken met als hij er niet is.
-              Duels waarin hij geblesseerd was tellen niet.
-            </InfoTip>
-          }
-        >
-          <div className="impact" style={{ paddingBottom: 8 }}>
-            {impact.map((p) => {
-              const i = view.impacts[p.id];
-              return (
-                <div key={p.id} className="imp-row">
-                  <span>{playerLabel(p)}</span>
-                  <span className="imp-bar" aria-hidden="true">
-                    <span style={{ width: `${(i.pointsImpact / maxImp) * 100}%` }} />
-                  </span>
-                  <span className="num">+{comma(i.pointsImpact, 2)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Box>
-      )}
 
       {open && <CardView playerId={open} onClose={() => setOpen(null)} />}
     </>

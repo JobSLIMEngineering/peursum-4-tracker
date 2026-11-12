@@ -28,6 +28,10 @@ export interface EntryDraft {
   injured: string[];
   /** Tijdelijke plek deze wedstrijd (alleen als die afwijkt van de vaste plek) */
   positions: Record<string, Role>;
+  /** Deel van de wedstrijd op die tijdelijke plek (0,25 · 0,5 · 0,75; niet ingevuld = de hele wedstrijd) */
+  positionShare: Record<string, number>;
+  /** Deel van de wedstrijd gespeeld (0,25 · 0,5 · 0,75; niet ingevuld = de hele wedstrijd) */
+  minutes: Record<string, number>;
 }
 
 export const emptySlot = (): GoalSlot => ({ scorerId: undefined, assistId: null, kind: "spel" });
@@ -85,10 +89,18 @@ export function toDraft(entry: MatchEntry | undefined, ourGoals: number): EntryD
     ownGoals,
     injured: [...(entry?.injured ?? [])],
     positions: { ...(entry?.positions ?? {}) },
+    positionShare: { ...(entry?.positionShare ?? {}) },
+    minutes: { ...(entry?.minutes ?? {}) },
   };
 }
 
 const emptySlotWith = (scorerId: string | null): GoalSlot => ({ scorerId, assistId: null, kind: "spel" });
+
+/** Alleen delen kleiner dan de hele wedstrijd opslaan (en alleen als het veld iets bevat) */
+function partial<K extends string>(key: K, rec: Record<string, number> | undefined, keep: (id: string) => boolean) {
+  const out = Object.fromEntries(Object.entries(rec ?? {}).filter(([id, v]) => keep(id) && v > 0 && v < 1));
+  return (Object.keys(out).length ? { [key]: out } : {}) as Partial<Record<K, Record<string, number>>>;
+}
 
 /** Concept omzetten naar wat wordt opgeslagen. Niet-ingevulde doelpunten tellen niet mee. */
 export function toEntry(draft: EntryDraft, matchId: string): MatchEntry {
@@ -127,6 +139,8 @@ export function toEntry(draft: EntryDraft, matchId: string): MatchEntry {
     ...(Object.keys(draft.positions ?? {}).length
       ? { positions: Object.fromEntries(Object.entries(draft.positions).filter(([id]) => draft.attendance.includes(id))) }
       : {}),
+    ...partial("positionShare", draft.positionShare, (id) => draft.attendance.includes(id) && !!draft.positions?.[id]),
+    ...partial("minutes", draft.minutes, (id) => draft.attendance.includes(id)),
   };
 }
 
@@ -142,6 +156,8 @@ export function removePlayer(d: EntryDraft, id: string): EntryDraft {
     ownGoals: d.ownGoals.filter((x) => x !== id),
     injured: d.injured,
     positions: Object.fromEntries(Object.entries(d.positions ?? {}).filter(([x]) => x !== id)),
+    positionShare: Object.fromEntries(Object.entries(d.positionShare ?? {}).filter(([x]) => x !== id)),
+    minutes: Object.fromEntries(Object.entries(d.minutes ?? {}).filter(([x]) => x !== id)),
   };
 }
 

@@ -1,4 +1,5 @@
 import { predict, type Fit } from "./model";
+import { rateMatch, type MatchRating } from "./rating";
 import { isPlayed, opponent, ourScore, US, type Match, type MatchEntry, type Player, type StandingRow } from "./types";
 
 /**
@@ -136,6 +137,12 @@ export function keeperCompare(perGame: number, standings: StandingRow[]): Keeper
 }
 
 export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings: StandingRow[] = []): Award[] {
+  // Spelerspunten per wedstrijd (voor IJzeren Muur en Beste Middenvelder)
+  const rated = rows.map((r) => new Map(rateMatch(r, players).map((x) => [x.playerId, x])));
+  const perGame = (id: string, f: (x: MatchRating) => number) => {
+    const xs = rated.map((m) => m.get(id)).filter((x): x is MatchRating => !!x);
+    return { games: xs.length, value: xs.length ? xs.reduce((s, x) => s + f(x), 0) / xs.length : 0 };
+  };
   const active = players.filter((p) => p.active);
   const impact = playerImpacts(active, rows);
   const sum = (id: string, f: (r: GameRow) => number) => rows.filter((r) => played(r, id)).reduce((s, r) => s + f(r), 0);
@@ -209,37 +216,44 @@ export function computeAwards(players: AwardPlayer[], rows: GameRow[], standings
         key: "muur",
         title: "IJzeren Muur",
         who: "Minder tegen dan verwacht",
-        how: `Hoeveel tegengoals we per duel minder kregen dan het model verwachtte (tegen deze tegenstanders), als hij meedeed. Wedstrijden waarin hij geblesseerd was tellen niet. Meedingen vanaf ${MIN_GAMES} duels en de helft van de duels waarin hij fit was.`,
+        how: `Verdedigingspunten per duel uit de spelerspunten: hoeveel tegengoals er minder vielen dan het model verwachtte tegen deze tegenstanders, als hij meedeed (naar rato van zijn speeltijd). Alleen vaste verdedigers, vanaf ${MIN_GAMES} duels.`,
       },
-      // Alleen vaste spelers, en alleen wie er iets bijdraagt (geen minnen in de lijst)
       active
-        .filter((p) => p.position === "Verdediger" && p.type === "vast" && impact[p.id].defenceImpact > 0)
-        .map((p) => ({
-          playerId: p.id,
-          value: impact[p.id].defenceImpact,
-          display: signed(impact[p.id].defenceImpact, 2),
-          unit: "per duel",
-          detail: inGames(p.id),
-          eligible: impact[p.id].eligible,
-        })),
+        .filter((p) => p.position === "Verdediger" && p.type === "vast")
+        .map((p) => {
+          const r = perGame(p.id, (x) => x.defence);
+          return {
+            playerId: p.id,
+            value: r.value,
+            display: signed(r.value, 2),
+            unit: "per duel",
+            detail: inGames(p.id),
+            eligible: r.games >= MIN_GAMES && r.value > 0,
+          };
+        })
+        .filter((r) => r.value > 0),
     ),
     make(
       {
         key: "mvm",
         title: "Beste Middenvelder",
-        who: "Meer punten dan verwacht",
-        how: `Hoeveel punten we per duel méér haalden dan verwacht met hem erbij, vergeleken met zonder hem. Wedstrijden waarin hij geblesseerd was tellen niet. Meedingen vanaf ${MIN_GAMES} duels en de helft van de duels waarin hij fit was.`,
+        who: "Meeste spelerspunten per duel",
+        how: `Spelerspunten per duel (goals, assists, en hoe het team aanviel en verdedigde tegenover de verwachting). Alleen vaste middenvelders, vanaf ${MIN_GAMES} duels.`,
       },
       active
-        .filter((p) => p.position === "Middenvelder" && p.type === "vast" && impact[p.id].pointsImpact > 0)
-        .map((p) => ({
-          playerId: p.id,
-          value: impact[p.id].pointsImpact,
-          display: signed(impact[p.id].pointsImpact, 2),
-          unit: "pnt/duel",
-          detail: inGames(p.id),
-          eligible: impact[p.id].eligible,
-        })),
+        .filter((p) => p.position === "Middenvelder" && p.type === "vast")
+        .map((p) => {
+          const r = perGame(p.id, (x) => x.total);
+          return {
+            playerId: p.id,
+            value: r.value,
+            display: r.value.toFixed(1).replace(".", ","),
+            unit: "pnt/duel",
+            detail: inGames(p.id),
+            eligible: r.games >= MIN_GAMES && r.value > 0,
+          };
+        })
+        .filter((r) => r.value > 0),
     ),
     make(
       { key: "kaarten", title: "Kaartenkoning", who: "Geel 1, rood 3 punten", how: "Gele kaart 1 punt, rode kaart (ook via twee keer geel) 3 punten." },

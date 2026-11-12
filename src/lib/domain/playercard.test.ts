@@ -67,7 +67,7 @@ describe("spelerskaart", () => {
   it("positie en kleur van de kaart", () => {
     expect(cards.s.pos).toBe("ST");
     expect(cards.k.pos).toBe("GK");
-    expect(cards.s.tier).toBe("goud");
+    expect(["goud", "glans"]).toContain(cards.s.tier);
   });
 
 });
@@ -105,5 +105,14 @@ describe("echte seizoenscijfers op de kaart", () => {
     expect(f.TEG).toBe("1");
     // 3 duels × 0,5 minder tegen dan verwacht
     expect(f.VRW).toBe("+1,5");
+  });
+});
+
+describe("bovenin lastiger", () => {
+  it("elk punt boven 78 kost meer, boven 88 nog meer", async () => {
+    const { compress } = await import("./playercard");
+    expect(compress(75)).toBe(75);
+    expect(compress(88)).toBe(84);
+    expect(compress(98)).toBeCloseTo(87, 5);
   });
 });

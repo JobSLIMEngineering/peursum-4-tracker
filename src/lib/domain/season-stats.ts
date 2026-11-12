@@ -10,17 +10,17 @@ import { ourScore, ROLE_CODE, ROLE_NAME, type Match, type MatchEntry, type Playe
 
 export type { Role };
 /** Plekken met Engelse afkorting (zoals op de kaarten) */
-export const ROLES: { key: Role; label: string }[] = (["K", "LB", "CV", "RB", "CM", "LV", "SP", "RV"] as Role[]).map((key) => ({
+export const ROLES: { key: Role; label: string }[] = (["K", "LB", "CV", "RB", "DM", "CM", "AM", "LV", "SP", "RV"] as Role[]).map((key) => ({
   key,
   label: `${ROLE_CODE[key]} · ${ROLE_NAME[key]}`,
 }));
 const FROM_POSITION: Record<Position, Role> = { Keeper: "K", Verdediger: "CV", Middenvelder: "CM", Aanvaller: "SP", Onbekend: "CM" };
 
-type RolePlayer = Pick<Player, "id" | "position" | "active"> & { role?: Role | null };
+type RolePlayer = Pick<Player, "id" | "position" | "active"> & { role?: Role | null; type?: Player["type"] };
 export const roleOf = (p: RolePlayer): Role => p.role ?? FROM_POSITION[p.position];
 
 /** Opstelling 1-4-3-3, van links naar rechts per linie (achteraan eerst) */
-export const FORMATION: Role[][] = [["K"], ["LB", "CV", "CV", "RB"], ["CM", "CM", "CM"], ["LV", "SP", "RV"]];
+export const FORMATION: Role[][] = [["K"], ["LB", "CV", "CV", "RB"], ["DM", "CM"], ["AM"], ["LV", "SP", "RV"]];
 
 const month = (r: GameRow) => (r.match.date ?? "").slice(0, 7);
 export const monthsOf = (rows: GameRow[]) => [...new Set(rows.map(month).filter(Boolean))].sort();
@@ -49,8 +49,9 @@ export function teamOfTheSeason(rows: GameRow[], players: RolePlayer[]): TeamSlo
 
 function bestEleven(rs: GameRow[], players: RolePlayer[], minGames: (matches: number) => number): TeamSlot[][] {
   const min = minGames(rs.length);
-  const ratings = seasonRatings(rs, players).filter((s) => s.games >= min);
   const byId = new Map(players.map((p) => [p.id, p]));
+  // Geen leenspelers in het team van de maand/seizoen
+  const ratings = seasonRatings(rs, players).filter((s) => s.games >= min && byId.get(s.playerId)?.type !== "leen");
   const used = new Set<string>();
   // Plek die maand: wat hij het vaakst speelde (keeper, tijdelijke plek per wedstrijd, anders zijn vaste plek)
   const role = (id: string): Role => {
@@ -65,8 +66,10 @@ function bestEleven(rs: GameRow[], players: RolePlayer[], minGames: (matches: nu
 
   const pick = (slot: Role) => {
     const free = ratings.filter((s) => !used.has(s.playerId));
-    // Strikt: alleen wie die plek speelde (vaste of tijdelijke plek); anders blijft hij leeg
-    const got = free.find((s) => role(s.playerId) === slot);
+    // Strikt: alleen wie die plek speelde (vaste of tijdelijke plek); anders blijft hij leeg.
+    // Uitzondering: op het middenveld (6, 8, 10) mag een andere middenvelder, als niemand die plek speelde.
+    const MID: Role[] = ["DM", "CM", "AM"];
+    const got = free.find((s) => role(s.playerId) === slot) ?? (MID.includes(slot) ? free.find((s) => MID.includes(role(s.playerId))) : undefined);
     if (got) used.add(got.playerId);
     return { role: slot, playerId: got?.playerId ?? null, points: got?.total ?? 0 };
   };

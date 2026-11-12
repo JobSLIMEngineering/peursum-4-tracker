@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { duos } from "@/lib/domain/insights";
-import { manOfTheMatch } from "@/lib/domain/rating";
+import { manOfTheMatch, motmReason } from "@/lib/domain/rating";
 import { newMilestones } from "@/lib/domain/season-stats";
 import { buildNews, type NewsKind } from "@/lib/domain/news";
 import { opponent, playerLabel } from "@/lib/domain/types";
@@ -54,7 +54,7 @@ export function NewsTicker() {
         motm: (() => {
           const last = view.rows.at(-1);
           const m = last && manOfTheMatch(last, view.players);
-          return m && last ? { playerId: m.playerId, total: m.total, opponent: opponent(last.match) } : null;
+          return m && last ? { playerId: m.playerId, total: m.total, opponent: opponent(last.match), reason: motmReason(last, m) } : null;
         })(),
         // Speler van de maand niet verklappen: die zit in het pakje op het Overzicht
         potm: null,

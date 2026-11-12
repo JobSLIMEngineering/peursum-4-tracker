@@ -120,7 +120,22 @@ export default function StatistiekenPage() {
           label="Spelersklassement"
           style={{ marginTop: 16 }}
           bodyClass={null}
-          right={<span className="meta">punten · per duel</span>}
+          right={
+            <>
+              <span className="meta">punten · per duel</span>
+              <InfoTip label="Hoe komen de punten tot stand?">
+                Per wedstrijd weet het model hoeveel goals we tegen deze tegenstander zouden maken en krijgen. Wie meedoet krijgt:
+                <br />• <b>verdedigen</b>: elke goal minder tegen dan verwacht levert de keeper 2,5, een verdediger 1,5, een
+                middenvelder 0,4 punt op (meer tegen kost evenveel);
+                <br />• <b>aanvallen</b>: elke goal meer dan verwacht levert een aanvaller 0,8, een middenvelder 0,4 punt op;
+                <br />• <b>team</b>: 0,5 × (punten − verwachte punten);
+                <br />• <b>zelf</b>: goal +3, assist +2, de nul als keeper +1, geel −1, rood −3, eigen goal −2.
+                <br />Wie een deel speelde of tijdelijk ergens anders stond, krijgt dat deel. Zo telt een sterke verdediging
+                net zo zwaar als een productieve aanval: samen is één goal tegengehouden ongeveer evenveel waard als één
+                goal gemaakt.
+              </InfoTip>
+            </>
+          }
         >
           <div className="ranking">
             {ranking.map((r, i) => {

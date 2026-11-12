@@ -10,6 +10,8 @@ const FONT = "'Barlow Condensed', 'Arial Narrow', Arial, sans-serif";
 /** Kleuren per soort kaart; "special" = speler van de maand (zwart-rood met goud) */
 export const TIERS = {
   goud: { a: "#fff1b8", b: "#e7bd45", c: "#a87d14", d: "#7a5a0c", ink: "#3b2a05", line: "#8a6510", glow: "#fff7d6" },
+  /** Glimmend goud (85+): feller, met glinsteringen */
+  glans: { a: "#fffbe0", b: "#ffd84a", c: "#d9a514", d: "#9c7410", ink: "#3b2a05", line: "#b88a1c", glow: "#ffffff" },
   /** Zwart met goud, zoals de speciale kaarten bij FIFA: voor de paar besten */
   zwartgoud: { a: "#3d3423", b: "#17130c", c: "#050403", d: "#000000", ink: "#f4c542", line: "#d4a017", glow: "#f4c542" },
   special: { a: "#6a0d15", b: "#2a070b", c: "#0b0203", d: "#000000", ink: "#f4c542", line: "#e1242f", glow: "#ff5a63" },
@@ -47,6 +49,7 @@ export function PlayerCardSvg({
   width,
   hattricks = 0,
   logo = `${BASE}/club-logo.png`,
+  marks = {},
 }: {
   card: PlayerCard;
   player: CardPlayer;
@@ -63,11 +66,39 @@ export function PlayerCardSvg({
   hattricks?: number;
   /** Clublogo (adres of data-URL; voor de video moet het een data-URL zijn) */
   logo?: string;
+  /** Tekens in de kaart: kaart-upgrade (▲), aftrek bij afwezigheid (▼), on fire, geblesseerd */
+  marks?: { up?: number; down?: number; fire?: "scorer" | "keeper"; injured?: boolean };
 }) {
   const kind: Tier = special || variant === "potm" ? "special" : variant === "inform" ? "zwartgoud" : variant === "tots" ? "tots" : card.tier;
   const t = TIERS[kind];
   const id = `card-${kind}`;
-  const dark = kind !== "goud";
+  const dark = kind !== "goud" && kind !== "glans";
+  // Tekens rechts naast het shirt (onder de mouw), van boven naar beneden
+  const chips: { key: string; fill: string; body: React.ReactNode }[] = [];
+  if (marks.up) chips.push({ key: "up", fill: "#1f9d55", body: <text y="4" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize="11" fill="#fff">▲{marks.up}</text> });
+  if (marks.down) chips.push({ key: "down", fill: "#d93a40", body: <text y="4" textAnchor="middle" fontFamily={FONT} fontWeight="900" fontSize="11" fill="#fff">▼{marks.down}</text> });
+  if (marks.fire)
+    chips.push({
+      key: "fire",
+      fill: "#2a0d05",
+      body:
+        marks.fire === "keeper" ? (
+          <path d="M-5 6V-1l-2-3 1-1 2 2v-5a1 1 0 0 1 2 0v4-5a1 1 0 0 1 2 0v5-4a1 1 0 0 1 2 0v4-2a1 1 0 0 1 2 0v5c0 3-2 5-5 5z" fill="#ffb02e" />
+        ) : (
+          <path d="M0.4-8c.5 2.6-.8 4.1-2.1 5.5C-3 -1.2-4.3.3-4.3 2.7a4.3 4.3 0 0 0 8.6.2c0-1.5-.6-2.6-1.4-3.5.1 1-.2 1.9-1 2.4.2-2.9-.6-5.4-1.7-7.3-.2 1.9-1 2.9-1.8 3.7.4-2.3 1.2-4.1 1.8-6.2Z" fill="#ff7a1a" />
+        ),
+    });
+  if (marks.injured)
+    chips.push({
+      key: "inj",
+      fill: "#ffffff",
+      body: (
+        <g transform="rotate(-45)">
+          <rect x="-8" y="-3" width="16" height="6" rx="3" fill="#e9b88f" />
+          <rect x="-2.5" y="-3" width="5" height="6" fill="#f7dcc2" />
+        </g>
+      ),
+    });
   const name = cardName(player);
   // De echte seizoenscijfers van de speler (wedstrijden, goals, assists, …)
   const left = card.facts.slice(0, 3);
@@ -118,6 +149,16 @@ export function PlayerCardSvg({
             <path d="M-20 362L320 102L320 113L-20 373Z" fill="#f4c542" opacity=".22" />
           </>
         )}
+        {kind === "glans" && (
+          <>
+            {/* Extra glansbanen en glinsteringen */}
+            <rect x="-60" y="-20" width="40" height="460" fill="#fff" opacity=".35" transform="rotate(24 150 210)" />
+            <rect x="40" y="-20" width="14" height="460" fill="#fff" opacity=".3" transform="rotate(24 150 210)" />
+            {[[60, 240], [250, 70], [235, 250], [40, 310], [270, 330]].map(([x, y]) => (
+              <path key={`${x}-${y}`} d={`M${x} ${y - 7}L${x + 2} ${y - 2}L${x + 7} ${y}L${x + 2} ${y + 2}L${x} ${y + 7}L${x - 2} ${y + 2}L${x - 7} ${y}L${x - 2} ${y - 2}Z`} fill="#fff" opacity=".85" />
+            ))}
+          </>
+        )}
         {kind === "tots" && (
           <>
             <path d="M-20 280L320 20L320 46L-20 306Z" fill="#9cc0ff" opacity=".28" />
@@ -161,6 +202,12 @@ export function PlayerCardSvg({
         <rect y="14" width="30" height="7" fill="#21468b" />
         <rect width="30" height="21" fill="none" stroke={t.ink} strokeOpacity=".3" />
       </g>
+      {chips.map((c, i) => (
+        <g key={c.key} transform={`translate(266 ${150 + i * 26})`}>
+          <circle r="11" fill={c.fill} stroke={t.line} strokeWidth="1.5" />
+          {c.body}
+        </g>
+      ))}
       {hattricks > 0 && (
         <text x="66" y={banner ? 250 : 240} textAnchor="middle" fontFamily={FONT} fontWeight="800" fontSize="13" fill={t.ink}>
           ⚽×3{hattricks > 1 ? ` ${hattricks}` : ""}

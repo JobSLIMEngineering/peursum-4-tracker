@@ -52,20 +52,22 @@ const rows = [
 ];
 
 describe("team van de maand", () => {
-  it("1-4-3-3 met de rol die past, alleen wie die maand speelde", () => {
+  it("4-3-3 met een 10 en twee daarachter, de rol die past, alleen wie die maand speelde", () => {
     const team = teamOfTheMonth(rows, players, "2026-09");
-    expect(team.map((l) => l.length)).toEqual([1, 4, 3, 3]);
+    expect(team.map((l) => l.length)).toEqual([1, 4, 2, 1, 3]);
+    // middenvelders zonder 6/8/10-rol vullen het middenveld
+    expect([...team[2], ...team[3]].every((s) => ["m1", "m2", "m3"].includes(s.playerId!))).toBe(true);
     expect(team[0][0].playerId).toBe("k");
     expect(team[1][0].playerId).toBe("lb");
     expect(team[1][3].playerId).toBe("rb");
-    expect(team[3][0].playerId).toBe("lv");
+    expect(team[4][0].playerId).toBe("lv");
     expect(team.flat().some((s) => s.playerId === "bank")).toBe(false);
   });
 
   it("strikt één speler per plek: speelde de rechtsbuiten niet, dan blijft die plek leeg", () => {
     const team = teamOfTheMonth(rows, players, "2026-10");
     expect(team.flat().some((s) => s.playerId === "rv")).toBe(false);
-    expect(team[3][2].playerId).toBeNull();
+    expect(team[4][2].playerId).toBeNull();
     // geen tweede spits op de vleugel
     expect(team.flat().filter((s) => s.playerId === "bank" || s.playerId === "sp").length).toBe(1);
   });

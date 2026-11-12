@@ -2,7 +2,7 @@
 
 import { Plaster } from "@/components/Badges";
 import { Shirt } from "@/components/Shirt";
-import { manOfTheMatch } from "@/lib/domain/rating";
+import { manOfTheMatch, motmReason } from "@/lib/domain/rating";
 import { useData } from "@/components/DataProvider";
 import { assignedGoals } from "@/lib/domain/stats";
 import { ourScore, playerLabel } from "@/lib/domain/types";
@@ -52,6 +52,7 @@ export function EntryView({ match, onEdit }: { match: ViewMatch; onEdit: () => v
           <div>
             <span className="k">Man van de wedstrijd</span>
             <b>{name(mp.id)}</b>
+            {row && <span className="motm-why">{motmReason(row, motm)}</span>}
             <span className="meta">{motm.total.toFixed(1).replace(".", ",")} spelerspunten</span>
           </div>
           <span className="motm-star" aria-hidden="true">

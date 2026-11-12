@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { playerImpacts } from "@/lib/domain/awards";
+import { playerCards } from "@/lib/domain/playercard";
+import { MON_FULL } from "@/lib/format";
+import { cardMarks } from "./cardMarks";
 import { createPortal } from "react-dom";
 import { ROLES } from "@/lib/domain/season-stats";
 import { playerLabel, POSITION_ROLE, ROLE_POSITION, type Role } from "@/lib/domain/types";
@@ -11,6 +15,8 @@ import { useData } from "./DataProvider";
 import { PlayerCardSvg } from "./PlayerCardSvg";
 import { PlayerSeasonStats } from "./PlayerSeasonStats";
 import { playerSeason } from "@/lib/domain/season-stats";
+
+const monthLabel = (ym: string) => MON_FULL[Number(ym.slice(5, 7)) - 1];
 
 /**
  * Spelerskaart schermvullend: de kaart groot in beeld, de rest wazig erachter.
@@ -31,6 +37,29 @@ export function CardView({
   const { view, mutate, readOnly } = useData();
   const [editing, setEditing] = useState(false);
   const p = view.players.find((x) => x.id === playerId);
+  // Kaart aan het eind van elke afgelopen maand (progressie door het seizoen)
+  const past = useMemo(() => {
+    const months = view.monthly.months.filter((m) => m < view.thisMonth);
+    return months
+      .map((m) => {
+        const upTo = view.rows.filter((r) => (r.match.date ?? "").slice(0, 7) <= m);
+        return { month: m, card: playerCards(upTo, view.players, playerImpacts(view.players, upTo))[playerId] };
+      })
+      .filter((h) => h.card && h.card.games > 0);
+  }, [view, playerId]);
+  const track = useRef<HTMLDivElement>(null);
+  const [slide, setSlide] = useState(0);
+  const onScroll = () => {
+    const el = track.current;
+    if (el) setSlide(Math.round(el.scrollLeft / el.clientWidth));
+  };
+  // Open op de kaart van nu (rechts)
+  useEffect(() => {
+    const el = track.current;
+    if (!el) return;
+    el.scrollLeft = el.scrollWidth;
+    queueMicrotask(() => setSlide(past.length));
+  }, [past.length]);
   // Laatste sluitfunctie bewaren, zodat de stap in de geschiedenis niet bij elke weergave opnieuw gezet wordt
   const closeRef = useRef(onClose);
   useEffect(() => {
@@ -44,7 +73,7 @@ export function CardView({
   useEffect(() => {
     let pushed = false;
     const t = setTimeout(() => {
-      history.pushState({ ...history.state, card: playerId }, "");
+      window.history.pushState({ ...window.history.state, card: playerId }, "");
       pushed = true;
     }, 0);
     const pop = () => closeRef.current();
@@ -52,7 +81,7 @@ export function CardView({
     return () => {
       clearTimeout(t);
       window.removeEventListener("popstate", pop);
-      if (pushed && history.state?.card === playerId) history.back();
+      if (pushed && window.history.state?.card === playerId) window.history.back();
     };
   }, [playerId]);
 
@@ -86,14 +115,41 @@ export function CardView({
       </div>
       <div className="cv-body" onClick={(e) => e.stopPropagation()}>
         <div className="cv-card">
-          <PlayerCardSvg
-            card={card}
-            player={p}
-            gold={view.goldKeepers.has(p.id)}
-            hattricks={hattricks}
-            variant={variant ?? view.special[p.id]?.variant}
-            banner={banner ?? view.special[p.id]?.banner}
-          />
+          {/* Veeg naar links/rechts: de kaart aan het eind van elke maand, rechts de kaart van nu */}
+          <div className="cv-track" ref={track} onScroll={onScroll}>
+            {past.map((h) => (
+              <div key={h.month} className="cv-slide">
+                <PlayerCardSvg card={h.card} player={p} gold={view.goldKeepers.has(p.id)} />
+              </div>
+            ))}
+            <div className="cv-slide">
+              <PlayerCardSvg
+                card={card}
+                player={p}
+                gold={view.goldKeepers.has(p.id)}
+                hattricks={hattricks}
+                variant={variant ?? view.special[p.id]?.variant}
+                banner={banner ?? view.special[p.id]?.banner}
+                marks={cardMarks(view, p.id)}
+              />
+            </div>
+          </div>
+          {past.length > 0 && (
+            <div className="cv-when">
+              <span className="news-dots">
+                {[...past.map((h) => h.month), "nu"].map((m, i) => (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-label={i === past.length ? "Nu" : `Eind ${monthLabel(m)}`}
+                    aria-current={i === slide}
+                    onClick={() => track.current?.scrollTo({ left: i * track.current.clientWidth, behavior: "smooth" })}
+                  />
+                ))}
+              </span>
+              <span className="cv-when-l">{slide >= past.length ? "Nu" : `Eind ${monthLabel(past[slide].month)}`}</span>
+            </div>
+          )}
         </div>
         <div className="cv-badges">
           <Badges playerId={p.id} />

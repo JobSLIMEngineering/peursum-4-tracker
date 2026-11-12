@@ -1213,18 +1213,39 @@ html, body { overflow-x: clip; }
 .cal-nav.sm { width: 30px; height: 30px; font-size: 18px; border-radius: 9px; }
 .cal-nav:disabled { opacity: .35; cursor: default; }
 .pitch {
-  margin: 4px 12px 14px; padding: 14px 6px; border-radius: var(--r-lg); display: grid; gap: 12px;
+  position: relative; aspect-ratio: 3 / 4; max-height: 560px; margin: 4px auto 14px; width: calc(100% - 24px); max-width: 440px; border-radius: var(--r-lg);
   background:
     linear-gradient(rgb(255 255 255 / .12), rgb(255 255 255 / .12)) center / 100% 2px no-repeat,
     radial-gradient(circle at 50% 50%, transparent 46px, rgb(255 255 255 / .12) 47px 49px, transparent 50px),
     repeating-linear-gradient(0deg, #1f6b3a 0 36px, #1b6034 36px 72px);
   border: 2px solid rgb(255 255 255 / .18);
 }
-.pitch-line { display: flex; justify-content: space-around; gap: 4px; }
-.pitch-p { display: grid; justify-items: center; gap: 1px; width: 72px; background: none; border: 0; cursor: pointer; color: #fff; padding: 0; }
-.pitch-p > span { font: 800 11px/1.1 var(--f-cond); text-transform: uppercase; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+.pitch-chem { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.chem { stroke-width: 3; stroke-linecap: round; opacity: .9; }
+.chem.goed { stroke: #3ddc84; }
+.chem.normaal { stroke: #f3a93c; stroke-width: 2; opacity: .5; }
+.chem.slecht { stroke: #ff4d55; }
+.chem.def { stroke-dasharray: 2 6; stroke-width: 3.5; }
+.chem.duo { stroke: #ffe36e; stroke-width: 5; filter: drop-shadow(0 0 3px #ffd84a); opacity: 1; }
+.pitch-p { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 1px; width: 64px; background: none; border: 0; cursor: pointer; color: #fff; padding: 0; z-index: 1; }
+.pitch-p > span { font: 800 10.5px/1.1 var(--f-cond); text-transform: uppercase; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
 .pitch-p small { font: 900 11px var(--f-cond); padding: 0 5px; border-radius: 5px; background: linear-gradient(150deg, #fbeaa0, #e0b43a); color: #3b2a05; }
-.pitch-p.empty { opacity: .6; cursor: default; align-content: center; height: 64px; }
+.pitch-p.empty { opacity: .6; cursor: default; align-content: center; height: 56px; }
+.chem-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: -6px 14px 10px; font: 700 11px var(--f-cond); text-transform: uppercase; letter-spacing: .04em; color: var(--fg-2); }
+.chem-legend i, .chem-row .dot { display: inline-block; width: 16px; height: 4px; border-radius: 2px; vertical-align: middle; }
+.chem-legend .ch-goed, .chem-row .dot.ch-goed { background: #3ddc84; }
+.chem-legend .ch-normaal, .chem-row .dot.ch-normaal { background: #f3a93c; opacity: .6; }
+.chem-legend .ch-slecht, .chem-row .dot.ch-slecht { background: #ff4d55; }
+.chem-legend .ch-duo, .chem-row .dot.ch-duo { background: #ffd84a; box-shadow: 0 0 4px #ffd84a; }
+.chem-legend .ch-def { background: repeating-linear-gradient(90deg, #3ddc84 0 3px, transparent 3px 7px); }
+.chem-list { margin: 0 14px 14px; display: grid; gap: 6px; }
+.chem-list .lbl { margin: 4px 0 2px; }
+.chem-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+.chem-row .who { display: grid; min-width: 0; }
+.chem-row .who b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chem-row .who small { color: var(--fg-2); font-size: 12px; }
+.chem-row .num { font: 900 16px var(--f-cond); }
+.chem-row .num.up { color: var(--win); }
 .news-k.upgrade, .news-k.mijlpaal { color: var(--win); }
 
 /* ==========================================================================
@@ -1270,7 +1291,9 @@ html, body { overflow-x: clip; }
 /* Tijdelijke plekken per wedstrijd */
 .temp-pos { display: grid; gap: 4px; }
 .tp-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 14px; }
-.tp-row select { width: auto; min-width: 120px; min-height: 34px; padding: 4px 8px; font-size: 14px; }
+.tp-row { flex-wrap: wrap; }
+.tp-sel { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.tp-row select { width: auto; min-width: 0; min-height: 34px; padding: 4px 8px; font-size: 14px; }
 .tp-row.moved span { font-weight: 700; color: var(--red-text); }
 
 /* Team van het seizoen (blauw-goud, zoals TOTY/TOTS) */
@@ -1311,10 +1334,22 @@ html, body { overflow-x: clip; }
 .pp-txt b { font: 900 italic 20px/1.1 var(--f-cond); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Keuze in de seizoensgrafiek */
-.chart-pick { display: flex; gap: 6px; overflow-x: auto; margin: 0 -2px 10px; padding: 2px; scrollbar-width: none; touch-action: pan-x pan-y; }
+.chart-pick { display: flex; gap: 4px; overflow-x: auto; margin: 0 -2px 6px; padding: 2px; scrollbar-width: none; touch-action: pan-x pan-y; }
 .chart-pick::-webkit-scrollbar { display: none; }
-.chart-pick button { flex: 0 0 auto; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--fg-2); font: 800 12px var(--f-cond); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.chart-pick button { flex: 0 0 auto; min-height: 26px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--fg-2); font: 800 10.5px var(--f-cond); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
 .chart-pick button[aria-selected="true"] { background: var(--red); border-color: var(--red); color: var(--on-red); }
 .chart .grid.zero { stroke: var(--line-strong); stroke-width: 1.5; }
 .chart .dot.n { fill: var(--red); }
 .fut-down { padding: 1px 5px; border-radius: 6px; background: var(--loss); color: #fff; font: 800 11px var(--f-cond); }
+
+/* Kaart: vegen door het seizoen */
+.cv-track { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; touch-action: pan-x pan-y; }
+.cv-track::-webkit-scrollbar { display: none; }
+.cv-slide { scroll-snap-align: center; padding: 0 4px; }
+.cv-when { display: grid; justify-items: center; gap: 6px; margin-top: 10px; color: #fff; }
+.cv-when .news-dots { padding: 0; }
+.cv-when .news-dots button { width: 9px; height: 9px; background: rgb(255 255 255 / .35); }
+.cv-when .news-dots button[aria-current="true"] { width: 22px; background: #f4c542; }
+.cv-when-l { font: 800 12px var(--f-cond); letter-spacing: .14em; text-transform: uppercase; color: rgb(255 255 255 / .75); }
+
+.motm-why { display: block; font-size: 13px; line-height: 1.35; margin: 2px 0; }

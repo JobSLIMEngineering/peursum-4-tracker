@@ -31,11 +31,13 @@ jobs:
         with:
           path: repo
 
-      - name: App-code ophalen (openbare repository)
+      # Is de app-repository privé, dan is het geheim APP_READ_TOKEN nodig (alleen Contents: read op de app)
+      - name: App-code ophalen
         uses: actions/checkout@v5
         with:
           repository: JobSLIMEngineering/peursum-4-tracker
           path: app
+          token: ${{ secrets.APP_READ_TOKEN || github.token }}
 
       - uses: actions/setup-node@v5
         with:

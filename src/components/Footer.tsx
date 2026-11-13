@@ -17,7 +17,7 @@ const fmt = (iso: string | null) =>
 
 /** Onderaan: laatste ophaalrun, Nu verversen en uitloggen */
 export function Footer() {
-  const { files, store, reload, logout, readOnly } = useData();
+  const { files, store, reload, logout, readOnly, account } = useData();
   const sync = files["sync.json"];
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,7 +47,9 @@ export function Footer() {
         {sync.unsure.length > 0 && <> · onzeker: {sync.unsure.join(", ")}</>}
       </div>
       <div className="actions" style={{ marginTop: 6 }}>
-        {readOnly ? (
+        {account?.role === "member" ? (
+          <span>Ingelogd als {account.email}</span>
+        ) : readOnly ? (
           <>
             <span>Je kijkt als gast (alleen lezen).</span>
             <button className="link" type="button" onClick={logout}>

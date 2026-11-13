@@ -15,7 +15,7 @@ const THEMES: { key: ThemeChoice; label: string }[] = [
 
 /** Instellingen (via Meer): thema, feedback en uitloggen (altijd met "weet je het zeker?") */
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
-  const { readOnly, logout, store } = useData();
+  const { readOnly, logout, store, account } = useData();
   const [confirm, setConfirm] = useState(false);
   const [feedback, setFeedback] = useState(false);
   const [theme, setThemeState] = useState<ThemeChoice>("auto");
@@ -32,7 +32,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   if (feedback) return <FeedbackPanel onClose={onClose} />;
-  const canLogout = !readOnly && store.kind === "github";
+  const canLogout = (!readOnly && store.kind === "github") || !!account;
 
   return (
     <div className="settings-pop glass" role="dialog" aria-label="Instellingen">
@@ -69,7 +69,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           </span>
         </button>
       )}
-      {readOnly && (
+      {readOnly && !account && (
         <button type="button" className="set-row" onClick={logout}>
           <span>
             <svg {...ICON}>
@@ -82,7 +82,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       {canLogout &&
         (confirm ? (
           <div className="set-confirm">
-            <span>Weet je het zeker? Daarna heb je je wachtwoord weer nodig.</span>
+            <span>{account ? `Uitloggen als ${account.email}? Daarna log je weer in met een code per e-mail.` : "Weet je het zeker? Daarna heb je je wachtwoord weer nodig."}</span>
             <span className="actions" style={{ marginTop: 8 }}>
               <button type="button" className="btn sm" onClick={() => setConfirm(false)}>
                 Nee

@@ -6,17 +6,20 @@ import type { SeedData } from "@/lib/domain/seed";
 import { initialData } from "@/lib/store/initial";
 import { toPublic } from "@/lib/store/public";
 import type { DataFile, DataFiles } from "@/lib/store/schema";
-import { GitHubStore, LocalStore, PublicStore, type Store } from "@/lib/store/store";
+import { ApiStore, GitHubStore, LocalStore, probeApi, PublicStore, type Store } from "@/lib/store/store";
 import { clearToken, getToken, isGuest, LOCAL_MODE, setGuest, setToken } from "@/lib/store/token";
 import { buildView, type AppView } from "@/lib/store/view";
 import { Login } from "./Login";
+import { Welcome } from "./Welcome";
 
 interface Ctx {
   store: Store;
   files: DataFiles;
   view: AppView;
-  /** Gast: alleen kijken, alle bewerkknoppen verborgen */
+  /** Gast of teamlid: alleen kijken, alle bewerkknoppen verborgen */
   readOnly: boolean;
+  /** Ingelogd via de eigen server (Cloudflare): wie, en beheerder of lid */
+  account: { email: string; role: "owner" | "member" } | null;
   /** Wijzigt een bestand: direct zichtbaar, daarna opgeslagen in de data-repository. */
   mutate<K extends DataFile>(file: K, fn: (cur: DataFiles[K]) => DataFiles[K], message: string): Promise<boolean>;
   reload(): Promise<void>;
@@ -33,7 +36,7 @@ export function useData(): Ctx {
   return c;
 }
 
-type Phase = { kind: "start" } | { kind: "login"; error?: string } | { kind: "ready"; store: Store };
+type Phase = { kind: "start" } | { kind: "welcome" } | { kind: "login"; error?: string } | { kind: "ready"; store: Store };
 
 const PUBLISHED_KEY = "p4-published";
 
@@ -81,8 +84,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Na het eerste renderen: localStorage bestaat alleen in de browser
-    queueMicrotask(() => {
+    queueMicrotask(async () => {
       if (LOCAL_MODE) return void open(new LocalStore(initialData(seed as SeedData)));
+      // Eigen server (Cloudflare)? Dan inloggen met e-mail; zonder login de openbare uitnodiging
+      const api = await probeApi();
+      if (api.kind === "in") return void open(new ApiStore(api.email, api.role));
+      if (api.kind === "out") return setPhase({ kind: "welcome" });
+      // Anders (GitHub Pages): zoals voorheen met de sleutel of als gast
       const token = getToken();
       // Deellink (…/?gast): direct als gast kijken, tenzij je op dit apparaat al bent ingelogd
       const params = new URLSearchParams(window.location.search);
@@ -128,12 +136,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const ctx = useMemo<Ctx | null>(() => {
     if (phase.kind !== "ready" || !files) return null;
     const store = phase.store;
-    const readOnly = store.kind === "public";
+    const account = store instanceof ApiStore ? { email: store.email, role: store.role } : null;
+    const readOnly = store.kind === "public" || account?.role === "member";
     return {
       store,
       files,
       view: buildView(files),
       readOnly,
+      account,
       saving,
       error,
       async mutate(file, fn, message) {
@@ -157,6 +167,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setFiles(await store.readAll());
       },
       logout() {
+        // Eigen server: uitloggen bij Cloudflare Access
+        // (geen pagina van de app maar het uitlogadres van Cloudflare, dus echt de pagina verlaten)
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        if (account) return void (window.location.href = "/cdn-cgi/access/logout");
         clearToken();
         setGuest(false);
         setFiles(null);
@@ -189,6 +203,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [phase, saving]);
 
   if (phase.kind === "start") return <p className="meta">Laden…</p>;
+  if (phase.kind === "welcome") return <Welcome />;
   if (phase.kind === "login") return <Login onLogin={login} onGuest={guest} error={phase.error} />;
   if (!ctx) return null;
   return <DataContext.Provider value={ctx}>{children}</DataContext.Provider>;

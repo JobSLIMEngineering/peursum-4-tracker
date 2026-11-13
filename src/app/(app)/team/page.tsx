@@ -7,6 +7,7 @@ import { cardMarks } from "@/components/cardMarks";
 import { useData } from "@/components/DataProvider";
 import { InfoTip } from "@/components/InfoTip";
 import { PlayerCardSvg } from "@/components/PlayerCardSvg";
+import { AccessRequests } from "@/components/AccessRequests";
 import { ScoutButton } from "@/components/Scouting";
 import { useSpecial } from "@/components/reveal";
 import { Box } from "@/components/ui";
@@ -81,6 +82,7 @@ export default function TeamPage() {
 
   return (
     <>
+      <AccessRequests />
       {!readOnly && <ScoutButton />}
       {LINES.map((line) => {
         const list = vast

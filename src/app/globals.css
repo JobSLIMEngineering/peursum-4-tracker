@@ -1386,3 +1386,21 @@ html, body { overflow-x: clip; }
 .scout-help { font-size: 12.5px; line-height: 1.45; text-align: left; margin-top: 6px; }
 .scout-table { width: 100%; text-align: left; background: var(--surface); border-radius: var(--r-lg); color: var(--fg); }
 .scout-table .meta { color: var(--fg-2); }
+
+/* Openbare uitnodiging (zonder login) */
+.welcome-h { margin: 2px 0 6px; font: 900 44px/1 var(--f-cond); letter-spacing: .02em; text-transform: uppercase; }
+.welcome-tiles { margin: 16px 0 10px; }
+.welcome-form { display: flex; gap: 4px; margin: 0 0 8px; }
+.welcome-form .tag { min-width: 26px; text-align: center; }
+.welcome-locked { position: relative; overflow: hidden; }
+.welcome-cards { display: flex; justify-content: center; gap: 10px; margin-bottom: 14px; }
+.welcome-cards i { width: 64px; height: 90px; border-radius: 10px; background: linear-gradient(160deg, #f4d77a, #b8892c); filter: blur(3px); opacity: .8; transform: rotate(-6deg); }
+.welcome-cards i:nth-child(2) { transform: translateY(-6px); opacity: 1; }
+.welcome-cards i:nth-child(3) { transform: rotate(6deg); }
+.welcome-list { margin: 8px 0 14px; padding-left: 18px; display: grid; gap: 4px; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+/* Toegangsaanvragen (beheerder) */
+.req-list { display: grid; gap: 8px; margin-top: 8px; }
+.req { display: grid; gap: 4px; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); }
+.req .actions { margin-top: 4px; }

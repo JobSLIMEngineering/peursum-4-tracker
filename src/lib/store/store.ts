@@ -7,7 +7,7 @@ export const APP_REPO = { owner: "JobSLIMEngineering", repo: "peursum-4-tracker"
 export const SYNC_WORKFLOW = "sync.yml";
 
 export interface Store {
-  readonly kind: "github" | "local" | "public";
+  readonly kind: "github" | "local" | "public" | "api";
   readAll(): Promise<DataFiles>;
   /** Leest het bestand vers, past `fn` toe en schrijft terug. Bij een botsing opnieuw. */
   update<K extends DataFile>(file: K, fn: (cur: DataFiles[K]) => DataFiles[K], message: string): Promise<DataFiles[K]>;
@@ -252,5 +252,72 @@ export class LocalStore implements Store {
     } catch {
       // negeren
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Eigen server (Cloudflare): inloggen met e-mail, de GitHub-sleutel staat alleen op de server
+// ---------------------------------------------------------------------------
+
+export type AccountRole = "owner" | "member";
+
+/** Kop die de server bij elke wijziging verwacht (zie src/lib/server/http.ts) */
+const APP_HEADER = { "X-P4": "1" };
+
+/** Is er een eigen server, en ben ik ingelogd? */
+export async function probeApi(): Promise<{ kind: "in"; email: string; role: AccountRole } | { kind: "out" } | { kind: "none" }> {
+  try {
+    // Niet ingelogd: Cloudflare Access stuurt door naar het inlogscherm (opaqueredirect)
+    const res = await fetch("/api/me", { cache: "no-store", redirect: "manual", credentials: "same-origin" });
+    if (res.type === "opaqueredirect" || res.status === 401 || res.status === 403) return { kind: "out" };
+    if (!res.ok || !(res.headers.get("Content-Type") ?? "").includes("json")) return { kind: "none" };
+    const me = (await res.json()) as { email: string; role: AccountRole };
+    return { kind: "in", email: me.email, role: me.role };
+  } catch {
+    return { kind: "none" };
+  }
+}
+
+export class ApiStore implements Store {
+  readonly kind = "api" as const;
+
+  constructor(
+    readonly email: string,
+    readonly role: AccountRole,
+  ) {}
+
+  private call(path: string, init: RequestInit = {}) {
+    return fetch(path, {
+      ...init,
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { ...APP_HEADER, ...(init.body ? { "Content-Type": "application/json" } : {}) },
+    });
+  }
+
+  async readAll(): Promise<DataFiles> {
+    const res = await this.call("/api/data");
+    if (!res.ok) throw new StoreError(`Laden mislukt (${res.status}).`, res.status);
+    const data = (await res.json()) as Partial<DataFiles>;
+    return Object.fromEntries(DATA_FILES.map((f) => [f, data[f] ?? structuredClone(EMPTY[f])])) as unknown as DataFiles;
+  }
+
+  async update<K extends DataFile>(file: K, fn: (cur: DataFiles[K]) => DataFiles[K], message: string): Promise<DataFiles[K]> {
+    if (this.role !== "owner") throw new StoreError("Alleen de beheerder kan bewerken.");
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const cur = await this.call(`/api/file?name=${encodeURIComponent(file)}`);
+      if (!cur.ok) throw new StoreError(`Lezen van ${file} mislukt (${cur.status}).`, cur.status);
+      const { data, sha } = (await cur.json()) as { data: DataFiles[K]; sha: string | null };
+      const next = fn(structuredClone(data));
+      const res = await this.call("/api/file", { method: "PUT", body: JSON.stringify({ name: file, data: next, sha, message }) });
+      if (res.ok) return next;
+      if (res.status !== 409) throw new StoreError(`Opslaan van ${file} mislukt (${res.status}).`, res.status);
+    }
+    throw new StoreError(`Opslaan van ${file} mislukt: het bestand werd steeds tegelijk gewijzigd.`);
+  }
+
+  async triggerSync(): Promise<void> {
+    const res = await this.call("/api/sync", { method: "POST" });
+    if (!res.ok) throw new StoreError(`Verversen starten mislukt (${res.status}).`, res.status);
   }
 }

@@ -4,8 +4,33 @@
     {
       "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "cf",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "wrangler@4.20.0",
+        "pages",
+        "dev",
+        "out",
+        "--port",
+        "8788",
+        "--binding",
+        "ACCESS_TEAM_DOMAIN=test.cloudflareaccess.com",
+        "--binding",
+        "ACCESS_AUD=test",
+        "--binding",
+        "GITHUB_TOKEN=nep",
+        "--binding",
+        "OWNER_EMAILS=baas@voorbeeld.nl"
+      ],
+      "port": 8788
     }
   ]
 }

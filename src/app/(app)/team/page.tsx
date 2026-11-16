@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Badges } from "@/components/Badges";
 import { CardView } from "@/components/CardView";
 import { cardMarks } from "@/components/cardMarks";
@@ -9,7 +9,7 @@ import { InfoTip } from "@/components/InfoTip";
 import { PlayerCardSvg } from "@/components/PlayerCardSvg";
 import { AccessRequests } from "@/components/AccessRequests";
 import { ScoutButton } from "@/components/Scouting";
-import { useSpecial } from "@/components/reveal";
+import { POTM_KEY, useSpecial, useStored, useTotmRevealed } from "@/components/reveal";
 import { Box } from "@/components/ui";
 import { ROLES } from "@/lib/domain/season-stats";
 import { playerTotals } from "@/lib/domain/stats";
@@ -27,6 +27,19 @@ const LINES: { key: Position; label: string }[] = [
   { key: "Onbekend", label: "Overig" },
 ];
 const ROLE_ORDER: Role[] = ["K", "LB", "CV", "RB", "CM", "LV", "SP", "RV"];
+/** Filters boven de spelerslijst: per linie, of op iets bijzonders (over alle linies heen) */
+type Filter = "alle" | Position | "potm" | "totm" | "fire" | "blessure";
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "alle", label: "Alle" },
+  { key: "Keeper", label: "Keepers" },
+  { key: "Verdediger", label: "Verdediging" },
+  { key: "Middenvelder", label: "Middenveld" },
+  { key: "Aanvaller", label: "Aanval" },
+  { key: "potm", label: "⭐ Speler van de maand" },
+  { key: "totm", label: "🏟️ Team van de maand" },
+  { key: "fire", label: "🔥 On fire" },
+  { key: "blessure", label: "🩹 Geblesseerd" },
+];
 const lineOf = (p: StoredPlayer): Position => (p.role ? ROLE_POSITION[p.role] : p.position);
 const roleOf = (p: StoredPlayer): Role => p.role ?? POSITION_ROLE[p.position];
 
@@ -39,6 +52,32 @@ export default function TeamPage() {
   const leen = active.filter((p) => p.type === "leen").sort((a, b) => playerLabel(a).localeCompare(playerLabel(b), "nl"));
   const [open, setOpen] = useState<string | null>(null);
   const special = useSpecial();
+  const [filter, setFilter] = useState<Filter>("alle");
+  // Speler/team van de maand pas meetellen als het pakje op dit apparaat geopend is (niets verklappen)
+  const potmOpened = useStored(POTM_KEY);
+  const totmOpen = useTotmRevealed();
+  const match = useMemo(() => {
+    const lastPotm = view.potms.at(-1);
+    const potmIds = new Set(
+      view.potms.filter((m) => m !== lastPotm || potmOpened === `${m.month}:${m.playerId}`).map((m) => m.playerId),
+    );
+    const totmIds = new Set(totmOpen ? (view.lastTotm?.ids ?? []) : []);
+    return (f: Filter, p: StoredPlayer) =>
+      f === "alle"
+        ? true
+        : f === "potm"
+          ? potmIds.has(p.id)
+          : f === "totm"
+            ? totmIds.has(p.id)
+            : f === "fire"
+              ? !!view.streaks[p.id]?.length
+              : f === "blessure"
+                ? !!p.injured || view.injuredLast.has(p.id)
+                : lineOf(p) === f;
+  }, [view, potmOpened, totmOpen]);
+  const counts = Object.fromEntries(FILTERS.map((f) => [f.key, vast.filter((p) => match(f.key, p)).length])) as Record<Filter, number>;
+  // Een filter dat leeg is geworden (bijv. niemand meer geblesseerd): terug naar alle spelers
+  const current: Filter = counts[filter] ? filter : "alle";
   const [name, setName] = useState("");
   const [role, setRole] = useState<Role | "">("");
 
@@ -78,14 +117,22 @@ export default function TeamPage() {
     }
   }
 
-  const firstLine = LINES.find((l) => vast.some((p) => lineOf(p) === l.key))?.key;
+  const shown = vast.filter((p) => match(current, p));
+  const firstLine = LINES.find((l) => shown.some((p) => lineOf(p) === l.key))?.key;
 
   return (
     <>
       <AccessRequests />
       {!readOnly && <ScoutButton />}
+      <div className="squad-filter" role="group" aria-label="Spelers filteren">
+        {FILTERS.filter((f) => f.key === "alle" || counts[f.key] > 0).map((f) => (
+          <button key={f.key} type="button" className="chip" aria-pressed={current === f.key} onClick={() => setFilter(f.key)}>
+            {f.label} <span className="t">{counts[f.key]}</span>
+          </button>
+        ))}
+      </div>
       {LINES.map((line) => {
-        const list = vast
+        const list = shown
           .filter((p) => lineOf(p) === line.key)
           .sort((a, b) => ROLE_ORDER.indexOf(roleOf(a)) - ROLE_ORDER.indexOf(roleOf(b)) || (view.cards[b.id]?.overall ?? 0) - (view.cards[a.id]?.overall ?? 0));
         if (!list.length) return null;
@@ -147,7 +194,7 @@ export default function TeamPage() {
         );
       })}
 
-      {leen.length > 0 && (
+      {leen.length > 0 && current === "alle" && (
         <Box label="Leenspelers" style={{ marginTop: 16 }} bodyClass={null} right={<span className="meta">{leen.length}</span>}>
           <div className="loan-list">
             {leen.map((p) => {

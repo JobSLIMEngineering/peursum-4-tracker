@@ -10,6 +10,7 @@ import { PotmPack } from "@/components/PotmPack";
 import { TeamOfMonth } from "@/components/TeamOfMonth";
 import { Box } from "@/components/ui";
 import { duos, seasonForm } from "@/lib/domain/insights";
+import { ownVsLoan, type SideRecord } from "@/lib/domain/loans";
 import { seasonRatings } from "@/lib/domain/rating";
 import { MON_FULL } from "@/lib/format";
 import type { StoredPlayer } from "@/lib/store/schema";
@@ -30,6 +31,7 @@ export default function StatistiekenPage() {
   const { view, readOnly } = useData();
   const form = useMemo(() => seasonForm(view.model, view.matches, view.pool), [view]);
   const pairs = useMemo(() => duos(view.matches, view.entries).slice(0, 6), [view]);
+  const loans = useMemo(() => ownVsLoan(view.rows, view.players), [view]);
   // Spelersklassement: alleen wie er iets bij heeft (geen minnen in beeld), top 10
   const ranking = useMemo(() => seasonRatings(view.rows, view.players).filter((r) => r.total > 0).slice(0, 10), [view]);
   const months = view.potms;
@@ -162,6 +164,28 @@ export default function StatistiekenPage() {
         </Box>
       )}
 
+      {loans.own.games + loans.loan.games > 0 && (
+        <Box
+          label="Eigen ploeg en leenspelers"
+          style={{ marginTop: 16 }}
+          right={
+            <InfoTip label="Wat telt mee?">
+              Ingevoerde competitiewedstrijden. Eigen ploeg = alleen spelers uit de selectie; met leenspelers = minstens één
+              leenspeler deed mee (ook als hij maar even speelde).
+            </InfoTip>
+          }
+        >
+          <div className="form-tiles">
+            <SideTile k="Eigen ploeg" r={loans.own} />
+            <SideTile k="Met leenspelers" r={loans.loan} extra={loans.loan.games ? `gem. ${comma(loans.loansPerGame)} leenspeler per duel` : undefined} />
+          </div>
+          <p className="meta" style={{ margin: 0 }}>
+            Goals: {loans.goals.own} van eigen spelers, {loans.goals.loan} van leenspelers · assists: {loans.assists.own} en{" "}
+            {loans.assists.loan}
+          </p>
+        </Box>
+      )}
+
       <Box
         label="Duo's"
         style={{ marginTop: 16 }}
@@ -200,5 +224,27 @@ export default function StatistiekenPage() {
         )}
       </Box>
     </>
+  );
+}
+
+/** Blokje met de resultaten van één kant: punten per duel groot, de rest eronder */
+function SideTile({ k, r, extra }: { k: string; r: SideRecord; extra?: string }) {
+  if (!r.games)
+    return (
+      <div>
+        <span className="k">{k}</span>
+        <span className="num">–</span>
+        <span className="meta">nog geen duels</span>
+      </div>
+    );
+  return (
+    <div>
+      <span className="k">{k}</span>
+      <span className="num">{comma(r.points / r.games)}</span>
+      <span className="meta">
+        punten per duel · {r.games} {r.games === 1 ? "duel" : "duels"}: {r.w}W {r.d}G {r.l}V · {r.goalsFor}–{r.goalsAgainst}
+        {extra && <><br />{extra}</>}
+      </span>
+    </div>
   );
 }

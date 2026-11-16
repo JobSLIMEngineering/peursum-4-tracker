@@ -1404,3 +1404,8 @@ html, body { overflow-x: clip; }
 .req-list { display: grid; gap: 8px; margin-top: 8px; }
 .req { display: grid; gap: 4px; padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); }
 .req .actions { margin-top: 4px; }
+
+/* Filter boven de spelerslijst */
+.squad-filter { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 12px; margin: 0 -2px; }
+.squad-filter::-webkit-scrollbar { display: none; }
+.squad-filter .chip { flex: 0 0 auto; white-space: nowrap; }

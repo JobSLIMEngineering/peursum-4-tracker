@@ -5,7 +5,7 @@ import { Plaster } from "@/components/Badges";
 import { useData } from "@/components/DataProvider";
 import { parseAttendance } from "@/lib/domain/attendance";
 import { removePlayer, toDraft, toEntry, toggleInjured, type CardKind, type EntryDraft, type GoalSlot } from "@/lib/domain/entry";
-import { ourScore, playerLabel, POSITION_ROLE, POSITIONS, ROLE_CODE, type GoalKind, type Role } from "@/lib/domain/types";
+import { opponent, ourScore, playerLabel, POSITION_ROLE, POSITIONS, ROLE_CODE, type GoalKind, type Role } from "@/lib/domain/types";
 import { ROLES } from "@/lib/domain/season-stats";
 import type { StoredPlayer } from "@/lib/store/schema";
 import type { ViewMatch } from "@/lib/store/view";
@@ -55,6 +55,13 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
   const scorers = [...present].sort(byScoringChance);
   const name = (id: string | null | undefined) => (id ? playerLabel(view.players.find((p) => p.id === id)) : "");
   const filled = draft.goals.filter((g) => g.scorerId !== undefined).length;
+  // Snel starten: de spelers van de vorige ingevoerde wedstrijd (zonder wie nu geblesseerd is)
+  const previous = view.matches
+    .filter((x) => x.id !== match.id && x.date && match.date && x.date < match.date && view.entries[x.id]?.attendance.length)
+    .sort((a, b) => b.date!.localeCompare(a.date!))[0];
+  const prevIds = previous
+    ? view.entries[previous.id].attendance.filter((id) => players.some((p) => p.id === id) && !draft.injured.includes(id))
+    : [];
 
   const setGoal = (i: number, patch: Partial<GoalSlot>) =>
     setDraft((d) => ({ ...d, goals: d.goals.map((g, j) => (j === i ? { ...g, ...patch } : g)) }));
@@ -93,6 +100,16 @@ export function EntryForm({ match, onDone }: { match: ViewMatch; onDone: () => v
 
   return (
     <>
+      {draft.attendance.length === 0 && prevIds.length > 0 && (
+        <div className="note quick-prev">
+          <span>
+            Zelfde ploeg als tegen {opponent(previous!)}? ({prevIds.length} spelers)
+          </span>
+          <button className="btn sm primary" type="button" onClick={() => setDraft((d) => ({ ...d, attendance: prevIds }))}>
+            Overnemen
+          </button>
+        </div>
+      )}
       <Attendance
         players={players}
         attendance={draft.attendance}

@@ -10,7 +10,10 @@ import { RoundsList } from "@/components/competition/RoundsList";
 function Competitie() {
   const params = useSearchParams();
   const id = params.get("w");
-  if (id) return <MatchDetail key={id} id={id} startEditing={params.get("wijzigen") === "1"} />;
+  if (id) {
+    const stap = params.get("stap");
+    return <MatchDetail key={id} id={id} startEditing={params.get("wijzigen") === "1"} step={stap === "uitslag" || stap === "invoer" ? stap : null} />;
+  }
   return <Overview />;
 }
 

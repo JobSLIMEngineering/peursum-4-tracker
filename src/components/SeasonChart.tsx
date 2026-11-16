@@ -214,10 +214,16 @@ export function SeasonChart({
             const li = lastIdx(l.values);
             const v = l.values[li];
             if (v == null) return null;
+            // Twee labels dicht bij elkaar: uit elkaar schuiven, het hoogste omhoog en het andere omlaag
             const other = m.lines[1 - j]?.values[lastIdx(m.lines[1 - j]?.values ?? [])];
-            const nudge = j === 1 && other != null && Math.abs(y(v) - y(other)) < 14 ? 14 : 0;
+            let ly = y(v);
+            if (other != null && Math.abs(y(v) - y(other)) < 15) {
+              const mid = (y(v) + y(other)) / 2;
+              const above = y(v) < y(other) || (y(v) === y(other) && j === 0);
+              ly = Math.max(PAD.t, Math.min(H - PAD.b, mid + (above ? -8 : 8)));
+            }
             return (
-              <text key={l.label} className={`end ${l.kind}`} x={W - PAD.r + 8} y={y(v) + nudge} dominantBaseline="middle">
+              <text key={l.label} className={`end ${l.kind}`} x={W - PAD.r + 8} y={ly} dominantBaseline="middle">
                 {l.end(v)}
               </text>
             );

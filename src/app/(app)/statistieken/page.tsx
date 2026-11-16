@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useData } from "@/components/DataProvider";
+import { AdviceBox } from "@/components/AdviceBox";
 import { SeasonChart } from "@/components/SeasonChart";
 import { InfoTip } from "@/components/InfoTip";
 import { Shirt } from "@/components/Shirt";
@@ -85,6 +86,8 @@ export default function StatistiekenPage() {
         )}
         <SeasonChart points={form} entries={view.entries} showInjuries={!readOnly} injuredNow={view.injuredLast.size} />
       </Box>
+
+      <AdviceBox />
 
       {potm && (
         <section className="box potm" style={{ marginTop: 16 }}>

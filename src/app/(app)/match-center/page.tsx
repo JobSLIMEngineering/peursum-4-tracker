@@ -2,6 +2,7 @@
 
 import { useData } from "@/components/DataProvider";
 import { MatchHero, PredictionBlocks } from "@/components/Prediction";
+import { AdviceBox } from "@/components/AdviceBox";
 import { InjuryChance } from "@/components/InjuryChance";
 import { LineupChance } from "@/components/LineupChance";
 import { Spotlights } from "@/components/Spotlights";
@@ -27,6 +28,7 @@ export default function MatchCenterPage() {
       <TopperBlock match={next} />
       <LineupChance match={next} />
       <InjuryChance match={next} />
+      <AdviceBox match={next} />
       <Spotlights match={next} />
       <PredictionBlocks view={view} match={next} />
     </>

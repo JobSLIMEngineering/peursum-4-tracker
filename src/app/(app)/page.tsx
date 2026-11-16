@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChampionChance } from "@/components/ChampionChance";
 import { NewsTicker } from "@/components/NewsTicker";
+import { PositionChart } from "@/components/PositionChart";
 import { PotmPack } from "@/components/PotmPack";
+import { QuickEntry } from "@/components/QuickEntry";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
@@ -27,6 +29,7 @@ export default function OverzichtPage() {
   return (
     <div className="grid2">
       <div className="stack ovl">
+        <QuickEntry />
         <MatchPair view={view} startOnNext={soon} />
         <NewsTicker />
         <PotmPack compact />
@@ -58,39 +61,42 @@ export default function OverzichtPage() {
         )}
       </div>
 
-      <Box label="Stand" right={<span className="meta">{shortDate(view.standingsDate)}</span>} bodyClass="tbl-wrap">
-        <table className="stand">
-          <thead>
-            <tr>
-              <th className="t" colSpan={2}>
-                Team
-              </th>
-              <th>G</th>
-              <th>DS</th>
-              <th>P</th>
-            </tr>
-          </thead>
-          <tbody>
-            {view.standings.map((r) => {
-              const gd = r.goalsFor - r.goalsAgainst;
-              return (
-                <tr key={r.team} className={r.team === US ? "us" : r.team === opp ? "nx" : ""}>
-                  <td className="pos">{r.position}</td>
-                  <td className="t">
-                    <span className="tname">
-                      <TeamLogo team={r.team} size={18} />
-                      <span>{r.team}</span>
-                    </span>
-                  </td>
-                  <td>{r.played}</td>
-                  <td>{gd > 0 ? `+${gd}` : gd}</td>
-                  <td className="pts">{r.points}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </Box>
+      <div className="stack">
+        <Box label="Stand" right={<span className="meta">{shortDate(view.standingsDate)}</span>} bodyClass="tbl-wrap">
+          <table className="stand">
+            <thead>
+              <tr>
+                <th className="t" colSpan={2}>
+                  Team
+                </th>
+                <th>G</th>
+                <th>DS</th>
+                <th>P</th>
+              </tr>
+            </thead>
+            <tbody>
+              {view.standings.map((r) => {
+                const gd = r.goalsFor - r.goalsAgainst;
+                return (
+                  <tr key={r.team} className={r.team === US ? "us" : r.team === opp ? "nx" : ""}>
+                    <td className="pos">{r.position}</td>
+                    <td className="t">
+                      <span className="tname">
+                        <TeamLogo team={r.team} size={18} />
+                        <span>{r.team}</span>
+                      </span>
+                    </td>
+                    <td>{r.played}</td>
+                    <td>{gd > 0 ? `+${gd}` : gd}</td>
+                    <td className="pts">{r.points}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Box>
+        <PositionChart view={view} />
+      </div>
     </div>
   );
 }

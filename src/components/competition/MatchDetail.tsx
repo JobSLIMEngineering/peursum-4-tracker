@@ -15,10 +15,14 @@ import { hasPrediction, type ViewMatch } from "@/lib/store/view";
 import { EntryForm } from "./EntryForm";
 import { EntryView } from "./EntryView";
 
-export function MatchDetail({ id, startEditing }: { id: string; startEditing: boolean }) {
+export function MatchDetail({ id, startEditing, step = null }: { id: string; startEditing: boolean; step?: "uitslag" | "invoer" | null }) {
   const { view, readOnly } = useData();
   const m = view.matches.find((x) => x.id === id);
-  const [mode, setMode] = useState<"view" | "fixture" | "entry" | "score">(startEditing && !readOnly ? "fixture" : "view");
+  // Snelle invoer (vanaf het Overzicht): meteen naar de uitslag of de stats, en na de uitslag door naar de stats
+  const quick = !!step && !readOnly;
+  const [mode, setMode] = useState<"view" | "fixture" | "entry" | "score">(
+    readOnly ? "view" : step === "uitslag" ? (m && isPlayed(m) ? "entry" : "score") : step === "invoer" ? "entry" : startEditing ? "fixture" : "view",
+  );
 
   const back = (
     <Link className="btn sm" href="/competitie/" style={{ marginBottom: 12 }}>
@@ -52,7 +56,7 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
         mode === "entry" ? (
           <EntryForm match={m} onDone={() => setMode("view")} />
         ) : mode === "score" ? (
-          <ScoreForm match={m} onDone={() => setMode("view")} />
+          <ScoreForm match={m} onDone={() => setMode(quick ? "entry" : "view")} />
         ) : (
           <>
             {m.manualScore && !readOnly && (
@@ -67,7 +71,7 @@ export function MatchDetail({ id, startEditing }: { id: string; startEditing: bo
           </>
         )
       ) : mode === "score" ? (
-        <ScoreForm match={m} onDone={() => setMode("view")} />
+        <ScoreForm match={m} onDone={() => setMode(quick ? "entry" : "view")} />
       ) : mode === "fixture" ? (
         <FixtureForm match={m} onDone={() => setMode("view")} />
       ) : (

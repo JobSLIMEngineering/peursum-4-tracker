@@ -30,6 +30,7 @@ export function AdviceBox({ match }: { match?: Match }) {
         pool: view.pool,
         injured: view.injuredLast,
         next: match ?? null,
+        standings: view.standings,
         label: (id) => playerLabel(view.players.find((p) => p.id === id)),
       }),
     [view, match],

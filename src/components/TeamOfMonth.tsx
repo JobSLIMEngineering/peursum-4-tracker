@@ -12,17 +12,17 @@ import { InfoTip } from "./InfoTip";
 import { markRevealed, TOTM_KEY, useTotmRevealed } from "./reveal";
 import { Shirt } from "./Shirt";
 
-const ROLE = Object.fromEntries(ROLES.map((r) => [r.key, r.label]));
+export const ROLE = Object.fromEntries(ROLES.map((r) => [r.key, r.label]));
 const monthName = (ym: string) => MON_FULL[Number(ym.slice(5, 7)) - 1];
 /** Achternaam (of voornaam) zodat het op het veldje past */
-const short = (name: string | null, label: string) => (name ? splitName(name, 9).last : label);
+export const short = (name: string | null, label: string) => (name ? splitName(name, 9).last : label);
 /** Horizontale plek (in %) per aantal spelers in een linie */
-const X: Record<number, number[]> = { 1: [50], 2: [30, 70], 3: [17, 50, 83], 4: [12, 37, 63, 88] };
+export const X: Record<number, number[]> = { 1: [50], 2: [30, 70], 3: [17, 50, 83], 4: [12, 37, 63, 88] };
 const DEF_ROLES = new Set<string>(["K", "LB", "CV", "RB"]);
-const Y5 = [88, 68, 49, 31, 10];
+export const Y5 = [88, 68, 49, 31, 10];
 /** In de aanval staat de spits het hoogst; de buitenspelers iets lager, naast de tien */
-const Y_SP = 8;
-const Y_WING = 19;
+export const Y_SP = 8;
+export const Y_WING = 19;
 /** Tijd tussen twee linies bij het onthullen */
 const STEP_MS = 650;
 

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { MatchHero, PredictionBlocks } from "@/components/Prediction";
 import { Fireworks } from "@/components/Fireworks";
+import { LineupAdvice } from "@/components/LineupAdvice";
 import { LineupChance } from "@/components/LineupChance";
 import { Spotlights } from "@/components/Spotlights";
 import { TopperBlock } from "@/components/TopperBlock";
@@ -88,6 +89,7 @@ export function MatchDetail({ id, startEditing, step = null }: { id: string; sta
             <>
               <TopperBlock match={m} />
               <LineupChance match={m} />
+              <LineupAdvice match={m} />
               <Spotlights match={m} />
               <PredictionBlocks view={view} match={m} />
             </>

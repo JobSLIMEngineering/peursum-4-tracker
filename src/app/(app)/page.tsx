@@ -7,6 +7,7 @@ import { NewsTicker } from "@/components/NewsTicker";
 import { PositionChart } from "@/components/PositionChart";
 import { PotmPack } from "@/components/PotmPack";
 import { QuickEntry } from "@/components/QuickEntry";
+import { ScenarioBox } from "@/components/ScenarioBox";
 import { ScoreBoard } from "@/components/ScoreBoard";
 import { TeamLogo } from "@/components/TeamLogo";
 import { useData } from "@/components/DataProvider";
@@ -35,6 +36,7 @@ export default function OverzichtPage() {
         <PotmPack compact />
 
         <ChampionChance view={view} />
+        <ScenarioBox view={view} />
 
         {per && (
           <Box

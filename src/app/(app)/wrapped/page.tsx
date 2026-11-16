@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Medal } from "@/components/Badges";
 import { useData } from "@/components/DataProvider";
@@ -15,25 +16,14 @@ import { lastMatches, playerTotals } from "@/lib/domain/stats";
 import { playerLabel, US } from "@/lib/domain/types";
 import { MON_FULL, todayNL } from "@/lib/format";
 import { canvasLogoSrc } from "@/lib/logos";
-import type { StoredPlayer } from "@/lib/store/schema";
+import { playerSlides, type WrappedSlide } from "@/lib/store/wrappedPlayer";
 import { renderWrappedVideo, videoType } from "@/lib/wrappedVideo";
 import { BASE } from "@/lib/base";
 
 const EVERY = 6000;
 const comma = (x: number, d = 1) => x.toFixed(d).replace(".", ",");
 
-interface Slide {
-  key: string;
-  kicker: string;
-  title: string;
-  big?: string;
-  sub?: string;
-  shirts?: StoredPlayer[];
-  /** Speler van de maand: walk-out met zijn kaart */
-  walkout?: { playerId: string; banner: string };
-  logo?: string;
-  list?: { award: AwardKey; text: string }[];
-}
+type Slide = WrappedSlide;
 
 /** Naam van deze editie: winterstop (najaar), of het hele seizoen als alles gespeeld is */
 function edition(today: string, done: boolean) {
@@ -46,8 +36,48 @@ function edition(today: string, done: boolean) {
 
 /** Peursum 4 Wrapped: het seizoen tot nu toe in een paar kaarten, zoals Instagram-stories, ook als video te delen */
 export default function WrappedPage() {
+  return (
+    <Suspense fallback={<p className="meta">Laden…</p>}>
+      <WrappedPicker />
+    </Suspense>
+  );
+}
+
+/** Kies het team of een speler (staat in de link, dus te delen: /wrapped/?speler=…) */
+function WrappedPicker() {
+  const { view } = useData();
+  const router = useRouter();
+  const params = useSearchParams();
+  const id = params.get("speler");
+  const known = !!id && view.players.some((p) => p.id === id);
+  const players = view.players
+    .filter((p) => p.active && view.rows.some((r) => r.entry.attendance.includes(p.id)))
+    .sort((a, b) => playerLabel(a).localeCompare(playerLabel(b)));
+  return (
+    <>
+      <label className="f wr-pick">
+        <span className="lbl">Wrapped van</span>
+        <select value={known ? id! : ""} onChange={(e) => router.replace(e.target.value ? `/wrapped/?speler=${encodeURIComponent(e.target.value)}` : "/wrapped/")}>
+          <option value="">Het team</option>
+          {players.map((p) => (
+            <option key={p.id} value={p.id}>
+              {playerLabel(p)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Stories key={known ? id! : "team"} playerId={known ? id! : null} />
+    </>
+  );
+}
+
+function Stories({ playerId }: { playerId: string | null }) {
   const { view } = useData();
   const slides = useMemo<Slide[]>(() => {
+    if (playerId) {
+      const us = view.standings.find((r) => r.team === US);
+      return playerSlides(view, playerId, edition(todayNL(), !!us && us.played >= 2 * (view.standings.length - 1)));
+    }
     const us = view.standings.find((r) => r.team === US);
     const totals = playerTotals(view.players, view.matches, Object.values(view.entries));
     const players = view.players.filter((p) => p.active);
@@ -107,7 +137,7 @@ export default function WrappedPage() {
         kicker: banner,
         title: playerLabel(by(potm.playerId)),
         big: `${comma(potm.total)} pnt`,
-        walkout: { playerId: potm.playerId, banner },
+        walkout: { playerId: potm.playerId, banner, special: true },
       });
     }
     if (best)
@@ -128,10 +158,10 @@ export default function WrappedPage() {
       });
     out.push({ key: "outro", kicker: done ? "Tot volgend seizoen" : "Op naar de tweede helft", title: "#PEURSUM4" });
     return out;
-  }, [view]);
+  }, [view, playerId]);
 
   const [i, setI] = useState(0);
-  const [pack, setPack] = useState<{ playerId: string; banner: string } | null>(null);
+  const [pack, setPack] = useState<{ playerId: string; banner: string; special?: boolean } | null>(null);
   // Pas na het laden weten we of de browser video kan opnemen (niet tijdens het bouwen van de site)
   const [canVideo, setCanVideo] = useState(false);
   useEffect(() => queueMicrotask(() => setCanVideo(!!videoType())), []);
@@ -171,7 +201,7 @@ export default function WrappedPage() {
           const c = w && view.cards[w.playerId];
           const p = w && view.players.find((x) => x.id === w.playerId);
           return c && p
-            ? renderToStaticMarkup(<PlayerCardSvg card={c} player={p} gold={view.goldKeepers.has(p.id)} special banner={w.banner} width={600} logo={logo} />)
+            ? renderToStaticMarkup(<PlayerCardSvg card={c} player={p} gold={view.goldKeepers.has(p.id)} special={!!w.special} banner={w.special ? w.banner : undefined} width={600} logo={logo} />)
             : undefined;
         })(),
       }));
@@ -184,7 +214,7 @@ export default function WrappedPage() {
 
   async function shareVideo() {
     if (video.state !== "done") return;
-    const file = new File([video.blob], `peursum4-wrapped.${video.ext}`, { type: video.blob.type });
+    const file = new File([video.blob], `peursum4-wrapped${playerId ? `-${playerId}` : ""}.${video.ext}`, { type: video.blob.type });
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: "Peursum 4 Wrapped" });
@@ -253,8 +283,8 @@ export default function WrappedPage() {
           {s.list && (
             <span className="wr-sub wr-list">
               {s.list.map((x) => (
-                <span key={x.award}>
-                  <Medal kind={x.award} size={26} /> {x.text}
+                <span key={x.text}>
+                  {x.award ? <Medal kind={x.award as AwardKey} size={26} /> : "🏅"} {x.text}
                 </span>
               ))}
             </span>
@@ -304,7 +334,7 @@ export default function WrappedPage() {
         </Link>
       </div>
       {video.state === "error" && <p className="note warn">{video.msg}</p>}
-      {pack && <Walkout playerId={pack.playerId} special banner={pack.banner} onClose={() => setPack(null)} />}
+      {pack && <Walkout playerId={pack.playerId} special={!!pack.special} banner={pack.special ? pack.banner : undefined} onClose={() => setPack(null)} />}
       {video.state === "done" && (
         <video className="wr-video" src={video.url} controls playsInline loop />
       )}

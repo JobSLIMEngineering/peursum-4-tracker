@@ -2,7 +2,8 @@ import type { GameRow, PlayerImpact } from "./awards";
 import { attendanceRates, injuryEffect } from "./insights";
 import { ownVsLoan } from "./loans";
 import { predict, type Fit } from "./model";
-import { isPlayed, opponent, ourScore, ROLE_POSITION, US, type Match, type Player, type Position } from "./types";
+import { lastMatches } from "./stats";
+import { isPlayed, opponent, ourScore, ROLE_POSITION, US, type Match, type Player, type Position, type StandingRow } from "./types";
 
 /**
  * Adviezen van de "assistent-trainer": regels op basis van de cijfers. Elke regel geeft hooguit één
@@ -35,6 +36,7 @@ export interface AdviceInput {
   injured: Set<string>;
   /** Eerstvolgende wedstrijd (voor de wedstrijdtips) */
   next?: Match | null;
+  standings?: StandingRow[];
   label: (id: string) => string;
 }
 
@@ -286,13 +288,94 @@ export function buildAdvice(inp: AdviceInput): Advice[] {
     const n = teams.length;
     const oAtt = 1 + teams.filter((t) => inp.model.attack[t] > inp.model.attack[opp]).length;
     const oDef = 1 + teams.filter((t) => inp.model.defence[t] < inp.model.defence[opp]).length;
+    // Hoe sterk is de tegenstander in het algemeen? (winkans en plek op de ranglijst)
+    const p = predict(inp.model, US, opp, nx.home === US);
+    const oRow = inp.standings?.find((r) => r.team === opp);
+    const top = !!oRow && oRow.position <= 3;
+    const low = !!oRow && oRow.position > n - Math.ceil(n / 3);
+    if (p.win < 0.35)
+      add({
+        key: "w-sterk",
+        kind: "wedstrijd",
+        tone: "let op",
+        title: "Sterke tegenstander: scherp beginnen",
+        text: `${opp} ${oRow ? `staat ${oRow.position}e met ${oRow.points} punten en ` : ""}onze winkans is maar ${Math.round(p.win * 100)}%. Vanaf de eerste minuut scherp: duels winnen, geen slordige ballen op eigen helft, en het eerste kwartier geen tegengoal. Een punt is hier ook goed.`,
+        weight: 58,
+      });
+    else if (top)
+      add({
+        key: "w-sterk",
+        kind: "wedstrijd",
+        tone: "let op",
+        title: "Topper: scherp beginnen",
+        text: `${opp} staat ${oRow!.position}e met ${oRow!.points} punten. We zijn ${p.win >= 0.5 ? `favoriet (${Math.round(p.win * 100)}% winkans), maar in een topper` : `aan elkaar gewaagd (${Math.round(p.win * 100)}% winkans), en in een topper`} beslist vaak het begin: vanaf de eerste minuut scherp, duels winnen en geen slordige ballen op eigen helft.`,
+        weight: 58,
+      });
+    else if (p.win >= 0.6 && low)
+      add({
+        key: "w-zwak",
+        kind: "wedstrijd",
+        tone: "goed",
+        title: "Favoriet, maar niet onderschatten",
+        text: `${opp} staat ${oRow!.position}e en onze winkans is ${Math.round(p.win * 100)}%. Zoek vroeg de 1–0; daarna geduldig blijven en niet slordig worden.`,
+        weight: 40,
+      });
+
+    // Vorm van de tegenstander: de laatste 3 duels
+    const form = lastMatches(inp.matches, opp, 3);
+    if (form.length === 3) {
+      const pts = form.reduce((a, g) => a + (g.goalsFor > g.goalsAgainst ? 3 : g.goalsFor === g.goalsAgainst ? 1 : 0), 0);
+      if (pts >= 9)
+        add({
+          key: "w-vorm",
+          kind: "wedstrijd",
+          tone: "let op",
+          title: `${opp} is in vorm`,
+          text: `Laatste 3 gewonnen (${form.map((g) => `${g.goalsFor}–${g.goalsAgainst}`).join(", ")}). Ze komen met vertrouwen: verwacht dat ze vroeg druk zetten.`,
+          weight: 42,
+        });
+      else if (pts <= 1)
+        add({
+          key: "w-vorm",
+          kind: "wedstrijd",
+          tone: "goed",
+          title: `${opp} zit in een dip`,
+          text: `Uit de laatste 3 maar ${pts} punt${pts === 1 ? "" : "en"}. Meteen druk zetten: een vroege goal doet bij een ploeg zonder vertrouwen extra pijn.`,
+          weight: 38,
+        });
+    }
+
+    // Thuis- of uitploeg: hoe doen zij het op hun eigen veld of juist uit?
+    const theirs = lastMatches(inp.matches, opp, 99).filter((g) => g.home === (nx.home !== US));
+    if (theirs.length >= 2) {
+      const ppg = theirs.reduce((a, g) => a + (g.goalsFor > g.goalsAgainst ? 3 : g.goalsFor === g.goalsAgainst ? 1 : 0), 0) / theirs.length;
+      if (nx.home !== US && ppg >= 2.2)
+        add({
+          key: "w-thuis",
+          kind: "wedstrijd",
+          tone: "let op",
+          title: `${opp} is thuis sterk`,
+          text: `Thuis halen ze ${comma(ppg)} punten per duel. Uit eerst overleven: het eerste halfuur compact, en de ruimte zoeken als zij moeten komen.`,
+          weight: 36,
+        });
+      else if (nx.home === US && ppg <= 0.8)
+        add({
+          key: "w-uit",
+          kind: "wedstrijd",
+          tone: "goed",
+          title: `${opp} doet het uit slecht`,
+          text: `Uit maar ${comma(ppg)} punt per duel. Thuis het initiatief nemen en hoog druk zetten.`,
+          weight: 32,
+        });
+    }
+
     if (oAtt <= 3)
       add({
         key: "w-aanval",
         kind: "wedstrijd",
         tone: "let op",
-        title: `${opp} kan scoren`,
-        text: `Aanvallend ${oAtt}e van de ${n}. Begin compact, geef de backs de opdracht eerst te verdedigen, en houd een middenvelder voor de verdediging.`,
+        title: `${opp} scoort veel: start verdedigend`,
+        text: `Aanvallend ${oAtt}e van de ${n}. Begin compact met de linies dicht bij elkaar, backs eerst verdedigen, en een middenvelder blijft altijd voor de verdediging. Pas als het staat, meer naar voren.`,
         weight: 50,
       });
     if (oDef >= n - 2)

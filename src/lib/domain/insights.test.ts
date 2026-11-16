@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import seedJson from "../../../docs/seed-data.json";
 import { fit, knownResults, predict } from "./model";
-import { attendanceRates, bestPartner, duos, likelyLineup, lineupPrediction, seasonForm } from "./insights";
+import { attendanceRates, bestPartner, duos, injuryEffect, likelyLineup, lineupPrediction, seasonForm } from "./insights";
 import { seedMatches, seedStandings, type SeedData } from "./seed";
 import { US, type MatchEntry } from "./types";
 
@@ -73,6 +73,17 @@ describe("winkans met deze spelers", () => {
     const half = lineupPrediction(base, [], impacts, { a: 0, b: 0 });
     expect(half.deltaPoints).toBe(0);
     expect(half.prediction.win).toBeCloseTo(base.win, 6);
+  });
+
+  it("blessures: een sterke vaste speler die ontbreekt kost winkans, wie zelden meedoet nauwelijks", () => {
+    const fx = injuryEffect(base, ["a", "b"], impacts, { a: 1, b: 0.5 });
+    expect(fx.now.win).toBeLessThan(base.win);
+    expect(fx.players.map((p) => p.id)).toEqual(["a", "b"]);
+    expect(fx.players[0].win).toBeGreaterThan(0);
+    // b deed het zonder hem toevallig beter: dat telt niet als winst
+    expect(fx.players[1].win).toBe(0);
+    expect(injuryEffect(base, [], impacts, { a: 1 }).now.win).toBeCloseTo(base.win, 10);
+    expect(injuryEffect(base, ["a"], impacts, { a: 0 }).now.win).toBeCloseTo(base.win, 10);
   });
 
   it("verwachte opstelling: vaste spelers die meestal meedoen en niet geblesseerd zijn", () => {

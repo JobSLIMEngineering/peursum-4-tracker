@@ -83,7 +83,7 @@ export default function StatistiekenPage() {
             )}
           </div>
         )}
-        <SeasonChart points={form} entries={view.entries} showInjuries={!readOnly} />
+        <SeasonChart points={form} entries={view.entries} showInjuries={!readOnly} injuredNow={view.injuredLast.size} />
       </Box>
 
       {potm && (

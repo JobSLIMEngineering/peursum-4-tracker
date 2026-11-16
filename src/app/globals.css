@@ -935,6 +935,10 @@ html, body { overflow-x: clip; }
 .lineup-head > span:last-child { display: grid; gap: 2px; }
 .lineup-diff.up { color: var(--win); }
 .lineup-diff.down { color: var(--loss); }
+.injury-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.injury-list li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: var(--r-md); background: var(--surface-2); font-size: 14px; }
+.injury-list li > :last-child { flex-shrink: 0; text-align: right; }
+.injury-list .down { color: var(--loss); }
 
 /* Weer bij een wedstrijd */
 .wx { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: rgb(255 255 255 / .1); font: 700 12px var(--f-cond); letter-spacing: .02em; text-transform: none; white-space: nowrap; }
@@ -969,9 +973,8 @@ html, body { overflow-x: clip; }
 .chart .end { font: 800 13px var(--f-cond); fill: var(--fg); }
 .chart .end.exp { fill: var(--muted); font-weight: 700; }
 .chart-tip {
-  position: absolute; top: 0; transform: translateX(-50%); pointer-events: none; z-index: 2;
-  display: grid; gap: 2px; padding: 8px 10px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line-strong);
-  box-shadow: var(--shadow-lg); font-size: 12px; color: var(--fg-2); white-space: nowrap;
+  display: grid; gap: 2px; min-height: 44px; align-content: center; margin-top: 6px; padding: 6px 10px; border-radius: var(--r-md);
+  background: var(--surface-2); font-size: 12px; color: var(--fg-2);
 }
 .chart-tip b { color: var(--fg); font-size: 13px; }
 

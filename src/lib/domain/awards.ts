@@ -51,6 +51,11 @@ export interface PlayerImpact {
   injured: number;
   /** Punten boven verwachting per wedstrijd met hem erbij, minus zonder hem (afgevlakt) */
   pointsImpact: number;
+  /**
+   * Zelfde, maar tegenover álle duels zonder hem, ook als hij geblesseerd was (afgevlakt). Zegt hoeveel
+   * we hem missen als hij er niet bij is; gebruikt voor de invloed van blessures op de winkans.
+   */
+  absentImpact?: number;
   /** Minder tegengoals dan verwacht per wedstrijd met hem erbij (afgevlakt; positief = goed) */
   defenceImpact: number;
   /** Genoeg wedstrijden om mee te dingen voor de impactprijzen */
@@ -69,6 +74,7 @@ export function playerImpacts(players: Pick<Player, "id">[], rows: GameRow[]): R
       available: avail.length,
       injured: rows.length - avail.length,
       pointsImpact: withP.length ? shrunk(withP.map((r) => r.ptsDiff)) - shrunk(without.map((r) => r.ptsDiff)) : 0,
+      absentImpact: withP.length ? shrunk(withP.map((r) => r.ptsDiff)) - shrunk(rows.filter((r) => !played(r, p.id)).map((r) => r.ptsDiff)) : 0,
       defenceImpact: shrunk(withP.map((r) => r.gaDiff)),
       // Ook minstens 2 duels zonder hem (fit): één keer afwezig zegt te weinig
       eligible: withP.length >= MIN_GAMES && withP.length >= avail.length / 2 && without.length >= 2,

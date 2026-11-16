@@ -1,4 +1,4 @@
-import type { PlayerImpact } from "./awards";
+import { MIN_GAMES, type PlayerImpact } from "./awards";
 import { fromXg, predict, type Fit, type Prediction } from "./model";
 import { isPlayed, US, type Match, type MatchEntry } from "./types";
 
@@ -147,6 +147,12 @@ export function lineupPrediction(
     delta += imp.pointsImpact * ((here.has(id) ? 1 : 0) - (rates[id] ?? 0));
   }
   delta *= DAMP;
+  return { prediction: shiftPoints(base, delta), deltaPoints: delta };
+}
+
+/** Schuif de voorspelling zo dat hij `delta` punten meer (of minder) oplevert */
+function shiftPoints(base: Prediction, delta: number): Prediction {
+  if (delta === 0) return base;
   const target = 3 * base.win + base.draw + delta;
   // Zoek de factor op de verwachte goals (voor ×f, tegen ÷f) die dit aantal punten geeft
   let lo = 0.4;
@@ -158,7 +164,44 @@ export function lineupPrediction(
     else hi = f;
   }
   const f = (lo + hi) / 2;
-  return { prediction: fromXg(base.xgUs * f, base.xgThem / f), deltaPoints: delta };
+  return fromXg(base.xgUs * f, base.xgThem / f);
+}
+
+export interface InjuryEffect {
+  /** Voorspelling met de geblesseerden erbij zoals normaal (= de gewone voorspelling) */
+  base: Prediction;
+  /** Voorspelling nu zij ontbreken */
+  now: Prediction;
+  /** Per geblesseerde: hoeveel winkans hij kost (positief = we missen hem), grootste eerst */
+  players: { id: string; win: number }[];
+}
+
+/**
+ * Wat doen de blessures met de winkans? De gewone voorspelling gaat uit van een normale bezetting:
+ * iedereen doet zo vaak mee als hij meestal doet. Een geblesseerde speler doet nu niet mee, dus valt
+ * wat hij toevoegt weg (punten boven verwachting met hem erbij tegenover alle duels zonder hem, ook
+ * die waarin hij geblesseerd was), maal hoe vaak hij normaal meedoet.
+ * Wie minder dan MIN_GAMES duels speelde, telt niet mee: daar zegt het verschil nog te weinig.
+ * Een blessure maakt de winkans nooit hoger.
+ */
+export function injuryEffect(
+  base: Prediction,
+  injured: Iterable<string>,
+  impacts: Record<string, PlayerImpact>,
+  rates: Record<string, number>,
+): InjuryEffect {
+  const cost = (id: string) => {
+    const imp = impacts[id];
+    if (!imp || imp.games < MIN_GAMES) return 0;
+    // Nooit negatief: dat het team het zonder iemand toevallig beter deed, is met zo weinig duels ruis
+    return Math.max(0, imp.absentImpact ?? imp.pointsImpact) * (rates[id] ?? 0) * DAMP;
+  };
+  const ids = [...new Set(injured)];
+  const now = shiftPoints(base, -ids.reduce((a, id) => a + cost(id), 0));
+  const players = ids
+    .map((id) => ({ id, win: base.win - shiftPoints(base, -cost(id)).win }))
+    .sort((a, b) => b.win - a.win);
+  return { base, now, players };
 }
 
 /** Ingevoerde aanwezigheid voor een nog te spelen wedstrijd (opgeslagen als invoer zonder uitslag) */

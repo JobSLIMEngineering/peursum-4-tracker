@@ -40,7 +40,18 @@ const cum = (xs: number[]) => xs.reduce<number[]>((a, x) => [...a, (a.at(-1) ?? 
  * tegenover wat het model verwachtte tegen deze tegenstanders, dus eerlijk voor de sterkte van de
  * tegenstander), opkomst en blessures. Tik of beweeg over de grafiek voor de wedstrijd op dat moment.
  */
-export function SeasonChart({ points, entries, showInjuries }: { points: FormPoint[]; entries: Record<string, MatchEntry>; showInjuries: boolean }) {
+export function SeasonChart({
+  points,
+  entries,
+  showInjuries,
+  injuredNow = 0,
+}: {
+  points: FormPoint[];
+  entries: Record<string, MatchEntry>;
+  showInjuries: boolean;
+  /** Aantal spelers dat nu geblesseerd staat (telt mee bij de laatste wedstrijd) */
+  injuredNow?: number;
+}) {
   const metrics = useMemo<Metric[]>(() => {
     const e = (i: number) => entries[points[i].match.id];
     const list: Metric[] = [
@@ -87,20 +98,26 @@ export function SeasonChart({ points, entries, showInjuries }: { points: FormPoi
         key: "opkomst",
         label: "Opkomst",
         note: "Aantal spelers per wedstrijd (alleen ingevoerde wedstrijden).",
-        lines: [{ label: "Aanwezig", kind: "us", values: points.map((_, i) => e(i)?.attendance.length ?? null), end: (v) => `${v} spelers` }],
+        lines: [{ label: "Aanwezig", kind: "us", values: points.map((_, i) => e(i)?.attendance.length ?? null), end: (v) => `${v} sp.` }],
         tip: (i) => (e(i) ? `${e(i)!.attendance.length} spelers aanwezig` : "niet ingevoerd"),
       },
     ];
+    // Bij de laatste wedstrijd telt ook wie nu op geblesseerd staat (spelerslijst), niet alleen het wedstrijdformulier
+    const hurt = (i: number) => {
+      const n = e(i)?.injured?.length;
+      if (i === points.length - 1) return Math.max(n ?? 0, injuredNow);
+      return e(i) ? (n ?? 0) : null;
+    };
     if (showInjuries)
       list.push({
         key: "blessures",
         label: "Blessures",
         note: "Aantal geblesseerde spelers per wedstrijd (alleen zichtbaar als je bent ingelogd).",
-        lines: [{ label: "Geblesseerd", kind: "us", values: points.map((_, i) => (e(i) ? (e(i)!.injured?.length ?? 0) : null)), end: (v) => `${v} geblesseerd` }],
-        tip: (i) => (e(i) ? `${e(i)!.injured?.length ?? 0} geblesseerd` : "niet ingevoerd"),
+        lines: [{ label: "Geblesseerd", kind: "us", values: points.map((_, i) => hurt(i)), end: (v) => `${v} weg` }],
+        tip: (i) => (hurt(i) == null ? "niet ingevoerd" : `${hurt(i)} geblesseerd`),
       });
     return list;
-  }, [points, entries, showInjuries]);
+  }, [points, entries, showInjuries, injuredNow]);
 
   const [key, setKey] = useState("punten");
   const [hover, setHover] = useState<number | null>(null);
@@ -206,16 +223,19 @@ export function SeasonChart({ points, entries, showInjuries }: { points: FormPoi
             );
           })}
         </svg>
-        {hp && (
-          <div className="chart-tip" style={{ left: `${(x(hover!) / W) * 100}%` }}>
+      </div>
+      <div className="chart-tip" aria-live="polite">
+        {hp ? (
+          <>
             <b>
               Ronde {hp.match.round ?? hover! + 1} · {hp.opponent}
             </b>
             <span>
-              {fmtDate(hp.match.date).full} · {hp.match.home === hp.opponent ? "uit" : "thuis"} · {hp.match.homeGoals}–{hp.match.awayGoals}
+              {fmtDate(hp.match.date).full} · {hp.match.home === hp.opponent ? "uit" : "thuis"} · {hp.match.homeGoals}–{hp.match.awayGoals} · {m.tip(hover!)}
             </span>
-            <span>{m.tip(hover!)}</span>
-          </div>
+          </>
+        ) : (
+          <span>Tik op de grafiek voor een wedstrijd.</span>
         )}
       </div>
       <p className="meta" style={{ margin: "8px 0 0" }}>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { scenario, winterBreak } from "./scenario";
+import { simulateSeason } from "./season";
 import { US, type Match, type StandingRow } from "./types";
 
 const m = (date: string, home: string, away: string): Match => ({
@@ -61,4 +62,12 @@ describe("scenario's", () => {
     expect(known.at(-1)!.chance!).toBeGreaterThan(known[0].chance!);
     expect(s.perMatch[0].win!).toBeGreaterThan(s.perMatch[0].loss!);
   });
+});
+
+it("einde seizoen, plek 1: zelfde kans als de kampioenskans (ook met een ontbrekende inhaalwedstrijd)", () => {
+  const st = [row("A", 1, 15), { ...row(US, 2, 12), played: 4 }, row("B", 3, 6), row("C", 4, 3)];
+  const matches = [m("2026-11-21", US, "A"), m("2026-11-21", "B", "C"), m("2026-11-28", "A", "B"), m("2026-11-28", "C", US)];
+  const s = scenario(model, st, matches, { deadline: null, target: 1, runs: 2000 });
+  const c = simulateSeason(model, st, matches, 2000);
+  expect(s.chance).toBe(c.champion[US]);
 });

@@ -6,12 +6,11 @@ import { useData } from "./DataProvider";
 type ShirtPlayer = Pick<Player, "id" | "name" | "position" | "type" | "number" | "hiddenNo">;
 
 /**
- * Kleuren: spelers rood met wit nummer; keeper geel met zwart nummer als hij de beste keeper van
- * de competitie is, anders groen; leenspelers grijs met zwart nummer.
+ * Kleuren: spelers rood met wit nummer; keeper altijd geel met zwart nummer; leenspelers grijs met
+ * zwart nummer. (`gold` = beste keeper van de competitie; verandert de kleur niet meer.)
  */
-function colors(p: ShirtPlayer, gold: boolean) {
-  if (p.position === "Keeper" && gold) return { top: "#ffd21f", bottom: "#e0a800", trim: "#1b1315", text: "#1b1315", stripe: "#b07c00" };
-  if (p.position === "Keeper") return { top: "#3fcf6e", bottom: "#1d9a48", trim: "#0f2a18", text: "#0f2a18", stripe: "#137036" };
+function colors(p: ShirtPlayer, _gold: boolean) {
+  if (p.position === "Keeper") return { top: "#ffd21f", bottom: "#e0a800", trim: "#1b1315", text: "#1b1315", stripe: "#b07c00" };
   if (p.type === "leen") return { top: "#b4b6ba", bottom: "#8a8c91", trim: "#4a4c50", text: "#1b1315", stripe: "" };
   return { top: "#e3262f", bottom: "#a3121c", trim: "#ffffff", text: "#ffffff", stripe: "" };
 }

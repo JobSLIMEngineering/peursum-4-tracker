@@ -80,7 +80,7 @@ export function scenario(
   matches: Match[],
   opts: { deadline: string | null; target: number; runs?: number; seed?: number },
 ): Scenario {
-  const { deadline, target, runs = 4000, seed = 2026 } = opts;
+  const { deadline, target, runs = 5000, seed = 2026 } = opts;
   const teams = standings.map((s) => s.team);
   const pool = new Set(teams);
   const idx = new Map(teams.map((t, i) => [t, i]));
@@ -88,14 +88,24 @@ export function scenario(
   const left = matches.filter((m) => m.kind === "competitie" && !isPlayed(m) && pool.has(m.home) && pool.has(m.away) && due(m));
   const ours = left.filter((m) => m.home === US || m.away === US).sort((a, b) => (a.date ?? "9").localeCompare(b.date ?? "9"));
   const us = standings.find((s) => s.team === US);
+  // Tot het eind van het seizoen: wedstrijden die nog niet in het programma staan (inhaal zonder datum)
+  // spelen we mee tegen een gemiddelde tegenstander, net als bij de kampioenskans. Zo geven beide hetzelfde.
+  const perTeam = 2 * (teams.length - 1);
+  const phantom: { team: number; home: boolean }[] = [];
+  if (!deadline)
+    standings.forEach((r, i) => {
+      const planned = left.filter((m) => m.home === r.team || m.away === r.team).length;
+      for (let k = 0; k < perTeam - r.played - planned; k++) phantom.push({ team: i, home: k % 2 === 0 });
+    });
+  const phantomOf = (t: string) => phantom.filter((x) => teams[x.team] === t).length;
   const base = { deadline, target, ours, rivals: [] as Rival[], mustDrop: 0 };
   if (!us)
     return { ...base, ourPoints: 0, maxPoints: 0, status: "onmogelijk", chance: 0, byWins: [], perMatch: [] };
 
   // ── Rekenen: in eigen hand? ──────────────────────────────────────────────
-  const maxPoints = us.points + 3 * ours.length;
+  const maxPoints = us.points + 3 * (ours.length + phantomOf(US));
   const others = standings.filter((s) => s.team !== US);
-  const gamesOf = (t: string) => left.filter((m) => m.home === t || m.away === t).length;
+  const gamesOf = (t: string) => left.filter((m) => m.home === t || m.away === t).length + phantomOf(t);
   const vsUs = (t: string) => ours.filter((m) => opponent(m) === t).length;
   // Als wij alles winnen: zij halen niets tegen ons
   const best = others.map((s) => {
@@ -154,6 +164,14 @@ export function scenario(
       att[i] = model.attack[s.team] * Math.exp(sd * gauss());
       def[i] = model.defence[s.team] * Math.exp(sd * gauss());
     });
+    for (const { team: t, home } of phantom) {
+      const adv = home ? HOME_ADVANTAGE : 1 / HOME_ADVANTAGE;
+      const f = poisson(model.mu * att[t] * adv, rand);
+      const a = poisson((model.mu * def[t]) / adv, rand);
+      gd[t] += f - a;
+      gf[t] += f;
+      pts[t] += f > a ? 3 : f === a ? 1 : 0;
+    }
     for (let k = 0; k < left.length; k++) {
       const h = poisson(model.mu * att[hi[k]] * def[ai[k]] * HOME_ADVANTAGE, rand);
       const a = poisson((model.mu * att[ai[k]] * def[hi[k]]) / HOME_ADVANTAGE, rand);

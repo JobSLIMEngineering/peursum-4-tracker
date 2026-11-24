@@ -1,3 +1,4 @@
+import { withManualResults } from "@/lib/domain/live-standings";
 import { scoutBase, type ScoutVote } from "@/lib/domain/scouting";
 import { computeAwards, gameRows, keeperCompare, playerImpacts, prizeLeads, type Award, type AwardKey, type GameRow, type PlayerImpact } from "@/lib/domain/awards";
 import { fit, knownResults, type Fit } from "@/lib/domain/model";
@@ -36,7 +37,7 @@ export interface AppView {
   impacts: Record<string, PlayerImpact>;
   /** Geblesseerd: bij de laatst ingevoerde wedstrijd of nu op geblesseerd gezet (pleistertje) */
   injuredLast: Set<string>;
-  /** Keepers met de minste tegengoals per duel van de hele competitie (geel shirt; anders groen) */
+  /** Keepers met de minste tegengoals per duel van de hele competitie */
   goldKeepers: Set<string>;
   /** Spelerskaarten (FIFA-stijl) */
   cards: Record<string, PlayerCard>;
@@ -66,7 +67,7 @@ const strip = ({ code, ...m }: StoredMatch) => ({ m, code });
 export function buildView(files: DataFiles): AppView {
   const snapshots = [...files["standings.json"].snapshots].sort((a, b) => a.fetchedAt.localeCompare(b.fetchedAt));
   const latest = snapshots.at(-1);
-  const standings = latest ? [...latest.rows].sort((a, b) => a.position - b.position) : [];
+  const clubStandings = latest ? [...latest.rows].sort((a, b) => a.position - b.position) : [];
   const { edits, extra } = files["overrides.json"];
   const hidden = new Set(files["overrides.json"].hidden ?? []);
 
@@ -96,6 +97,8 @@ export function buildView(files: DataFiles): AppView {
     status: isPlayed(m) ? "gespeeld" : m.date ? "gepland" : "niet ingepland",
   }));
 
+  // Zelf ingevulde uitslagen die de clubsite nog niet heeft, tellen al mee in de stand
+  const standings = withManualResults(clubStandings, matches);
   const model = fit(standings, knownResults(matches, standings));
   const pool = new Set(standings.map((s) => s.team));
   const entries = files["entries.json"].entries;

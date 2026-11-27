@@ -42,6 +42,12 @@ export function Calendar() {
     return map;
   }, [view]);
   const undated = view.matches.filter((m) => isOurs(m) && !m.date && !isPlayed(m)) as ViewMatch[];
+  // Afgelast: blijft doorgestreept op de oude datum staan tot er een nieuwe is
+  const called = useMemo(() => {
+    const map = new Map<string, ViewMatch>();
+    for (const m of view.matches as ViewMatch[]) if (isOurs(m) && m.cancelled?.from) map.set(m.cancelled.from, m);
+    return map;
+  }, [view]);
 
   // Start op de maand van vandaag (of van de eerstvolgende wedstrijd als die in een latere maand valt)
   const next = ours.filter((m) => !isPlayed(m) && m.date! >= today).sort((a, b) => a.date!.localeCompare(b.date!))[0];
@@ -92,6 +98,7 @@ export function Calendar() {
               {week.map((d) => {
                 const ds = iso(d);
                 const m = (byDate.get(ds) ?? []).find(isOurs);
+                const off = !m ? called.get(ds) : undefined;
                 const score = m ? ourScore(m) : null;
                 return (
                   <span key={ds} className={`cal-cell ${d.getMonth() !== first.getMonth() ? "out" : ""} ${ds === today ? "today" : ""}`}>
@@ -102,7 +109,13 @@ export function Calendar() {
                         <span>{score ? `${score[0]}-${score[1]}` : (m.time ?? (m.home === US ? "T" : "U"))}</span>
                       </span>
                     )}
-                    {training(d).length > 0 && !m && (
+                    {off && (
+                      <span className={`cal-match off ${off.home === US ? "h" : "a"}`} title="Afgelast">
+                        <TeamLogo team={opponent(off)} size={18} />
+                        <span>afg.</span>
+                      </span>
+                    )}
+                    {training(d).length > 0 && !m && !off && (
                       <span className="cal-train" aria-label="Training">
                         <Cone />
                       </span>
@@ -130,6 +143,7 @@ export function Calendar() {
                       </div>
                     )),
                     ...mine.filter((m) => m.date === iso(d)).map((m) => <OurMatch key={m.id} m={m} />),
+                    ...(called.get(iso(d)) ? [<OurMatch key={`af-${iso(d)}`} m={called.get(iso(d))!} />] : []),
                   ])}
                   {others.length > 0 && <Others list={others} />}
                   {!mine.length && !others.length && !week.some((d) => training(d).length) && <p className="meta">Niets gepland.</p>}
@@ -150,6 +164,7 @@ export function Calendar() {
                 <TeamLogo team={opponent(m)} size={18} />
                 <span>{opponent(m)}</span>
               </span>
+              {m.cancelled && <span className="tag L">afgelast</span>}
             </Link>
           ))}
         </div>
@@ -172,11 +187,11 @@ function Cone() {
 /** Onze wedstrijd in een opengeklapte week: groot en direct aan te tikken */
 function OurMatch({ m }: { m: ViewMatch }) {
   const { view } = useData();
-  const d = parse(m.date!);
+  const d = parse((m.date ?? m.cancelled?.from)!);
   const score = ourScore(m);
   const chance = !score && hasPrediction(view, m) ? predict(view.model, US, opponent(m), m.home === US).win : null;
   return (
-    <Link href={`/competitie/?w=${encodeURIComponent(m.id)}`} className="cal-item ours">
+    <Link href={`/competitie/?w=${encodeURIComponent(m.id)}`} className={`cal-item ours ${m.cancelled ? "off" : ""}`}>
       <span className="cal-when">
         <b>{DAYS[(d.getDay() + 6) % 7]}</b> {d.getDate()}
       </span>
@@ -186,13 +201,15 @@ function OurMatch({ m }: { m: ViewMatch }) {
         <span>
           <b>{opponent(m)}</b>
           <small>
-            {m.time ?? "tijd volgt"}
-            {m.venue ? ` · ${m.venue}` : ""}
+            {m.cancelled ? "Afgelast · nieuwe datum volgt" : m.movedFrom !== undefined ? `Verplaatst${m.movedFrom ? ` van ${parse(m.movedFrom).getDate()}/${parse(m.movedFrom).getMonth() + 1}` : ""} · ${m.time ?? "tijd volgt"}` : (m.time ?? "tijd volgt")}
+            {m.venue && !m.cancelled ? ` · ${m.venue}` : ""}
             {m.kind !== "competitie" ? ` · ${m.kind}` : ""}
           </small>
         </span>
       </span>
-      {score ? (
+      {m.cancelled ? (
+        <span className="tag L">afgelast</span>
+      ) : score ? (
         <Score home={m.homeGoals!} away={m.awayGoals!} ours={score} />
       ) : chance !== null ? (
         <span className="pct">

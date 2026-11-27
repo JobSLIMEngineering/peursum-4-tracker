@@ -252,7 +252,7 @@ export function MatchHero({ match }: { match: ViewMatch }) {
         ))}
         <div className="fixture-mid" style={{ order: 1 }}>
           <span className="num">{match.time ?? "–"}</span>
-          <span className="k">{match.date ? d.full : "Datum onbekend"}</span>
+          <span className="k">{match.cancelled ? "Afgelast" : match.date ? d.full : "Datum onbekend"}</span>
           {left && <span className="fixture-left">{left}</span>}
           <WeatherTag date={match.date} time={match.time} />
         </div>

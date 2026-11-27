@@ -1470,3 +1470,10 @@ html, body { overflow-x: clip; }
 
 /* Wrapped: kies team of speler */
 .wr-pick { max-width: 420px; margin: 0 auto 12px; display: grid; gap: 4px; }
+
+/* Afgelast */
+.cal-match.off { opacity: .55; }
+.cal-match.off span { text-decoration: line-through; }
+.cal-item.ours.off { opacity: .75; }
+.cal-item.ours.off b { text-decoration: line-through; }
+.cancel-note b { color: var(--fg); }

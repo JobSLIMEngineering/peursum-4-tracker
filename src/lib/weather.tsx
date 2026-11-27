@@ -89,7 +89,8 @@ export function useWeather(date: string | null, time: string | null): Weather | 
 /** Klein icoontje met temperatuur, bijv. "🌧️ 9°" */
 export function WeatherTag({ date, time }: { date: string | null; time: string | null }) {
   const w = useWeather(date, time);
-  if (!w) return null;
+  // Zonder datum (bijv. afgelast) geen weerbericht
+  if (!w || !date) return null;
   const l = weatherLabel(w.code);
   return (
     <span className="wx" title={`${l.text}, ${w.temp}°C`} aria-label={`Weer: ${l.text}, ${w.temp} graden`}>

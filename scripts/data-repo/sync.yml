@@ -8,6 +8,8 @@ on:
     - cron: "5 11-22 * * 6"
     # Zondag: 08, 12, 16 en 20 uur Nederlandse tijd
     - cron: "5 6,7,10,11,14,15,18,19 * * 0"
+    # Doordeweeks: één keer per dag rond 20:00 Nederlandse tijd (de clubsite werkt uitslagen soms later bij)
+    - cron: "5 18 * * 1-5"
   workflow_dispatch:
     inputs:
       force:

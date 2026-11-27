@@ -8,7 +8,7 @@ import { isPlayed, US, type Match, type MatchEntry, type Player, type StandingRo
  * inhaalwedstrijden, wie terug is van een blessure, koplopers van de prijzen en wie on fire is.
  */
 
-export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped" | "motm" | "potm" | "upgrade" | "mijlpaal" | "totm";
+export type NewsKind = "stand" | "uitschieter" | "verrassing" | "inhaal" | "terug" | "prijs" | "vuur" | "duo" | "wrapped" | "motm" | "potm" | "upgrade" | "mijlpaal" | "totm" | "afgelast";
 
 export interface NewsItem {
   key: string;
@@ -26,7 +26,8 @@ export interface NewsItem {
 
 export interface NewsInput {
   today: string;
-  matches: Match[];
+  /** Met afgelast (oude datum) of verplaatst (oude datum) als de beheerder dat aangaf */
+  matches: (Match & { cancelled?: { from: string | null; time: string | null }; movedFrom?: string | null })[];
   standings: StandingRow[];
   /** Standen van eerdere ophaalmomenten, oud → nieuw */
   snapshots: { fetchedAt: string; rows: StandingRow[] }[];
@@ -74,6 +75,21 @@ export function buildNews(i: NewsInput): NewsItem[] {
             ? "Peursum 4 staat bovenaan"
             : `Peursum 4 staat ${us.position}e`;
     out.push({ key: "stand", kind: "stand", kicker: "Stand", title, text: `${us.points} punten uit ${us.played} duels${lead}`, href: "/" });
+  }
+
+  // --- Afgelast of verplaatst (onze wedstrijden) ---
+  const DAG = ["zo", "ma", "di", "wo", "do", "vr", "za"];
+  const day = (d: string) => {
+    const x = new Date(`${d}T12:00`);
+    return `${DAG[x.getDay()]} ${x.getDate()}/${x.getMonth() + 1}`;
+  };
+  for (const m of i.matches) {
+    if (m.home !== US && m.away !== US) continue;
+    const from = m.cancelled?.from;
+    if (m.cancelled && from && daysBetween(i.today, from) >= -3 && daysBetween(i.today, from) <= 14)
+      out.push({ key: `afgelast-${m.id}`, kind: "afgelast", kicker: "Afgelast", title: `${m.home} – ${m.away}`, text: `${day(from)} gaat niet door. Nieuwe datum volgt.`, href: `/competitie/?w=${m.id}` });
+    else if (m.movedFrom !== undefined && m.date && m.date >= i.today && (!m.movedFrom || daysBetween(m.movedFrom, i.today) <= 30))
+      out.push({ key: `verplaatst-${m.id}`, kind: "afgelast", kicker: "Verplaatst", title: `${m.home} – ${m.away}`, text: `Nieuwe datum: ${day(m.date)}${m.time ? ` om ${m.time}` : ""}`, href: `/competitie/?w=${m.id}` });
   }
 
   // --- Poule: uitschieters, verrassingen en inhaalwedstrijden van de laatste 10 dagen ---

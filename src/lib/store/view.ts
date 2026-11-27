@@ -8,13 +8,20 @@ import { playersOfTheMonth, type MonthWinner } from "@/lib/domain/rating";
 import { MON_FULL, todayNL } from "@/lib/format";
 import { hotStreaks, type Streak } from "@/lib/domain/streaks";
 import { isPlayed, opponent, US, type Match, type MatchEntry, type StandingRow } from "@/lib/domain/types";
-import type { DataFiles, Snapshot, StoredMatch, StoredPlayer } from "./schema";
+import type { Cancellation, DataFiles, Snapshot, StoredMatch, StoredPlayer } from "./schema";
 
 export type ViewMatch = Match & {
   extra: boolean;
   code: string | null;
   /** Uitslag zelf ingevuld (de clubsite heeft hem nog niet) */
   manualScore?: boolean;
+  /** Datum en tijd zoals op de clubsite (voor de wijzigingen van de beheerder) */
+  clubDate?: string | null;
+  clubTime?: string | null;
+  /** Afgelast en nog geen nieuwe datum: oorspronkelijke datum en tijd (de wedstrijd zelf heeft geen datum meer) */
+  cancelled?: { from: string | null; time: string | null };
+  /** Was afgelast en staat nu op een nieuwe datum: de oude datum */
+  movedFrom?: string | null;
 };
 
 export interface AppView {
@@ -83,6 +90,8 @@ export function buildView(files: DataFiles): AppView {
         homeGoals: manual ? e!.homeGoals! : m.homeGoals,
         awayGoals: manual ? e!.awayGoals! : m.awayGoals,
         manualScore: manual,
+        clubDate: m.date,
+        clubTime: m.time,
         edited: !!e,
         extra: false,
         code,
@@ -92,10 +101,12 @@ export function buildView(files: DataFiles): AppView {
       const { m, code } = strip(s);
       return { ...m, edited: true, extra: true, code };
     }),
-  ].map((m) => ({
-    ...m,
-    status: isPlayed(m) ? "gespeeld" : m.date ? "gepland" : "niet ingepland",
-  }));
+  ]
+    .map((m) => withCancellation(m as ViewMatch, files["overrides.json"].cancelled?.[m.id]))
+    .map((m) => ({
+      ...m,
+      status: isPlayed(m) ? "gespeeld" : m.cancelled ? "afgelast" : m.date ? "gepland" : "niet ingepland",
+    }));
 
   // Zelf ingevulde uitslagen die de clubsite nog niet heeft, tellen al mee in de stand
   const standings = withManualResults(clubStandings, matches);
@@ -193,6 +204,17 @@ const byKickoff = (a: Match, b: Match) =>
   (a.date ?? "9999").localeCompare(b.date ?? "9999") || (a.time ?? "").localeCompare(b.time ?? "");
 
 /** Eerstvolgende competitiewedstrijd van Peursum 4 tegen een poule-team, met datum. */
+/**
+ * Afgelast: zonder nieuwe datum valt hij uit de agenda (geen datum, status "afgelast"). Geeft de clubsite
+ * inmiddels een andere datum dan bij het afgelasten, dan is hij verplaatst: die nieuwe datum en tijd gaan
+ * voor (ook boven een eigen wijziging van de oude datum). Een gespeelde wedstrijd is nooit afgelast.
+ */
+export function withCancellation<M extends ViewMatch>(m: M, c: Cancellation | undefined): M {
+  if (!c || isPlayed(m)) return m;
+  if (!m.extra && m.clubDate && m.clubDate !== c.clubDate) return { ...m, date: m.clubDate, time: m.clubTime ?? null, movedFrom: c.from };
+  return { ...m, date: null, time: null, cancelled: { from: c.from, time: c.time } };
+}
+
 export function nextMatch(v: AppView): ViewMatch | undefined {
   return v.matches
     .filter((m) => (m.home === US || m.away === US) && !isPlayed(m) && m.kind === "competitie" && m.date)

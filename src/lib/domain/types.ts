@@ -6,7 +6,7 @@
 export const US = "Peursum 4";
 
 export type MatchKind = "competitie" | "beker" | "oefen";
-export type MatchStatus = "gepland" | "gespeeld" | "niet ingepland";
+export type MatchStatus = "gepland" | "gespeeld" | "niet ingepland" | "afgelast";
 export type MatchSource = "seed" | "scraper" | "afgeleid" | "handmatig";
 export type Position =
   | "Keeper"

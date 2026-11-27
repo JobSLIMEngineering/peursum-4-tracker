@@ -30,6 +30,7 @@ const ICON: Record<NewsKind, string> = {
   upgrade: "⬆️",
   mijlpaal: "🎯",
   totm: "🏟️",
+  afgelast: "🚫",
 };
 
 /** Achternaam (of label) voor korte opsommingen */
@@ -38,7 +39,7 @@ const shortName = (p: StoredPlayer | undefined) => (p?.name ? splitName(p.name, 
 const EVERY = 5500;
 
 /** Volgorde van belangrijkheid als er te veel berichten zijn */
-const PRIORITY: NewsKind[] = ["totm", "motm", "stand", "mijlpaal", "upgrade", "terug", "inhaal", "verrassing", "uitschieter", "prijs", "vuur", "duo", "potm", "wrapped"];
+const PRIORITY: NewsKind[] = ["afgelast", "totm", "motm", "stand", "mijlpaal", "upgrade", "terug", "inhaal", "verrassing", "uitschieter", "prijs", "vuur", "duo", "potm", "wrapped"];
 
 /** Nieuws: berichtjes die om de beurt rustig voorbij komen (tik op een bolletje om te kiezen) */
 export function NewsTicker() {

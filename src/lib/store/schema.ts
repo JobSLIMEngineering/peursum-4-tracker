@@ -28,6 +28,21 @@ export type MatchEdit = Pick<Match, "date" | "time" | "home" | "away" | "kind" |
   awayGoals?: number | null;
 };
 
+/**
+ * Zelf afgelast. Staat los van de wijzigingen, zodat een nieuwe datum van de clubsite vanzelf doorkomt:
+ * zodra de clubsite een andere datum geeft dan `clubDate`, is de wedstrijd verplaatst en staat hij weer
+ * gewoon in de agenda (met "verplaatst van").
+ */
+export interface Cancellation {
+  /** Oorspronkelijke datum en tijd (zoals de app ze toonde) */
+  from: string | null;
+  time: string | null;
+  /** Datum op de clubsite op het moment van afgelasten */
+  clubDate: string | null;
+  /** Wanneer afgelast (ISO) */
+  at: string;
+}
+
 export interface StoredPlayer extends Player {
   /** Naam zoals op de clubsite ("Berg, Rien van den"), als de speler daarvandaan komt */
   clubName: string | null;
@@ -58,7 +73,7 @@ export interface DataFiles {
   "standings.json": { snapshots: Snapshot[] };
   "matches.json": { matches: StoredMatch[] };
   /** `hidden`: wedstrijden die de gebruiker heeft verwijderd (ook als ze van de clubsite komen) */
-  "overrides.json": { edits: Record<string, MatchEdit>; extra: StoredMatch[]; hidden?: string[] };
+  "overrides.json": { edits: Record<string, MatchEdit>; extra: StoredMatch[]; hidden?: string[]; cancelled?: Record<string, Cancellation> };
   "players.json": { players: StoredPlayer[] };
   "entries.json": { entries: Record<string, MatchEntry> };
   "feedback.json": { items: FeedbackItem[] };

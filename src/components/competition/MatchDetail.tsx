@@ -11,6 +11,7 @@ import { LineupChance } from "@/components/LineupChance";
 import { Spotlights } from "@/components/Spotlights";
 import { TopperBlock } from "@/components/TopperBlock";
 import { isPlayed, opponent, ourScore, US, type MatchKind } from "@/lib/domain/types";
+import { fmtDate } from "@/lib/format";
 import type { MatchEdit } from "@/lib/store/schema";
 import { hasPrediction, type ViewMatch } from "@/lib/store/view";
 import { EntryForm } from "./EntryForm";
@@ -77,13 +78,15 @@ export function MatchDetail({ id, startEditing, step = null }: { id: string; sta
         <FixtureForm match={m} onDone={() => setMode("view")} />
       ) : (
         <>
-          <div className="actions" style={{ margin: "0 0 14px" }} hidden={readOnly}>
+          <Cancelled match={m} onNewDate={() => setMode("fixture")} />
+          <div className="actions" style={{ margin: "0 0 14px" }} hidden={readOnly || !!m.cancelled}>
             <button className="btn primary" type="button" onClick={() => setMode("score")}>
               Uitslag invullen
             </button>
             <button className="btn" type="button" onClick={() => setMode("fixture")}>
               Wijzigen
             </button>
+            <CancelButton match={m} />
           </div>
           {hasPrediction(view, m) ? (
             <>
@@ -217,10 +220,14 @@ function FixtureForm({ match, onDone }: { match: ViewMatch; onDone: () => void }
     };
     const ok = await mutate(
       "overrides.json",
-      (o) =>
-        match.extra
-          ? { ...o, extra: o.extra.map((x) => (x.id === match.id ? { ...x, ...edit } : x)) }
-          : { ...o, edits: { ...o.edits, [match.id]: { ...o.edits[match.id], ...edit } } },
+      (o) => {
+        // Zelf een (nieuwe) datum ingevuld: dan is hij niet meer afgelast
+        const cancelled = { ...(o.cancelled ?? {}) };
+        if (edit.date) delete cancelled[match.id];
+        return match.extra
+          ? { ...o, cancelled, extra: o.extra.map((x) => (x.id === match.id ? { ...x, ...edit } : x)) }
+          : { ...o, cancelled, edits: { ...o.edits, [match.id]: { ...o.edits[match.id], ...edit } } };
+      },
       `wedstrijd gewijzigd: ${edit.home} - ${edit.away}`,
     );
     if (ok) onDone();
@@ -333,6 +340,69 @@ export function DeleteMatch({ match }: { match: ViewMatch }) {
         {armed ? "Zeker? Tik nog een keer" : "Wedstrijd verwijderen"}
       </button>
       {armed && <span className="meta">Hoort deze wedstrijd niet bij Peursum 4? Dan verdwijnt hij uit de app.</span>}
+    </div>
+  );
+}
+
+/** Afgelast melden. Omkeerbaar ("Toch niet afgelast"), dus zonder extra bevestiging. */
+function CancelButton({ match }: { match: ViewMatch }) {
+  const { mutate } = useData();
+  async function cancel() {
+    await mutate(
+      "overrides.json",
+      (o) => ({
+        ...o,
+        cancelled: {
+          ...(o.cancelled ?? {}),
+          [match.id]: { from: match.date, time: match.time, clubDate: match.clubDate ?? null, at: new Date().toISOString() },
+        },
+      }),
+      `afgelast: ${match.home} - ${match.away}`,
+    );
+  }
+  return (
+    <button className="btn" type="button" onClick={cancel}>
+      Afgelast
+    </button>
+  );
+}
+
+/** Melding bij een afgelaste of verplaatste wedstrijd, met nieuwe datum of terugdraaien */
+function Cancelled({ match, onNewDate }: { match: ViewMatch; onNewDate: () => void }) {
+  const { mutate, readOnly } = useData();
+  if (match.movedFrom !== undefined && !match.cancelled)
+    return (
+      <p className="note" style={{ marginTop: 0, marginBottom: 14 }}>
+        Verplaatst: was {match.movedFrom ? fmtDate(match.movedFrom).full : "eerder gepland"}, afgelast. De nieuwe datum komt van de clubsite.
+      </p>
+    );
+  if (!match.cancelled) return null;
+  async function undo() {
+    await mutate(
+      "overrides.json",
+      (o) => {
+        const cancelled = { ...(o.cancelled ?? {}) };
+        delete cancelled[match.id];
+        return { ...o, cancelled };
+      },
+      `niet meer afgelast: ${match.home} - ${match.away}`,
+    );
+  }
+  return (
+    <div className="note warn cancel-note" style={{ marginTop: 0, marginBottom: 14 }}>
+      <b>Afgelast</b>
+      {match.cancelled.from ? ` (was ${fmtDate(match.cancelled.from).full}${match.cancelled.time ? ` om ${match.cancelled.time}` : ""})` : ""}. Zodra de
+      clubsite een nieuwe datum heeft, staat hij vanzelf weer in de agenda.
+      {!readOnly && (
+        <div className="actions" style={{ marginTop: 8 }}>
+          <button className="btn sm primary" type="button" onClick={onNewDate}>
+            Nieuwe datum invullen
+          </button>
+          <button className="btn sm" type="button" onClick={undo}>
+            Toch niet afgelast
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -321,7 +321,7 @@ function MatchRow({ m, view }: { m: ViewMatch; view: AppView }) {
     } else {
       sub = (
         <>
-          {m.date ? (m.time ?? "tijd onbekend") : "niet ingepland"}
+          {m.cancelled ? "afgelast" : m.date ? (m.time ?? "tijd onbekend") : "niet ingepland"}
           {m.venue ? ` · ${m.venue}` : ""}
           {m.kind !== "competitie" ? ` · ${m.kind}` : ""}
           {m.edited && (

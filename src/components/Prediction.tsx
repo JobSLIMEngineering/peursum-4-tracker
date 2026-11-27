@@ -251,8 +251,17 @@ export function MatchHero({ match }: { match: ViewMatch }) {
           </div>
         ))}
         <div className="fixture-mid" style={{ order: 1 }}>
-          <span className="num">{match.time ?? "–"}</span>
-          <span className="k">{match.cancelled ? "Afgelast" : match.date ? d.full : "Datum onbekend"}</span>
+          {match.cancelled ? (
+            <>
+              <span className="cancel-bar">Afgelast</span>
+              {match.cancelled.from && <span className="k">was {fmtDate(match.cancelled.from).full}</span>}
+            </>
+          ) : (
+            <>
+              <span className="num">{match.time ?? "–"}</span>
+              <span className="k">{match.date ? d.full : "Datum onbekend"}</span>
+            </>
+          )}
           {left && <span className="fixture-left">{left}</span>}
           <WeatherTag date={match.date} time={match.time} />
         </div>
